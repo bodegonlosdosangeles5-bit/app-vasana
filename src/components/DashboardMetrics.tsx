@@ -8,6 +8,8 @@ import { useMemo, useState, useEffect } from "react";
 import { Producto } from "@/services/productoService";
 import { useRealtimeInventory } from "@/hooks/useRealtimeInventory";
 import { useRealtimeProductos } from "@/hooks/useRealtimeProductos";
+import { ProductionStatsModal } from "./ProductionStatsModal";
+import { BarChart3 } from "lucide-react";
 
 interface DashboardMetricsProps {
   formulas?: Producto[]; // Mantener para compatibilidad pero no usar
@@ -23,6 +25,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isOutOfStockOpen, setIsOutOfStockOpen] = useState(false);
   const [isFormulasListOpen, setIsFormulasListOpen] = useState(false);
+  const [isProductionStatsOpen, setIsProductionStatsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [animatedProgressKilos, setAnimatedProgressKilos] = useState(0);
   const [animatedProgressTerminados, setAnimatedProgressTerminados] = useState(0);
@@ -241,6 +244,15 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
       progress: animatedProgressKilos,
       hasFormulasList: true,
     },
+    {
+      title: "Estadísticas de Producción",
+      value: "Reportes",
+      subtitle: "rendimiento gráfico",
+      icon: BarChart3,
+      color: "warning",
+      progress: animatedProgressKilos, // Usar un progreso visual
+      hasProductionStats: true,
+    },
   ];
 
 
@@ -248,9 +260,9 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
     <div className="space-y-6 sm:space-y-8">
       {/* Metrics Cards - Horizontal Layout */}
       <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
-        {metrics.map((metric, index) => {
+        {metrics.map((metric: any, index) => {
           const Icon = metric.icon;
-          const isClickable = metric.hasOutOfStock || metric.hasSearch || metric.hasNavigation || metric.hasFormulasList;
+          const isClickable = metric.hasOutOfStock || metric.hasSearch || metric.hasNavigation || metric.hasFormulasList || metric.hasProductionStats;
           
           return (
             <Card 
@@ -268,6 +280,8 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                   onNavigateToProduction();
                 } else if (metric.hasFormulasList) {
                   setIsFormulasListOpen(true);
+                } else if (metric.hasProductionStats) {
+                  setIsProductionStatsOpen(true);
                 }
               }}
             >
@@ -556,12 +570,21 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
 
                       {/* Información de producción */}
                       <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                          <FlaskConical className="h-4 w-4 text-accent" />
-                          <span className="font-medium">Lote:</span>
-                          <span className="text-accent font-semibold">
-                            {formula.batchSize || 0} kg
-                          </span>
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <FlaskConical className="h-4 w-4 text-accent" />
+                            <span className="font-medium">Lote:</span>
+                            <span className="text-accent font-semibold">
+                              {(formula as any).lote || formula.id}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-4" /> {/* Espaciador para alinear con el icono de arriba */}
+                            <span className="font-medium">Cantidad:</span>
+                            <span className="text-accent font-semibold">
+                              {formula.batchSize || 0} kg
+                            </span>
+                          </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="font-medium">Tipo:</span>
@@ -587,6 +610,13 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Estadísticas de Producción */}
+      <ProductionStatsModal
+        isOpen={isProductionStatsOpen}
+        onClose={() => setIsProductionStatsOpen(false)}
+        productos={formulasData}
+      />
 
     </div>
   );

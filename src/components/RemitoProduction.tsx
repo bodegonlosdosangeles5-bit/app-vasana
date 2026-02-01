@@ -301,7 +301,8 @@ export const RemitoProduction = ({ productionItems }: RemitoProductionProps) => 
                           </Badge>
                         </div>
                         <div className="text-xs text-muted-foreground space-y-1">
-                          <div>Lote: {item.id}</div>
+                          <div>Lote: {(item as any).lote || item.id}</div>
+                          <div>Cantidad: {item.batchSize} kg</div>
                           <div>
                             {item.type === 'client' ? `Cliente: ${item.clientName || 'N/A'}` : 'Stock'}
                           </div>

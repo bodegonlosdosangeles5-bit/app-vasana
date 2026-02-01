@@ -381,7 +381,7 @@ export const FormulasSection = ({
         }
       } else {
         // Fallback al servicio directo si no hay función de Realtime
-        const success = await FormulaService.addMissingIngredient(
+        const success = await ProductoService.addMissingIngredient(
           selectedFormulaForIngredient.id,
           {
             name: newIngredient.name,
@@ -391,7 +391,7 @@ export const FormulasSection = ({
         );
 
         if (success) {
-          const updatedFormulas = await FormulaService.getFormulas();
+          const updatedFormulas = await ProductoService.getProductos();
           setFormulas(updatedFormulas);
           
           setIsAddIngredientModalOpen(false);
@@ -457,13 +457,13 @@ export const FormulasSection = ({
         }
       } else {
         // Fallback al servicio directo si no hay función de Realtime
-        const success = await FormulaService.removeMissingIngredient(formulaId, ingredientName);
+        const success = await ProductoService.removeMissingIngredient(formulaId, ingredientName);
         if (success) {
           console.log('✅ Ingrediente eliminado exitosamente via servicio directo');
           
           // Si no quedan ingredientes faltantes, actualizar en la base de datos
           if (remainingIngredients.length === 0) {
-            await FormulaService.updateFormula(formulaId, { status: 'available' });
+            await ProductoService.updateProducto(formulaId, { status: 'available' });
           }
         }
       }
@@ -565,7 +565,10 @@ export const FormulasSection = ({
                       <span>{formula.name}</span>
                     </CardTitle>
                     <p className="text-base text-foreground dark:text-white mt-1">
-                      Lote: {formula.id} • Cantidad: {formula.batchSize} kg
+                      Lote: {(formula as any).lote || formula.id}
+                    </p>
+                    <p className="text-base text-foreground dark:text-white mt-1">
+                      Cantidad: {formula.batchSize} kg
                     </p>
                     {!showOnlyIncomplete && (
                       <p className="text-base text-foreground dark:text-white font-medium mt-1">
