@@ -1,4 +1,8 @@
-import { Package, FlaskConical, TrendingUp, Search, X, MapPin } from "lucide-react";
+import { 
+  Package, FlaskConical, Search, X, MapPin, 
+  BarChart3, TrendingDown, Calendar, Scale, AlertCircle,
+  PackageCheck, Droplets, TrendingUp
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
@@ -8,8 +12,11 @@ import { useMemo, useState, useEffect } from "react";
 import { Producto } from "@/services/productoService";
 import { useRealtimeInventory } from "@/hooks/useRealtimeInventory";
 import { useRealtimeProductos } from "@/hooks/useRealtimeProductos";
+import { MetricasService, ComparativaHoyAyer, ProductionViewData } from "@/services/metricasService";
+import { format, subDays, parseISO, startOfWeek, isSameMonth, isSameWeek, startOfMonth } from "date-fns";
+import { es } from "date-fns/locale";
 import { ProductionStatsModal } from "./ProductionStatsModal";
-import { BarChart3 } from "lucide-react";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
 interface DashboardMetricsProps {
   formulas?: Producto[]; // Mantener para compatibilidad pero no usar
@@ -30,6 +37,41 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
   const [animatedProgressKilos, setAnimatedProgressKilos] = useState(0);
   const [animatedProgressTerminados, setAnimatedProgressTerminados] = useState(0);
   const [animatedProgressOutOfStock, setAnimatedProgressOutOfStock] = useState(0);
+  const [comparativa, setComparativa] = useState<ComparativaHoyAyer>({ hoy_total: 0, ayer_total: 0 });
+  const [viewData, setViewData] = useState<ProductionViewData[]>([]);
+  const [isMetricasLoading, setIsMetricasLoading] = useState(true);
+
+  // Cargar datos de la vista SQL para asegurar consistencia con los reportes
+  useEffect(() => {
+    let isMounted = true;
+    const fetchAllData = async () => {
+      try {
+        setIsMetricasLoading(true);
+        const [compData, summaryData] = await Promise.all([
+          MetricasService.getComparativaHoyAyer(),
+          MetricasService.getProductionSummaryFromView()
+        ]);
+        
+        if (isMounted) {
+          if (compData) {
+            setComparativa({
+              hoy_total: Number(compData.hoy_total || 0),
+              ayer_total: Number(compData.ayer_total || 0)
+            });
+          }
+          if (summaryData) {
+            setViewData(summaryData);
+          }
+        }
+      } catch (error) {
+        console.error("❌ Fallo crítico al cargar datos de métricas:", error);
+      } finally {
+        if (isMounted) setIsMetricasLoading(false);
+      }
+    };
+    fetchAllData();
+    return () => { isMounted = false; };
+  }, [productos]);
   
   // Hook para obtener datos de inventario
   const { inventoryItems, loading: inventoryLoading } = useRealtimeInventory();
@@ -43,20 +85,45 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
       .replace(/\s+/g, ''); // Quitar espacios
   };
 
-  // Calcular los kilos disponibles usando la misma lógica que ProductionSection (excluyendo procesadas)
-  const kilosDisponibles = useMemo(() => {
-    return formulasData
-      .filter(formula => {
-        const normalizedStatus = normalizeText(formula.status);
-        const normalizedDestination = normalizeText(formula.destination);
-        
-        const isTerminated = normalizedStatus === 'available';
-        const isVillaMartelli = normalizedDestination === 'villamartelli';
-        
-        return isTerminated && isVillaMartelli;
-      })
-      .reduce((total, formula) => total + (formula.batchSize || 0), 0);
-  }, [formulasData]);
+  // Calcular los totales filtrados por tiempo usando la vista SQL para precisión absoluta
+  const { weeklyTotal, monthlyTotal, totalAvailableKilosVM } = useMemo(() => {
+    const now = new Date();
+
+    // 1. Kilos Disponibles (Stock Total actual en planta - real time desde hook)
+    const villaMartelliProducts = formulasData.filter(formula => {
+      const normalizedStatus = normalizeText(formula?.status || "");
+      const normalizedDestination = normalizeText(formula?.destination || "");
+      return normalizedStatus === 'available' && normalizedDestination === 'villamartelli';
+    });
+    const totalAvailable = villaMartelliProducts.reduce((sum, p) => sum + (p?.batchSize || 0), 0);
+
+    // 2. Semanal (Desde el Lunes de esta semana - de la Vista SQL)
+    const weekly = viewData.reduce((sum, d) => {
+      const dDate = parseISO(d.fecha_produccion);
+      if (isSameWeek(dDate, now, { weekStartsOn: 1 })) {
+        return sum + Number(d.total_kg || 0);
+      }
+      return sum;
+    }, 0);
+
+    // 3. Mensual (Desde el día 1 de este mes - de la Vista SQL)
+    const monthly = viewData.reduce((sum, d) => {
+      const dDate = parseISO(d.fecha_produccion);
+      if (isSameMonth(dDate, now)) {
+        return sum + Number(d.total_kg || 0);
+      }
+      return sum;
+    }, 0);
+
+    return { 
+      weeklyTotal: weekly, 
+      monthlyTotal: monthly, 
+      totalAvailableKilosVM: totalAvailable 
+    };
+  }, [formulasData, viewData]);
+
+  // Metas de progreso para animaciones
+  const progressTotalKilosTarget = Math.min(100, Math.max(0, Math.round((totalAvailableKilosVM / 10000) * 100)));
 
   // Calcular productos terminados para Villa Martelli
   const formulasTerminadas = useMemo(() => {
@@ -125,38 +192,51 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
   const MAX_PRODUCTOS_TERMINADOS = 50;
   const progressTerminadosTarget = Math.min(100, Math.max(0, Math.round((formulasTerminadas.length / MAX_PRODUCTOS_TERMINADOS) * 100)));
 
-  // Progreso de kilos basado en 5000 kilos como máximo
-  const MAX_KILOS = 5000;
-  const progressKilosTarget = Math.min(100, Math.max(0, Math.round((kilosDisponibles / MAX_KILOS) * 100)));
+  // Progreso semanal (interno)
+  const MAX_KILOS_WEEKLY = 5000;
+  const progressWeeklyKilosTarget = Math.min(100, Math.max(0, Math.round((weeklyTotal / MAX_KILOS_WEEKLY) * 100)));
 
-  // Animación del progreso de kilos desde 0 hasta el valor final
+  // Progreso mensual basado en 15000 kilos como máximo
+  const MAX_KILOS_MONTHLY = 15000;
+  const progressMonthlyTarget = Math.min(100, Math.max(0, Math.round((monthlyTotal / MAX_KILOS_MONTHLY) * 100)));
+  
+  const [animatedProgressMonthly, setAnimatedProgressMonthly] = useState(0);
+
+  // Animación del progreso mensual
   useEffect(() => {
-    // Resetear el progreso animado cuando cambian los kilos disponibles
+    setAnimatedProgressMonthly(0);
+    if (progressMonthlyTarget > 0) {
+      const duration = 2000;
+      const startTime = Date.now();
+      const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        setAnimatedProgressMonthly(progressMonthlyTarget * easeOut);
+        if (progress < 1) requestAnimationFrame(animate);
+      };
+      requestAnimationFrame(animate);
+    }
+  }, [progressMonthlyTarget]);
+
+  useEffect(() => {
     setAnimatedProgressKilos(0);
 
-    if (progressKilosTarget > 0) {
-      const duration = 2000; // Duración total de la animación: 2 segundos
+    if (progressTotalKilosTarget > 0) {
+      const duration = 2000;
       const startTime = Date.now();
 
       const animate = () => {
         const elapsed = Date.now() - startTime;
         const progress = Math.min(elapsed / duration, 1);
-        
-        // Usar una función de easing para una animación más suave (ease-out)
         const easeOut = 1 - Math.pow(1 - progress, 3);
-        const newValue = progressKilosTarget * easeOut;
-        
-        setAnimatedProgressKilos(newValue);
+        setAnimatedProgressKilos(progressTotalKilosTarget * easeOut);
 
-        if (progress < 1) {
-          requestAnimationFrame(animate);
-        }
+        if (progress < 1) requestAnimationFrame(animate);
       };
-
-      const animationFrame = requestAnimationFrame(animate);
-      return () => cancelAnimationFrame(animationFrame);
+      requestAnimationFrame(animate);
     }
-  }, [progressKilosTarget]);
+  }, [progressTotalKilosTarget]);
 
   // Animación del progreso de productos terminados desde 0 hasta el valor final
   useEffect(() => {
@@ -218,39 +298,43 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
 
   const metrics = [
     {
-      title: "Materias Primas sin Stock",
-      value: outOfStockItems.length.toString(),
-      subtitle: "items faltantes",
-      icon: Package,
-      color: "destructive",
-      progress: animatedProgressOutOfStock,
-      hasOutOfStock: true,
-    },
-    {
-      title: "Productos Terminados",
+      title: "STOCK FINALIZADO",
       value: formulasTerminadas.length.toString(),
-      subtitle: "para Villa Martelli",
-      icon: FlaskConical,
-      color: "secondary",
+      subtitle: "disponibles para despacho",
+      icon: PackageCheck,
+      colorClass: "text-[#D4AF37]",
+      bgClass: "bg-[#D4AF37]/15",
       progress: animatedProgressTerminados,
       hasNavigation: true,
     },
     {
-      title: "Kilos Disponibles",
-      value: `${kilosDisponibles.toLocaleString()} kg`,
-      subtitle: "productos producidos",
-      icon: TrendingUp,
-      color: "accent",
+      title: "KILOS DISPONIBLES",
+      value: `${totalAvailableKilosVM.toLocaleString()} kg`,
+      subtitle: "Villa Martelli (Stock)",
+      icon: Scale,
+      colorClass: "text-amber-500",
+      bgClass: "bg-amber-500/15",
       progress: animatedProgressKilos,
       hasFormulasList: true,
     },
     {
-      title: "Estadísticas de Producción",
-      value: "Reportes",
-      subtitle: "rendimiento gráfico",
-      icon: BarChart3,
-      color: "warning",
-      progress: animatedProgressKilos, // Usar un progreso visual
+      title: "ALERTAS DE INSUMOS",
+      value: outOfStockItems.length.toString(),
+      subtitle: outOfStockItems.length > 0 ? "reabastecimiento crítico" : "niveles normales",
+      icon: Droplets,
+      colorClass: outOfStockItems.length > 0 ? "text-rose-500" : "text-emerald-500",
+      bgClass: outOfStockItems.length > 0 ? "bg-rose-500/15" : "bg-emerald-500/15",
+      isCritical: outOfStockItems.length > 0,
+      progress: animatedProgressOutOfStock,
+      hasOutOfStock: true,
+    },
+    {
+      title: "REPORTE DE PLANTA",
+      value: " ",
+      subtitle: " ",
+      icon: TrendingUp,
+      colorClass: "text-slate-200",
+      bgClass: "bg-slate-200/10",
       hasProductionStats: true,
     },
   ];
@@ -287,7 +371,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
             >
               <CardContent className="card-content">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="card-title">
+                  <h3 className="text-zinc-400 text-xs font-medium uppercase tracking-widest">
                     {metric.title}
                   </h3>
                   <div className="flex items-center gap-2">
@@ -304,21 +388,70 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                         <Search className="h-4 w-4" />
                       </Button>
                     )}
-                    <div className={`p-2 rounded-lg bg-${metric.color}/10 flex-shrink-0`}>
-                      <Icon className="card-icon" />
+                    <div className={`h-10 w-10 flex items-center justify-center rounded-full ${metric.bgClass} ${metric.isCritical ? 'animate-pulse' : ''} flex-shrink-0 transition-transform duration-300 group-hover:scale-110`}>
+                      <Icon className={`h-5 w-5 ${metric.colorClass}`} strokeWidth={1.5} />
                     </div>
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <div className="metric-value">
-                    {metric.value}
-                  </div>
-                  <p className="metric-label">
-                    {metric.subtitle}
-                  </p>
-                  <div className="mt-4">
-                    <Progress value={metric.progress} className="h-2" />
-                  </div>
+                  {metric.isSpecialDona ? (
+                    <div className="flex items-center gap-4 min-h-[80px]">
+                      {isMetricasLoading ? (
+                        <div className="flex-1 flex items-center justify-center">
+                          <div className="h-5 w-5 border-2 border-yellow-500 border-t-transparent animate-spin rounded-full" />
+                        </div>
+                      ) : (
+                        <>
+                          <div className="h-20 w-20 shrink-0">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={[
+                                    { name: 'Hoy', value: Math.max(0, comparativa?.hoy_total || 0) },
+                                    { name: 'Ayer', value: Math.max(1, comparativa?.ayer_total || 0) }
+                                  ]}
+                                  innerRadius="60%"
+                                  outerRadius="100%"
+                                  paddingAngle={5}
+                                  dataKey="value"
+                                  stroke="none"
+                                >
+                                  <Cell fill="#fbbf24" />
+                                  <Cell fill="#27272a" />
+                                </Pie>
+                                <Tooltip 
+                                  contentStyle={{ backgroundColor: '#000', border: '1px solid #fbbf24', fontSize: '10px' }}
+                                  itemStyle={{ color: '#fff' }}
+                                />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="metric-value text-xl">
+                              {(comparativa?.hoy_total || 0).toLocaleString()} kg
+                            </div>
+                            <p className="metric-label text-[10px] sm:text-xs">
+                              {metric.subtitle} (Vs {(comparativa?.ayer_total || 0).toLocaleString()}kg)
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="metric-value">
+                        {metric.value}
+                      </div>
+                      <p className="metric-label">
+                        {metric.subtitle}
+                      </p>
+                      {metric.progress !== undefined && (
+                        <div className="mt-4">
+                          <Progress value={metric.progress} className="h-2" />
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -534,7 +667,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                 </span>
               </div>
               <p className="text-sm text-muted-foreground mt-1">
-                Total de kilos producidos: {kilosDisponibles.toLocaleString()} kg
+                Total de kilos producidos: {totalAvailableKilosVM.toLocaleString()} kg
               </p>
             </div>
 
@@ -605,7 +738,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
 
             {/* Resumen final */}
             <div className="text-sm text-muted-foreground text-center border-t pt-4">
-              Total de productos terminados: {formulasTerminadas.length} | Total de kilos: {kilosDisponibles.toLocaleString()} kg
+              Total de productos terminados: {formulasTerminadas.length} | Total de kilos: {totalAvailableKilosVM.toLocaleString()} kg
             </div>
           </div>
         </DialogContent>
