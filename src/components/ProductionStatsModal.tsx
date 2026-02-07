@@ -70,23 +70,24 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
 
     const weekAgo = subDays(now, 7);
 
+    // List of recent lots for the table/PDF - Include ALL production (ignore status) for Villa Martelli
     const villaMartelliProducts = productos.filter(p => 
-      p.status === 'available' && 
       p.destination.toLowerCase().replace(/\s+/g, '') === 'villamartelli'
     );
 
-    const weeklyTotal = villaMartelliProducts.reduce((sum, p) => {
-      const pDate = p.date ? parseISO(p.date) : null;
-      if (pDate && isSameWeek(pDate, now, { weekStartsOn: 1 })) {
-        return sum + (p.batchSize || 0);
+    // Calculate totals using viewData directly to ensure historical accuracy
+    const weeklyTotal = viewData.reduce((sum, d) => {
+      const dDate = parseISO(d.fecha_produccion);
+      if (isSameWeek(dDate, now, { weekStartsOn: 1 })) {
+        return sum + Number(d.total_kg || 0);
       }
       return sum;
     }, 0);
 
-    const monthlyTotal = villaMartelliProducts.reduce((sum, p) => {
-      const pDate = p.date ? parseISO(p.date) : null;
-      if (pDate && isSameMonth(pDate, now)) {
-        return sum + (p.batchSize || 0);
+    const monthlyTotal = viewData.reduce((sum, d) => {
+      const dDate = parseISO(d.fecha_produccion);
+      if (isSameMonth(dDate, now)) {
+        return sum + Number(d.total_kg || 0);
       }
       return sum;
     }, 0);
@@ -112,14 +113,32 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
           total: Number(d.total_kg)
         }));
     } else if (viewType === "monthly") {
-      // Agrupar por mes_nombre desde la vista (Últimos 6 meses)
-      const monthlyGroups: Record<string, number> = {};
+      // Agrupar por mes_nombre desde la vista (Últimos 12 meses)
+      // Usamos un Map para acumular por mes asegurando orden
+      const monthlyGroups = new Map<string, { total: number, date: Date }>();
+      
       viewData.forEach(d => {
         const date = parseISO(d.fecha_produccion);
-        const label = d.mes_nombre.trim().slice(0, 3) + " " + format(date, "yy");
-        monthlyGroups[label] = (monthlyGroups[label] || 0) + Number(d.total_kg);
+        // Generar clave única YYYY-MM para ordenamiento correcto
+        const key = format(date, "yyyy-MM");
+        const label = format(date, "MMM yy", { locale: es });
+        
+        if (!monthlyGroups.has(key)) {
+          monthlyGroups.set(key, { total: 0, date });
+        }
+        
+        const current = monthlyGroups.get(key)!;
+        current.total += Number(d.total_kg);
       });
-      chartDynamicData = Object.entries(monthlyGroups).slice(-6).map(([name, total]) => ({ name, total }));
+
+      // Convertir a array, ordenar por fecha y formato final
+      chartDynamicData = Array.from(monthlyGroups.entries())
+        .sort((a, b) => a[0].localeCompare(b[0])) // Ordenar por YYYY-MM
+        .map(([_, data]) => ({
+          name: format(data.date, "MMM yy", { locale: es }).charAt(0).toUpperCase() + format(data.date, "MMM yy", { locale: es }).slice(1),
+          total: data.total
+        }));
+        
     } else {
       // Semanal (Mantenemos lógica de fallback si no hay vista de semanas o usamos la diaria agrupada)
       const weeklyGroups: Record<string, number> = {};
@@ -128,7 +147,7 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
         const label = `Sem ${format(date, "I")}`; // ISO Week
         weeklyGroups[label] = (weeklyGroups[label] || 0) + Number(d.total_kg);
       });
-      chartDynamicData = Object.entries(weeklyGroups).slice(-6).map(([name, total]) => ({ name, total }));
+      chartDynamicData = Object.entries(weeklyGroups).slice(-8).map(([name, total]) => ({ name, total }));
     }
 
     return {

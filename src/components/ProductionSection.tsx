@@ -382,69 +382,69 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
 
         <TabsContent value="shipments" className="space-y-4">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Remitos Generados</h3>
+            <h3 className="text-lg font-semibold">Envíos Realizados</h3>
           </div>
 
-          {allRemitosLoading ? (
+          {enviosLoading ? (
             <div className="text-center py-8">
-              <p className="text-muted-foreground">Cargando remitos...</p>
+              <p className="text-muted-foreground">Cargando envíos...</p>
             </div>
-          ) : allRemitosError ? (
+          ) : enviosError ? (
             <div className="text-center py-8">
-              <p className="text-destructive">Error: {allRemitosError}</p>
+              <p className="text-destructive">Error: {enviosError}</p>
             </div>
-          ) : remitos.length === 0 ? (
+          ) : envios.length === 0 ? (
             <div className="text-center py-8">
-              <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground text-lg">No hay remitos generados</p>
+              <Truck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground text-lg">No hay envíos registrados</p>
               <p className="text-muted-foreground text-sm mt-2">
-                Ve a la pestaña "Remito" para generar un nuevo remito
+                Los envíos se generarán automáticamente al procesar remitos
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-              {remitos.map((remito) => (
-                <Card key={remito.id} className="hover:shadow-md transition-shadow">
+              {envios.map((envio) => (
+                <Card key={envio.id} className="hover:shadow-md transition-shadow">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-base sm:text-lg font-semibold">
-                      {remito.id}
+                      {envio.numero_envio}
                     </CardTitle>
-                    <Badge variant={getStatusColor(remito.estado) as any}>
-                      {getStatusText(remito.estado)}
+                    <Badge variant={getStatusColor(envio.estado) as any}>
+                      {getStatusText(envio.estado)}
                     </Badge>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div className="flex items-center space-x-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span>{new Date(remito.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' })}</span>
+                        <span>{envio.fecha_creacion ? new Date(envio.fecha_creacion).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : (envio.created_at ? new Date(envio.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-')}</span>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Weight className="h-4 w-4 text-muted-foreground" />
-                        <span>{remito.total_kilos} kg</span>
+                        <span>{envio.total_kilos} kg</span>
                       </div>
                       <div className="flex flex-col gap-1 text-sm">
                         <div className="flex items-start gap-2">
                           <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                          <span className="break-words whitespace-normal leading-tight">{remito.destino}</span>
+                          <span className="break-words whitespace-normal leading-tight">{envio.destino}</span>
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span>{new Date(remito.created_at).toLocaleDateString()}</span>
+                        <Package className="h-4 w-4 text-muted-foreground" />
+                        <span>{envio.total_remitos} Remitos</span>
                       </div>
                     </div>
-                    {remito.observaciones && (
+                    {envio.observaciones && (
                       <div className="pt-2 border-t text-sm">
                         <span className="text-muted-foreground">Observaciones: </span>
-                        <span className="font-medium">{remito.observaciones}</span>
+                        <span className="font-medium">{envio.observaciones}</span>
                       </div>
                     )}
                     <div className="pt-2 border-t">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleViewRemito(remito.id)}
+                        onClick={() => handleViewEnvio(envio.id)}
                         className="w-full flex items-center gap-2"
                       >
                         <Eye className="h-4 w-4" />

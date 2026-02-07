@@ -300,7 +300,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
     {
       title: "STOCK FINALIZADO",
       value: formulasTerminadas.length.toString(),
-      subtitle: "disponibles para despacho",
+      subtitle: "Unidades disponibles",
       icon: PackageCheck,
       colorClass: "text-[#D4AF37]",
       bgClass: "bg-[#D4AF37]/15",
@@ -330,12 +330,13 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
     },
     {
       title: "REPORTE DE PLANTA",
-      value: " ",
-      subtitle: " ",
-      icon: TrendingUp,
+      value: " ", // Intentionally empty to just show button/icon
+      subtitle: "Ver reporte",
+      icon: TrendingUp, // This icon will be handled in render
       colorClass: "text-slate-200",
       bgClass: "bg-slate-200/10",
       hasProductionStats: true,
+      isReportCard: true // New flag to handle special rendering if needed
     },
   ];
 
@@ -348,13 +349,15 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
           const Icon = metric.icon;
           const isClickable = metric.hasOutOfStock || metric.hasSearch || metric.hasNavigation || metric.hasFormulasList || metric.hasProductionStats;
           
+          
           return (
             <Card 
               key={index} 
               className={`metric-card flex-1 bg-white/10 backdrop-blur-md rounded-2xl shadow-md
                           transition-all duration-300 ease-in-out
                           hover:shadow-xl hover:scale-105 hover:border hover:border-yellow-400/60 hover:bg-white/20
-                          ${isClickable ? 'cursor-pointer' : ''}`}
+                          ${isClickable ? 'cursor-pointer' : ''}
+                          ${metric.isReportCard ? 'flex flex-col justify-center items-center py-4 bg-slate-800/40 border-slate-700/50 hover:bg-slate-700/50' : ''}`}
               onClick={() => {
                 if (metric.hasOutOfStock) {
                   setIsOutOfStockOpen(true);
@@ -369,90 +372,109 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                 }
               }}
             >
-              <CardContent className="card-content">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-zinc-400 text-xs font-medium uppercase tracking-widest">
-                    {metric.title}
-                  </h3>
-                  <div className="flex items-center gap-2">
-                    {metric.hasSearch && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIsSearchOpen(true);
-                        }}
-                        className="h-8 w-8 p-0 hover:bg-primary/10"
-                      >
-                        <Search className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <div className={`h-10 w-10 flex items-center justify-center rounded-full ${metric.bgClass} ${metric.isCritical ? 'animate-pulse' : ''} flex-shrink-0 transition-transform duration-300 group-hover:scale-110`}>
-                      <Icon className={`h-5 w-5 ${metric.colorClass}`} strokeWidth={1.5} />
+              <CardContent className={`card-content ${metric.isReportCard ? 'flex flex-col items-center justify-center w-full h-full p-0' : ''}`}>
+                
+                {metric.isReportCard ? (
+                  <div className="flex flex-col items-center gap-3">
+                     <div className={`h-12 w-12 flex items-center justify-center rounded-full ${metric.bgClass} transition-transform duration-300 group-hover:scale-110`}>
+                      <Icon className={`h-6 w-6 ${metric.colorClass}`} strokeWidth={1.5} />
+                    </div>
+                    <div className="text-center">
+                        <h3 className="text-zinc-300 text-xs font-bold uppercase tracking-widest mb-1">
+                          {metric.title}
+                        </h3>
+                        <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider">
+                          {metric.subtitle}
+                        </p>
                     </div>
                   </div>
-                </div>
-                <div className="space-y-3">
-                  {metric.isSpecialDona ? (
-                    <div className="flex items-center gap-4 min-h-[80px]">
-                      {isMetricasLoading ? (
-                        <div className="flex-1 flex items-center justify-center">
-                          <div className="h-5 w-5 border-2 border-yellow-500 border-t-transparent animate-spin rounded-full" />
-                        </div>
-                      ) : (
-                        <>
-                          <div className="h-20 w-20 shrink-0">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <PieChart>
-                                <Pie
-                                  data={[
-                                    { name: 'Hoy', value: Math.max(0, comparativa?.hoy_total || 0) },
-                                    { name: 'Ayer', value: Math.max(1, comparativa?.ayer_total || 0) }
-                                  ]}
-                                  innerRadius="60%"
-                                  outerRadius="100%"
-                                  paddingAngle={5}
-                                  dataKey="value"
-                                  stroke="none"
-                                >
-                                  <Cell fill="#fbbf24" />
-                                  <Cell fill="#27272a" />
-                                </Pie>
-                                <Tooltip 
-                                  contentStyle={{ backgroundColor: '#000', border: '1px solid #fbbf24', fontSize: '10px' }}
-                                  itemStyle={{ color: '#fff' }}
-                                />
-                              </PieChart>
-                            </ResponsiveContainer>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="metric-value text-xl">
-                              {(comparativa?.hoy_total || 0).toLocaleString()} kg
-                            </div>
-                            <p className="metric-label text-[10px] sm:text-xs">
-                              {metric.subtitle} (Vs {(comparativa?.ayer_total || 0).toLocaleString()}kg)
-                            </p>
-                          </div>
-                        </>
+                ) : (
+                  <>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-zinc-400 text-xs font-medium uppercase tracking-widest">
+                      {metric.title}
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      {metric.hasSearch && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsSearchOpen(true);
+                          }}
+                          className="h-8 w-8 p-0 hover:bg-primary/10"
+                        >
+                          <Search className="h-4 w-4" />
+                        </Button>
                       )}
-                    </div>
-                  ) : (
-                    <>
-                      <div className="metric-value">
-                        {metric.value}
+                      <div className={`h-10 w-10 flex items-center justify-center rounded-full ${metric.bgClass} ${metric.isCritical ? 'animate-pulse' : ''} flex-shrink-0 transition-transform duration-300 group-hover:scale-110`}>
+                        <Icon className={`h-5 w-5 ${metric.colorClass}`} strokeWidth={1.5} />
                       </div>
-                      <p className="metric-label">
-                        {metric.subtitle}
-                      </p>
-                      {metric.progress !== undefined && (
-                        <div className="mt-4">
-                          <Progress value={metric.progress} className="h-2" />
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    {metric.isSpecialDona ? (
+                      <div className="flex items-center gap-4 min-h-[80px]">
+                        {isMetricasLoading ? (
+                          <div className="flex-1 flex items-center justify-center">
+                            <div className="h-5 w-5 border-2 border-yellow-500 border-t-transparent animate-spin rounded-full" />
+                          </div>
+                        ) : (
+                          <>
+                            <div className="h-20 w-20 shrink-0">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                  <Pie
+                                    data={[
+                                      { name: 'Hoy', value: Math.max(0, comparativa?.hoy_total || 0) },
+                                      { name: 'Ayer', value: Math.max(1, comparativa?.ayer_total || 0) }
+                                    ]}
+                                    innerRadius="60%"
+                                    outerRadius="100%"
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                    stroke="none"
+                                  >
+                                    <Cell fill="#fbbf24" />
+                                    <Cell fill="#27272a" />
+                                  </Pie>
+                                  <Tooltip 
+                                    contentStyle={{ backgroundColor: '#000', border: '1px solid #fbbf24', fontSize: '10px' }}
+                                    itemStyle={{ color: '#fff' }}
+                                  />
+                                </PieChart>
+                              </ResponsiveContainer>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="metric-value text-xl">
+                                {(comparativa?.hoy_total || 0).toLocaleString()} kg
+                              </div>
+                              <p className="metric-label text-[10px] sm:text-xs">
+                                {metric.subtitle} (Vs {(comparativa?.ayer_total || 0).toLocaleString()}kg)
+                              </p>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        <div className="metric-value">
+                          {metric.value}
                         </div>
-                      )}
-                    </>
-                  )}
-                </div>
+                        <p className="metric-label">
+                          {metric.subtitle}
+                        </p>
+                        {metric.progress !== undefined && (
+                          <div className="mt-4">
+                            <Progress value={metric.progress} className="h-2" />
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           );

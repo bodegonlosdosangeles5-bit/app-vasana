@@ -18,7 +18,8 @@ export const RemitoProduction = ({ productionItems }: RemitoProductionProps) => 
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
   const realtimeHook = useRealtimeRemitos();
-  const pollingHook = useRemitosPolling();
+  const pollingHook = useRemitosPolling()
+  ;
   
   // Usar polling si hay error de Realtime, sino usar Realtime
   const {
