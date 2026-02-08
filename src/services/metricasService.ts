@@ -43,20 +43,62 @@ export class MetricasService {
   }
 
   /**
-   * Obtiene el resumen de producción desde la vista SQL de Supabase
+   * Obtiene el resumen de producción TOTAL desde la vista SQL (Remitos Cerrados + Producción Actual)
    */
   static async getProductionSummaryFromView(): Promise<ProductionViewData[]> {
     try {
       const { data, error } = await supabase
-        .from('vista_resumen_produccion_diaria' as any)
+        .from('vista_metricas_produccion_total' as any)
         .select('*')
         .order('fecha_produccion', { ascending: true });
 
       if (error) throw error;
       return (data as any) || [];
     } catch (error) {
-      console.error('Error fetching from vista_resumen_produccion_diaria:', error);
+      console.error('Error fetching from vista_metricas_produccion_total:', error);
       return [];
+    }
+  }
+
+  /**
+   * Obtiene la producción semanal TOTAL (Remitos Cerrados + Producción Actual)
+   */
+  static async getWeeklyProductionTotal(): Promise<number> {
+    try {
+      const { data, error } = await supabase.rpc('get_weekly_production_total', { target_date: new Date().toISOString() });
+      if (error) throw error;
+      return Number(data) || 0;
+    } catch (error) {
+      console.error('Error fetching weekly production total:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Obtiene la producción mensual TOTAL (Remitos Cerrados + Producción Actual)
+   */
+  static async getMonthlyProductionTotal(): Promise<number> {
+    try {
+      const { data, error } = await supabase.rpc('get_monthly_production_total', { target_date: new Date().toISOString() });
+      if (error) throw error;
+      return Number(data) || 0;
+    } catch (error) {
+      console.error('Error fetching monthly production total:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Obtiene los kilos en producción actual (no enviados)
+   */
+  static async getCurrentProductionKilos(): Promise<number> {
+    try {
+      const { data, error } = await supabase.rpc('get_current_production_kilos');
+      if (error) throw error;
+      return Number(data) || 0;
+    } catch (error) {
+      console.error('Error fetching current production kilos:', error);
+      return 0;
     }
   }
 

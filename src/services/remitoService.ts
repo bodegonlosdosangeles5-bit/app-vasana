@@ -495,6 +495,75 @@ export class RemitoService {
     }
   }
 
+  // Actualizar remito (solo para administradores)
+  static async updateRemito(
+    remitoId: string, 
+    updates: { total_kilos?: number; observaciones?: string }
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      console.log('🔄 Actualizando remito:', remitoId, updates);
+
+      // Validar que el ID existe
+      if (!remitoId || remitoId.trim() === '') {
+        return { success: false, message: 'ID de remito inválido' };
+      }
+
+      // Obtener el remito actual para comparar
+      const { data: currentRemito, error: fetchError } = await supabase
+        .from('remitos')
+        .select('*')
+        .eq('id', remitoId)
+        .single();
+
+      if (fetchError || !currentRemito) {
+        console.error('❌ Error obteniendo remito:', fetchError);
+        return { success: false, message: 'Remito no encontrado' };
+      }
+
+      // Preparar datos de actualización
+      const updateData: any = {
+        updated_at: new Date().toISOString()
+      };
+
+      if (updates.total_kilos !== undefined) {
+        updateData.total_kilos = updates.total_kilos;
+      }
+
+      if (updates.observaciones !== undefined) {
+        updateData.observaciones = updates.observaciones;
+      }
+
+      // Actualizar el remito
+      const { data, error } = await supabase
+        .from('remitos')
+        .update(updateData)
+        .eq('id', remitoId)
+        .select();
+
+      if (error) {
+        console.error('❌ Error actualizando remito:', error);
+        return { success: false, message: 'Error al actualizar el remito' };
+      }
+
+      if (!data || data.length === 0) {
+        return { success: false, message: 'No se actualizó ningún registro' };
+      }
+
+      console.log('✅ Remito actualizado exitosamente:', data[0]);
+      
+      // Las métricas se recalcularán automáticamente porque usan las funciones SQL
+      // que consultan directamente la tabla remitos
+      
+      return { 
+        success: true, 
+        message: 'Remito actualizado correctamente. Las métricas se ajustarán automáticamente.' 
+      };
+    } catch (error) {
+      console.error('❌ Error actualizando remito:', error);
+      return { success: false, message: 'Error inesperado al actualizar' };
+    }
+  }
+
   // Obtener todos los remitos
   static async getAllRemitos(): Promise<RemitoWithItems[]> {
     try {

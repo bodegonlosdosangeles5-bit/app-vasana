@@ -5,8 +5,10 @@ import { ProductoService } from '@/services/productoService';
 // Definir el tipo Producto localmente para evitar conflictos
 export interface Producto {
   id: string;
+  lote_code: string;
   name: string;
   batchSize: number;
+  stock_actual: number;
   status: 'available' | 'incomplete';
   destination: string;
   date?: string;

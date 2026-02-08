@@ -342,9 +342,9 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
 
 
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="space-y-6 p-6 bg-gray-50 rounded-2xl">
       {/* Metrics Cards - Horizontal Layout */}
-      <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+      <div className="flex flex-col sm:flex-row gap-6">
         {metrics.map((metric: any, index) => {
           const Icon = metric.icon;
           const isClickable = metric.hasOutOfStock || metric.hasSearch || metric.hasNavigation || metric.hasFormulasList || metric.hasProductionStats;
@@ -353,11 +353,11 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
           return (
             <Card 
               key={index} 
-              className={`metric-card flex-1 bg-white/10 backdrop-blur-md rounded-2xl shadow-md
+              className={`flex-1 bg-white border-0 rounded-2xl shadow-lg
                           transition-all duration-300 ease-in-out
-                          hover:shadow-xl hover:scale-105 hover:border hover:border-yellow-400/60 hover:bg-white/20
+                          hover:shadow-xl hover:scale-105
                           ${isClickable ? 'cursor-pointer' : ''}
-                          ${metric.isReportCard ? 'flex flex-col justify-center items-center py-4 bg-slate-800/40 border-slate-700/50 hover:bg-slate-700/50' : ''}`}
+                          ${metric.isReportCard ? 'flex flex-col justify-center items-center py-6 bg-gradient-to-br from-pink-50 to-white border-2 border-pink-200 hover:border-pink-300' : ''}`}
               onClick={() => {
                 if (metric.hasOutOfStock) {
                   setIsOutOfStockOpen(true);
@@ -372,18 +372,18 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                 }
               }}
             >
-              <CardContent className={`card-content ${metric.isReportCard ? 'flex flex-col items-center justify-center w-full h-full p-0' : ''}`}>
+              <CardContent className={`card-content ${metric.isReportCard ? 'flex flex-col items-center justify-center w-full h-full p-0' : 'p-6'}`}>
                 
                 {metric.isReportCard ? (
                   <div className="flex flex-col items-center gap-3">
-                     <div className={`h-12 w-12 flex items-center justify-center rounded-full ${metric.bgClass} transition-transform duration-300 group-hover:scale-110`}>
-                      <Icon className={`h-6 w-6 ${metric.colorClass}`} strokeWidth={1.5} />
+                     <div className="h-14 w-14 flex items-center justify-center rounded-full bg-pink-100 transition-transform duration-300 group-hover:scale-110">
+                      <Icon className="h-7 w-7 text-pink-500" strokeWidth={2} />
                     </div>
                     <div className="text-center">
-                        <h3 className="text-zinc-300 text-xs font-bold uppercase tracking-widest mb-1">
+                        <h3 className="text-slate-700 text-xs font-bold uppercase tracking-widest mb-1">
                           {metric.title}
                         </h3>
-                        <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider">
+                        <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">
                           {metric.subtitle}
                         </p>
                     </div>
@@ -391,7 +391,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                 ) : (
                   <>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-zinc-400 text-xs font-medium uppercase tracking-widest">
+                    <h3 className="text-slate-600 text-xs font-semibold uppercase tracking-widest">
                       {metric.title}
                     </h3>
                     <div className="flex items-center gap-2">
@@ -403,13 +403,13 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                             e.stopPropagation();
                             setIsSearchOpen(true);
                           }}
-                          className="h-8 w-8 p-0 hover:bg-primary/10"
+                          className="h-8 w-8 p-0 hover:bg-pink-50 text-pink-500"
                         >
                           <Search className="h-4 w-4" />
                         </Button>
                       )}
-                      <div className={`h-10 w-10 flex items-center justify-center rounded-full ${metric.bgClass} ${metric.isCritical ? 'animate-pulse' : ''} flex-shrink-0 transition-transform duration-300 group-hover:scale-110`}>
-                        <Icon className={`h-5 w-5 ${metric.colorClass}`} strokeWidth={1.5} />
+                      <div className={`h-12 w-12 flex items-center justify-center rounded-full ${metric.bgClass.replace('bg-', 'bg-pink-').replace('/15', '-100')} ${metric.isCritical ? 'animate-pulse' : ''} flex-shrink-0 transition-transform duration-300 group-hover:scale-110`}>
+                        <Icon className={`h-6 w-6 ${metric.colorClass.includes('rose') ? 'text-rose-500' : metric.colorClass.includes('emerald') ? 'text-emerald-500' : 'text-pink-500'}`} strokeWidth={2} />
                       </div>
                     </div>
                   </div>
@@ -418,7 +418,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                       <div className="flex items-center gap-4 min-h-[80px]">
                         {isMetricasLoading ? (
                           <div className="flex-1 flex items-center justify-center">
-                            <div className="h-5 w-5 border-2 border-yellow-500 border-t-transparent animate-spin rounded-full" />
+                            <div className="h-5 w-5 border-2 border-pink-500 border-t-transparent animate-spin rounded-full" />
                           </div>
                         ) : (
                           <>
@@ -436,21 +436,21 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                                     dataKey="value"
                                     stroke="none"
                                   >
-                                    <Cell fill="#fbbf24" />
-                                    <Cell fill="#27272a" />
+                                    <Cell fill="#f472b6" />
+                                    <Cell fill="#e5e7eb" />
                                   </Pie>
                                   <Tooltip 
-                                    contentStyle={{ backgroundColor: '#000', border: '1px solid #fbbf24', fontSize: '10px' }}
-                                    itemStyle={{ color: '#fff' }}
+                                    contentStyle={{ backgroundColor: '#fff', border: '2px solid #f472b6', fontSize: '10px', borderRadius: '8px' }}
+                                    itemStyle={{ color: '#1e293b' }}
                                   />
                                 </PieChart>
                               </ResponsiveContainer>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="metric-value text-xl">
+                              <div className="text-2xl font-black text-slate-800">
                                 {(comparativa?.hoy_total || 0).toLocaleString()} kg
                               </div>
-                              <p className="metric-label text-[10px] sm:text-xs">
+                              <p className="text-xs text-slate-500 font-medium">
                                 {metric.subtitle} (Vs {(comparativa?.ayer_total || 0).toLocaleString()}kg)
                               </p>
                             </div>
@@ -459,15 +459,15 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                       </div>
                     ) : (
                       <>
-                        <div className="metric-value">
+                        <div className="text-3xl font-black text-slate-800">
                           {metric.value}
                         </div>
-                        <p className="metric-label">
+                        <p className="text-sm text-slate-600 font-medium">
                           {metric.subtitle}
                         </p>
                         {metric.progress !== undefined && (
                           <div className="mt-4">
-                            <Progress value={metric.progress} className="h-2" />
+                            <Progress value={metric.progress} className="h-2 bg-pink-100" />
                           </div>
                         )}
                       </>
@@ -484,10 +484,10 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
 
       {/* Modal de búsqueda de inventario */}
       <Dialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden bg-white rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Search className="h-5 w-5" />
+            <DialogTitle className="flex items-center gap-2 text-slate-800">
+              <Search className="h-5 w-5 text-pink-500" />
               Buscar Materias Primas
             </DialogTitle>
           </DialogHeader>
@@ -495,19 +495,19 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
           <div className="space-y-4">
             {/* Barra de búsqueda */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
                 placeholder="Buscar por nombre, certificado o ubicación..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 border-pink-200 focus:border-pink-400 rounded-xl"
               />
               {searchTerm && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setSearchTerm("")}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-pink-50 text-pink-500"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -517,11 +517,11 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
             {/* Resultados */}
             <div className="max-h-96 overflow-y-auto">
               {inventoryLoading ? (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-8 text-slate-500">
                   Cargando inventario...
                 </div>
               ) : filteredInventory.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-8 text-slate-500">
                   {searchTerm ? 'No se encontraron resultados' : 'No hay materias primas disponibles'}
                 </div>
               ) : (
@@ -529,13 +529,13 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                   {filteredInventory.map((item) => (
                     <div
                       key={item.id}
-                      className="p-4 border rounded-lg hover:bg-muted/50 transition-colors space-y-3"
+                      className="p-4 border border-slate-200 rounded-xl hover:bg-pink-50 hover:border-pink-300 transition-colors space-y-3"
                     >
                       {/* Información principal */}
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-lg truncate">{item.name}</h4>
-                          <p className="text-sm text-muted-foreground">
+                          <h4 className="font-semibold text-lg truncate text-slate-800">{item.name}</h4>
+                          <p className="text-sm text-slate-500">
                             Certificado: {item.certificate}
                           </p>
                         </div>
@@ -554,14 +554,14 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                       {/* Información de stock y ubicación */}
                       <div className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
-                          <Package className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">Stock:</span>
-                          <span>{item.currentStock} {item.unit}</span>
+                          <Package className="h-4 w-4 text-pink-500" />
+                          <span className="font-medium text-slate-700">Stock:</span>
+                          <span className="text-slate-600">{item.currentStock} {item.unit}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">Ubicación:</span>
-                          <span className="truncate">{item.location}</span>
+                          <MapPin className="h-4 w-4 text-pink-500" />
+                          <span className="font-medium text-slate-700">Ubicación:</span>
+                          <span className="truncate text-slate-600">{item.location}</span>
                         </div>
                       </div>
                     </div>
@@ -571,7 +571,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
             </div>
 
             {/* Resumen */}
-            <div className="text-sm text-muted-foreground text-center">
+            <div className="text-sm text-slate-500 text-center">
               {searchTerm ? 
                 `Mostrando ${filteredInventory.length} de ${inventoryItems.length} materias primas` :
                 `Total: ${inventoryItems.length} materias primas`

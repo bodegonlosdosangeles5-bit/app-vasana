@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import { TrendingUp, BarChart3, Calendar, Package, Download, FileText, Eye } from "lucide-react";
+import { TrendingUp, BarChart3, Calendar, Package, Download, FileText, Eye, Activity } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -51,15 +51,33 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
   const reportRef = useRef<HTMLDivElement>(null);
 
   // Cargar datos de la vista al abrir el modal
+  const [preciseMetrics, setPreciseMetrics] = useState({ weekly: 0, monthly: 0 });
+
+  // Cargar datos de la vista y métricas exactas al abrir el modal
   useEffect(() => {
     if (isOpen) {
-      const fetchViewData = async () => {
+      const fetchData = async () => {
         setLoadingView(true);
-        const data = await MetricasService.getProductionSummaryFromView();
-        setViewData(data);
-        setLoadingView(false);
+        try {
+          // Paralelizar llamadas para eficiencia - Usar funciones TOTALES (Remitos + Producción Actual)
+          const [viewDataResult, weeklyResult, monthlyResult] = await Promise.all([
+            MetricasService.getProductionSummaryFromView(),
+            MetricasService.getWeeklyProductionTotal(),
+            MetricasService.getMonthlyProductionTotal()
+          ]);
+          
+          setViewData(viewDataResult);
+          setPreciseMetrics({
+            weekly: weeklyResult,
+            monthly: monthlyResult
+          });
+        } catch (e) {
+          console.error("Error loading metrics:", e);
+        } finally {
+          setLoadingView(false);
+        }
       };
-      fetchViewData();
+      fetchData();
     }
   }, [isOpen]);
 
@@ -75,22 +93,18 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
       p.destination.toLowerCase().replace(/\s+/g, '') === 'villamartelli'
     );
 
-    // Calculate totals using viewData directly to ensure historical accuracy
-    const weeklyTotal = viewData.reduce((sum, d) => {
-      const dDate = parseISO(d.fecha_produccion);
-      if (isSameWeek(dDate, now, { weekStartsOn: 1 })) {
-        return sum + Number(d.total_kg || 0);
-      }
-      return sum;
-    }, 0);
-
-    const monthlyTotal = viewData.reduce((sum, d) => {
-      const dDate = parseISO(d.fecha_produccion);
-      if (isSameMonth(dDate, now)) {
-        return sum + Number(d.total_kg || 0);
-      }
-      return sum;
-    }, 0);
+    // List of recent lots for the table from View Data if available, or fallback to productos
+    // We prefer viewData because it has "Remito" truth. But viewData is aggregated.
+    // For the list of LOTS, we still use 'productos' but filter properly?
+    // Actually, user wants "Historical metrics".
+    // The TABLE "Listado de Lotes Procesados" uses 'recentLots'.
+    // If we use 'productos', we must ensure we include 'entregado' status. 
+    // Ideally we should have a view for "Remito Items" history.
+    // For now, filtering 'productos' is cleaner for the TABLE, assuming 'entregado' status exists.
+    
+    // Use Server-Side Totals for accuracy (Calendar Week/Month)
+    const weeklyTotal = preciseMetrics.weekly;
+    const monthlyTotal = preciseMetrics.monthly;
 
     const monthAgo = subDays(now, 30);
     const recentLots = villaMartelliProducts
@@ -159,7 +173,7 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
       year: now.getFullYear(),
       reportDate: format(now, "dd 'de' MMMM 'de' yyyy", { locale: es })
     };
-  }, [productos, viewData, viewType]);
+  }, [productos, viewData, viewType, preciseMetrics]);
 
   const handleExportPDF = async () => {
     if (!reportRef.current) return;
@@ -229,7 +243,8 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
       pdf.setFontSize(14);
       pdf.setFont("helvetica", "bold");
       pdf.text("2. Listado de Lotes Procesados", 15, 85);
-      const tableData = stats.recentLots.map(lot => [
+      const tableData = stats.recentLots.map((lot, index) => [
+        (index + 1).toString(),
         lot.date ? format(parseISO(lot.date), "dd/MM/yyyy") : "-",
         lot.name,
         (lot as any).lote || lot.id,
@@ -238,12 +253,15 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
       ]);
       autoTable(pdf, {
         startY: 90,
-        head: [['Fecha', 'Producto', 'Lote', 'Peso', 'Destinatario']],
+        head: [['N°', 'Fecha', 'Producto', 'Lote', 'Peso', 'Destinatario']],
         body: tableData,
         theme: 'striped',
         headStyles: { fillColor: [234, 179, 8], textColor: [0, 0, 0] },
         styles: { fontSize: 9 },
-        margin: { left: 15, right: 15 }
+        margin: { left: 15, right: 15 },
+        columnStyles: {
+          0: { cellWidth: 10 }, // Ancho pequeño para N°
+        }
       });
       const blob = pdf.output("bloburl");
       window.open(blob, "_blank");
@@ -257,10 +275,10 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-black/90 border border-yellow-500/50 p-3 rounded-lg shadow-xl backdrop-blur-sm">
-          <p className="text-yellow-400 font-bold mb-1">{label}</p>
-          <p className="text-white text-sm">
-            Producción: <span className="font-mono font-bold text-yellow-400">{payload[0].value.toLocaleString()} kg</span>
+        <div className="bg-white border-2 border-teal-500 p-4 rounded-xl shadow-2xl">
+          <p className="text-teal-700 font-bold mb-1 text-sm">{label}</p>
+          <p className="text-slate-700 text-sm">
+            Producción: <span className="font-mono font-bold text-teal-600">{payload[0].value.toLocaleString()} kg</span>
           </p>
         </div>
       );
@@ -270,105 +288,125 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl bg-zinc-950 border-zinc-800 text-zinc-100 shadow-2xl max-h-[95vh] flex flex-col p-6 overflow-hidden">
-        <DialogHeader className="relative pr-12">
-          <DialogTitle className="flex items-center gap-3 text-2xl font-bold bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent">
-            <BarChart3 className="h-7 w-7 text-yellow-500" />
+      <DialogContent className="max-w-5xl bg-white border-slate-200 text-slate-900 shadow-2xl max-h-[95vh] flex flex-col p-8 overflow-hidden">
+        <DialogHeader className="relative pr-12 pb-6 border-b border-slate-200">
+          <DialogTitle className="flex items-center gap-3 text-3xl font-bold text-slate-800 uppercase tracking-tight">
+            <BarChart3 className="h-8 w-8 text-teal-600" strokeWidth={2} />
             Estadísticas de Producción
           </DialogTitle>
-          <DialogDescription className="text-zinc-400">
+          <DialogDescription className="text-slate-500 mt-2 text-base">
             Resumen de rendimiento y kilos producidos para Villa Martelli.
           </DialogDescription>
-          <div className="absolute right-0 top-0 mt-[-4px] flex gap-2">
+          <div className="absolute right-0 top-0 flex gap-3">
             <Button
               onClick={handlePreviewPDF}
               disabled={isPreviewing}
               variant="outline"
-              size="sm"
-              className="border-blue-600/30 text-blue-400 hover:bg-blue-500/10 hover:text-blue-300 gap-2 font-semibold no-print"
+              size="default"
+              className="border-2 border-teal-500 text-teal-600 hover:bg-teal-50 hover:text-teal-700 gap-2 font-semibold rounded-xl px-6 no-print transition-all"
             >
-              <Eye className="h-4 w-4" />
+              <Eye className="h-5 w-5" />
               {isPreviewing ? "Generando..." : "Vista Previa"}
             </Button>
             <Button
               onClick={handleExportPDF}
               disabled={isExporting}
               variant="outline"
-              size="sm"
-              className="border-yellow-600/30 text-yellow-500 hover:bg-yellow-500/10 hover:text-yellow-400 gap-2 font-semibold no-print"
+              size="default"
+              className="border-2 border-amber-500 text-amber-600 hover:bg-amber-50 hover:text-amber-700 gap-2 font-semibold rounded-xl px-6 no-print transition-all"
             >
-              <FileText className="h-4 w-4" />
+              <FileText className="h-5 w-5" />
               {isExporting ? "Exportando..." : "Exportar"}
             </Button>
           </div>
         </DialogHeader>
 
-        <div className="mt-4 flex-1 flex flex-col gap-4 min-h-0 print-container" ref={reportRef}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 shrink-0">
-            <Card className="bg-zinc-900/50 border-zinc-800">
-              <CardContent className="py-4 px-5">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-zinc-400 text-[10px] sm:text-xs font-medium uppercase tracking-wider">Semanal</p>
-                  <Calendar className="h-4 w-4 text-yellow-500" />
+        <div className="mt-6 flex-1 flex flex-col gap-6 min-h-0 print-container" ref={reportRef}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 shrink-0">
+            {/* Tarjeta Semanal */}
+            <Card className="bg-white border-2 border-blue-400 shadow-lg hover:shadow-xl transition-shadow rounded-2xl overflow-hidden">
+              <CardContent className="py-6 px-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-blue-600" strokeWidth={2} />
+                    <p className="text-slate-600 text-xs font-semibold uppercase tracking-wider">Semanal</p>
+                  </div>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <p className="text-2xl sm:text-3xl font-black text-white">{stats.weeklyTotal.toLocaleString()}</p>
-                  <p className="text-lg font-bold text-yellow-500">kg</p>
+                  <p className="text-5xl font-black text-blue-700">{stats.weeklyTotal.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-blue-500">kg</p>
                 </div>
+                <p className="text-xs text-slate-500 mt-2">Última semana completa</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-zinc-900/50 border-zinc-800">
-              <CardContent className="py-4 px-5">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-zinc-400 text-[10px] sm:text-xs font-medium uppercase tracking-wider">PRODUCCIÓN {stats.monthName.toUpperCase()}</p>
-                  <TrendingUp className="h-4 w-4 text-yellow-500" />
+            {/* Tarjeta Mensual */}
+            <Card className="bg-white border-2 border-teal-400 shadow-lg hover:shadow-xl transition-shadow rounded-2xl overflow-hidden">
+              <CardContent className="py-6 px-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-teal-600" strokeWidth={2} />
+                    <p className="text-slate-600 text-xs font-semibold uppercase tracking-wider">Producción {stats.monthName}</p>
+                  </div>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <p className="text-2xl sm:text-3xl font-black text-white">{stats.monthlyTotal.toLocaleString()}</p>
-                  <p className="text-lg font-bold text-yellow-500">kg</p>
+                  <p className="text-5xl font-black text-teal-700">{stats.monthlyTotal.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-teal-500">kg</p>
                 </div>
+                <p className="text-xs text-slate-500 mt-2">Mes calendario completo</p>
               </CardContent>
             </Card>
-
-
           </div>
 
-          <div className="bg-zinc-900/30 border border-zinc-800 rounded-xl p-5 flex-1 flex flex-col min-h-0">
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 flex-1 flex flex-col min-h-0 shadow-sm">
             <Tabs value={viewType} onValueChange={(v) => setViewType(v as any)} className="w-full flex-1 flex flex-col">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
-                <h4 className="font-bold flex items-center gap-2 text-zinc-100 text-sm">
-                  <Package className="h-4 w-4 text-yellow-500" />
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+                <h4 className="font-bold flex items-center gap-2 text-slate-800 text-lg">
+                  <Activity className="h-5 w-5 text-teal-600" strokeWidth={2} />
                   Kilos Producidos
                 </h4>
-                <TabsList className="bg-zinc-900 border border-zinc-800 p-1 h-8 no-print">
-                  <TabsTrigger value="daily" className="text-[10px] py-1 px-3">Diario</TabsTrigger>
-                  <TabsTrigger value="weekly" className="text-[10px] py-1 px-3">Semanal</TabsTrigger>
-                  <TabsTrigger value="monthly" className="text-[10px] py-1 px-3">Mensual</TabsTrigger>
+                <TabsList className="bg-white border-2 border-slate-200 p-1.5 h-auto rounded-xl no-print shadow-sm">
+                  <TabsTrigger value="daily" className="text-sm py-2 px-4 rounded-lg data-[state=active]:bg-teal-500 data-[state=active]:text-white font-medium">Diario</TabsTrigger>
+                  <TabsTrigger value="weekly" className="text-sm py-2 px-4 rounded-lg data-[state=active]:bg-teal-500 data-[state=active]:text-white font-medium">Semanal</TabsTrigger>
+                  <TabsTrigger value="monthly" className="text-sm py-2 px-4 rounded-lg data-[state=active]:bg-teal-500 data-[state=active]:text-white font-medium">Mensual</TabsTrigger>
                 </TabsList>
               </div>
 
-              <div className="w-full h-[300px] mt-auto relative">
+              <div className="w-full h-[350px] mt-auto relative bg-white rounded-xl p-4 border border-slate-200">
                 {loadingView ? (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-teal-500"></div>
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={stats.chartDynamicData}>
                       <defs>
-                        <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#fbbf24" stopOpacity={1} />
-                          <stop offset="100%" stopColor="#ca8a04" stopOpacity={0.1} />
+                        <linearGradient id="barGradientClean" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#14b8a6" stopOpacity={1} />
+                          <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.8} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#27272a" />
-                      <XAxis dataKey="name" stroke="#71717a" fontSize={10} tickLine={false} axisLine={false} />
-                      <YAxis stroke="#71717a" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}kg`} />
-                      <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.03)' }} />
-                      <Bar dataKey="total" radius={[4, 4, 0, 0]} animationDuration={1000}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.3} />
+                      <XAxis 
+                        dataKey="name" 
+                        stroke="#64748b" 
+                        fontSize={12} 
+                        tickLine={false} 
+                        axisLine={{ stroke: '#cbd5e1', strokeWidth: 1 }}
+                        fontWeight={500}
+                      />
+                      <YAxis 
+                        stroke="#64748b" 
+                        fontSize={12} 
+                        tickLine={false} 
+                        axisLine={{ stroke: '#cbd5e1', strokeWidth: 1 }} 
+                        tickFormatter={(v) => `${v}kg`}
+                        fontWeight={500}
+                      />
+                      <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(20, 184, 166, 0.05)' }} />
+                      <Bar dataKey="total" radius={[12, 12, 0, 0]} animationDuration={1000}>
                         {stats.chartDynamicData.map((_, i) => (
-                          <Cell key={`cell-${i}`} fill="url(#barGradient)" />
+                          <Cell key={`cell-${i}`} fill="url(#barGradientClean)" />
                         ))}
                       </Bar>
                     </BarChart>

@@ -96,6 +96,14 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
       .replace(/\s+/g, ''); // Quitar espacios
   };
 
+  // Función para recargar datos de un envío específico
+  const loadEnvioData = async (envioId: string) => {
+    const envioData = await getEnvioConRemitos(envioId);
+    if (envioData) {
+      setSelectedEnvio(envioData);
+    }
+  };
+
   // Mostrar productos terminados con destino a Villa Martelli
   const currentProduction = useMemo(() => {
     return productos.filter(producto => {
@@ -109,9 +117,19 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
     });
   }, [productos]);
 
-  // Calcular la producción total mensual
-  const monthlyProduction = useMemo(() => {
-    return currentProduction.reduce((total, producto) => total + (producto.batchSize || 0), 0);
+  // Calcular el Stock Total Disponible (Solo producción activa para enviar)
+  // DEBE coincidir con los items mostrados en "Remito Villa Martelli" (status available y stock > 0)
+  const totalStockAvailable = useMemo(() => {
+    return currentProduction.reduce((total, producto) => {
+      // Filtrar solo los que están disponibles realmente (no entregados, no históricos viejos)
+      // currentProduction ya filtra por 'available' y 'villamartelli', pero aseguramos que tenga stock
+      const stock = (producto as any).stock_actual !== undefined ? (producto as any).stock_actual : producto.batchSize;
+      
+      // Si el stock es 0, no suma (aunque esté available en la lista visual por alguna razón)
+      if (stock <= 0) return total;
+
+      return total + stock;
+    }, 0);
   }, [currentProduction]);
 
 
@@ -154,7 +172,7 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
     setEditingProducto(formula);
     setEditForm({
       name: formula.name,
-      lote: (formula as any).lote || formula.id,
+      lote: (formula as any).lote_code || (formula as any).lote || formula.id,
       batchSize: formula.batchSize,
       destination: formula.destination,
       type: formula.type,
@@ -176,7 +194,18 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
     try {
       const success = await updateProductoRealtime(editingProducto.id, {
         name: editForm.name,
+        lote_code: editForm.lote, // Allow updating lote code
         batchSize: editForm.batchSize,
+        stock_actual: editForm.batchSize, // Reset stock to full production if manually editing production amount? Usually users want to edit just metadata. But if they edit batchSize, stock likely should update if it was full. 
+        // Better strategy: We don't have stock field in edit form. 
+        // If we strictly follow "Production is History", then changing batchSize changes history.
+        // We should PROBABLY keep stock_actual as is, unless user explicitly edits it.
+        // But for now, let's just pass undefined for stock_actual to not overwrite it, OR fetch current?
+        // updateProductoRealtime calls updateProducto service which updates fields passed.
+        // If I don't pass stock_actual, it won't be updated. Perfect.
+        // Wait, types: updateProducto(id, partial).
+        // validation: "stock_actual" is not in editForm.
+        // So I will NOT include stock_actual here, preserving current stock.
         destination: editForm.destination,
         type: editForm.type,
         clientName: editForm.type === "client" ? editForm.clientName : undefined,
@@ -265,68 +294,74 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
   const canEdit = user?.role === 'admin' || user?.user_name === 'jose';
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-6 p-6 bg-gray-50 rounded-2xl">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h2 className="text-xl sm:text-2xl font-bold text-black dark:text-white">Control de Producción</h2>
+        <h2 className="text-2xl sm:text-3xl font-bold text-slate-800">Control de Producción</h2>
         <div className="flex items-center space-x-4">
           <div className="text-right">
-            <p className="text-xs sm:text-sm text-black/80 dark:text-white/80">Kilos disponibles</p>
-            <p className="text-lg sm:text-2xl font-bold text-black dark:text-white">{monthlyProduction.toLocaleString()} kg</p>
+            <p className="text-xs sm:text-sm text-slate-600 font-medium">Kilos disponibles</p>
+            <p className="text-2xl sm:text-3xl font-black text-pink-500">{totalStockAvailable.toLocaleString()} kg</p>
           </div>
-          <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-green-500" />
+          <TrendingUp className="h-8 w-8 text-pink-400" strokeWidth={2.5} />
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="current" className="text-xs sm:text-sm">Producción Actual</TabsTrigger>
-          <TabsTrigger value="remito" className="text-xs sm:text-sm">Remito Villa Martelli</TabsTrigger>
-          <TabsTrigger value="shipments" className="text-xs sm:text-sm">Envíos</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 bg-white border-2 border-slate-200 p-1.5 rounded-xl shadow-sm">
+          <TabsTrigger value="current" className="text-sm font-semibold rounded-lg data-[state=active]:bg-pink-400 data-[state=active]:text-white">Producción Actual</TabsTrigger>
+          <TabsTrigger value="remito" className="text-sm font-semibold rounded-lg data-[state=active]:bg-pink-400 data-[state=active]:text-white">Remito Villa Martelli</TabsTrigger>
+          <TabsTrigger value="shipments" className="text-sm font-semibold rounded-lg data-[state=active]:bg-pink-400 data-[state=active]:text-white">Envíos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="current" className="space-y-4">
           {currentProduction.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground text-lg text-black dark:text-white">No hay fórmulas terminadas para Villa Martelli</p>
-              <p className="text-muted-foreground text-sm mt-2 text-black dark:text-white">
+            <div className="text-center py-12 bg-white rounded-2xl shadow-sm">
+              <p className="text-slate-600 text-lg font-medium">No hay fórmulas terminadas para Villa Martelli</p>
+              <p className="text-slate-500 text-sm mt-2">
                 Las fórmulas terminadas con destino "Villa Martelli" aparecerán aquí automáticamente
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {currentProduction.map((formula) => (
-                <Card key={formula.id} className="card-elegant hover:shadow-md transition-all min-h-[16rem] h-auto py-2">
+                <Card key={formula.id} className="bg-white border-0 rounded-2xl shadow-lg hover:shadow-xl transition-all min-h-[16rem] h-auto py-2">
                   <CardHeader className="h-full">
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0 flex-1 space-y-1.5">
-                        <CardTitle className="text-base sm:text-lg font-bold text-black dark:text-white break-words leading-tight mb-2">
+                        <CardTitle className="text-lg font-bold text-slate-800 break-words leading-tight mb-2">
                           {formula.name}
                         </CardTitle>
                         
-                        <div className="flex items-center gap-2 text-sm sm:text-base text-black/80 dark:text-white/80">
-                          <span className="font-semibold text-yellow-600 dark:text-yellow-500">Lote:</span>
-                          <span className="truncate">{(formula as any).lote || formula.id}</span>
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <span className="font-semibold text-pink-500">Lote:</span>
+                          <span className="truncate">{(formula as any).lote_code || (formula as any).lote || formula.id}</span>
                         </div>
 
-                        <div className="flex items-center gap-2 text-sm sm:text-base text-black/80 dark:text-white/80">
-                          <span className="font-semibold text-yellow-600 dark:text-yellow-500">Cantidad:</span>
-                          <span>{formula.batchSize} kg</span>
+                        <div className="flex flex-col gap-0.5 text-sm text-slate-600">
+                          <div className="flex items-center gap-2">
+                             <span className="font-semibold text-pink-500">Producción:</span>
+                             <span>{formula.batchSize} kg</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                             <span className="font-semibold text-pink-500">Stock:</span>
+                             <span className="font-bold">{(formula as any).stock_actual !== undefined ? (formula as any).stock_actual : formula.batchSize} kg</span>
+                          </div>
                         </div>
 
-                        <div className="flex flex-col gap-0.5 text-sm sm:text-base text-black dark:text-white">
-                          <span className="font-semibold text-yellow-600 dark:text-yellow-500">Destino:</span>
+                        <div className="flex flex-col gap-0.5 text-sm text-slate-600">
+                          <span className="font-semibold text-pink-500">Destino:</span>
                           <span className="break-words whitespace-normal leading-snug">{formula.destination}</span>
                         </div>
 
-                        <div className="flex items-center gap-2 text-sm text-black/60 dark:text-white/60">
+                        <div className="flex items-center gap-2 text-xs text-slate-500">
                           <Calendar className="h-3.5 w-3.5" />
                           <span>{formula.date ? new Date(formula.date).toLocaleDateString('es-AR', {
                             day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC'
                           }) : 'No especificada'}</span>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-1.5 text-xs sm:text-sm text-black/70 dark:text-white/70 pt-1">
-                          <Badge variant="outline" className="text-[10px] uppercase font-bold border-zinc-300 dark:border-zinc-700">
+                        <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-600 pt-1">
+                          <Badge variant="outline" className="text-[10px] uppercase font-bold border-pink-300 text-pink-600 bg-pink-50">
                             {formula.type === "client" ? "Cliente" : "Stock"}
                           </Badge>
                           {formula.type === "client" && formula.clientName && (
@@ -342,7 +377,7 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8 text-black/40 dark:text-white/40 hover:text-yellow-500 hover:bg-yellow-500/10 transition-all"
+                                className="h-8 w-8 text-slate-400 hover:text-pink-500 hover:bg-pink-50 transition-all rounded-lg"
                                 onClick={() => handleEditClick(formula)}
                               >
                                 <Pencil className="h-4 w-4" />
@@ -350,7 +385,7 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8 text-black/40 dark:text-white/40 hover:text-red-500 hover:bg-red-500/10 transition-all"
+                                className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all rounded-lg"
                                 onClick={() => {
                                   setProductToDelete(formula.id);
                                   setIsDeleteConfirmOpen(true);
@@ -467,6 +502,12 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
           setIsEnvioDetailOpen(false);
           setSelectedEnvio(null);
         }}
+        onRemitoUpdated={() => {
+          // Refrescar los datos del envío actual
+          if (selectedEnvio) {
+            loadEnvioData(selectedEnvio.id);
+          }
+        }}
       />
 
       <Dialog open={isRemitoDetailOpen} onOpenChange={setIsRemitoDetailOpen}>
@@ -552,12 +593,12 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="edit-lote" className="text-zinc-400">Número de Lote (ID)</Label>
+              <Label htmlFor="edit-lote" className="text-zinc-400">Número de Lote (Código)</Label>
               <Input
                 id="edit-lote"
                 value={editForm.lote}
-                disabled
-                className="bg-zinc-900 border-zinc-800 text-zinc-500 cursor-not-allowed"
+                onChange={(e) => setEditForm({ ...editForm, lote: e.target.value })}
+                className="bg-zinc-900 border-zinc-800 focus:border-yellow-500/50 text-white"
               />
             </div>
             

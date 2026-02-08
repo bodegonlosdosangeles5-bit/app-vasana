@@ -267,7 +267,9 @@ export const FormulasSection = ({
           required: parseFloat(ing.required),
           unit: ing.unit
         })) : [],
-        id: newFormula.lot // Usar el lote como ID
+        id: newFormula.lot, // Usar el lote como ID (se usará como lote_code en el servicio)
+        lote_code: newFormula.lot, // Pasar explícitamente el lote_code
+        stock_actual: parseInt(newFormula.batchSize) // Stock inicial igual a la producción
       };
 
       console.log('🔄 Creando producto con datos:', formulaData);
@@ -565,11 +567,16 @@ export const FormulasSection = ({
                       <span>{formula.name}</span>
                     </CardTitle>
                     <p className="text-base text-foreground dark:text-white mt-1">
-                      Lote: {(formula as any).lote || formula.id}
+                      Lote: {(formula as any).lote_code || (formula as any).lote || formula.id}
                     </p>
-                    <p className="text-base text-foreground dark:text-white mt-1">
-                      Cantidad: {formula.batchSize} kg
-                    </p>
+                    <div className="flex flex-col gap-1 mt-1">
+                      <p className="text-base text-foreground dark:text-white">
+                        <span className="font-medium">Prod:</span> {formula.batchSize} kg
+                      </p>
+                      <p className="text-sm font-semibold text-green-600 dark:text-green-400">
+                        Stock: {(formula as any).stock_actual !== undefined ? (formula as any).stock_actual : formula.batchSize} kg
+                      </p>
+                    </div>
                     {!showOnlyIncomplete && (
                       <p className="text-base text-foreground dark:text-white font-medium mt-1">
                         Destino: {formula.destination}

@@ -284,6 +284,8 @@ export type Database = {
       productos: {
         Row: {
           batch_size: number
+          lote_code: string | null
+          stock_actual: number
           client_name: string | null
           created_at: string | null
           date: string | null
@@ -296,6 +298,8 @@ export type Database = {
         }
         Insert: {
           batch_size?: number
+          lote_code?: string | null
+          stock_actual?: number
           client_name?: string | null
           created_at?: string | null
           date?: string | null
@@ -308,6 +312,8 @@ export type Database = {
         }
         Update: {
           batch_size?: number
+          lote_code?: string | null
+          stock_actual?: number
           client_name?: string | null
           created_at?: string | null
           date?: string | null
@@ -632,6 +638,34 @@ export type Database = {
           user_id_param: string
         }
         Returns: Json
+      }
+      get_weekly_production: {
+        Args: {
+          target_date?: string
+        }
+        Returns: number
+      }
+      get_monthly_production: {
+        Args: {
+          target_date?: string
+        }
+        Returns: number
+      }
+      get_weekly_production_total: {
+        Args: {
+          target_date?: string
+        }
+        Returns: number
+      }
+      get_monthly_production_total: {
+        Args: {
+          target_date?: string
+        }
+        Returns: number
+      }
+      get_current_production_kilos: {
+        Args: Record<string, never>
+        Returns: number
       }
       update_user_role: {
         Args: { p_role: string; p_user_id: string }

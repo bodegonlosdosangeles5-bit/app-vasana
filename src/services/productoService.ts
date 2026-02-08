@@ -2,8 +2,10 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface Producto {
   id: string;
+  lote_code: string; // New field for the actual Lote Number
   name: string;
-  batchSize: number;
+  batchSize: number; // Historical Production Amount
+  stock_actual: number; // Current Available Stock
   status: 'available' | 'incomplete';
   destination: string;
   date?: string;
@@ -33,8 +35,10 @@ export class ProductoService {
         .from('productos')
         .select(`
           id,
+          lote_code,
           name,
           batch_size,
+          stock_actual,
           status,
           destination,
           date,
@@ -125,8 +129,10 @@ export class ProductoService {
 
       return productos.map(producto => ({
         id: producto.id,
+        lote_code: (producto as any).lote_code || producto.id, // Fallback to ID for old records
         name: producto.name,
         batchSize: producto.batch_size,
+        stock_actual: (producto as any).stock_actual !== undefined ? (producto as any).stock_actual : producto.batch_size, // Fallback to batch_size
         status: producto.status as 'available' | 'incomplete',
         destination: producto.destination,
         date: producto.date || undefined,
@@ -147,15 +153,18 @@ export class ProductoService {
       console.log('🔧 Creando producto con datos:', producto);
       
       // Usar ID proporcionado o generar uno único
-      const id = producto.id || `P${Date.now()}`;
-      console.log('🆔 ID usado:', id);
+      // Generate unique ID: Lote + Timestamp + Random to allow repetitions of Lote Number
+      const uniqueId = `P-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+      const loteCode = producto.lote_code || producto.id || `L-${Date.now()}`; // Use provided ID as Lote if lote_code is missing
       
       const { data, error } = await supabase
         .from('productos')
         .insert({
-          id: id,
+          id: uniqueId,
+          lote_code: loteCode,
           name: producto.name,
           batch_size: producto.batchSize,
+          stock_actual: producto.batchSize, // Initial stock equals production amount
           status: producto.status,
           destination: producto.destination,
           date: producto.date || null,
@@ -175,7 +184,7 @@ export class ProductoService {
       // Insertar ingredientes faltantes si existen
       if (producto.missingIngredients && producto.missingIngredients.length > 0) {
         const missingIngredientsData = producto.missingIngredients.map(ingredient => ({
-          producto_id: id,
+          producto_id: uniqueId,
           name: ingredient.name,
           required: ingredient.required,
           unit: ingredient.unit
@@ -189,7 +198,7 @@ export class ProductoService {
       // Insertar ingredientes disponibles si existen
       if (producto.ingredients && producto.ingredients.length > 0) {
         const availableIngredientsData = producto.ingredients.map(ingredient => ({
-          producto_id: id,
+          producto_id: uniqueId,
           name: ingredient.name,
           required: ingredient.required,
           available: ingredient.available,
@@ -203,7 +212,9 @@ export class ProductoService {
 
       const result = {
         ...producto,
-        id: id
+        id: uniqueId,
+        lote_code: loteCode,
+        stock_actual: producto.batchSize
       };
       
       console.log('✅ Producto creado exitosamente:', result);
@@ -221,7 +232,9 @@ export class ProductoService {
         .from('productos')
         .update({
           name: updates.name,
+          lote_code: updates.lote_code, // Allow updating lote_code
           batch_size: updates.batchSize,
+          stock_actual: updates.stock_actual, // Allow updating stock
           status: updates.status,
           destination: updates.destination,
           date: updates.date || null,
