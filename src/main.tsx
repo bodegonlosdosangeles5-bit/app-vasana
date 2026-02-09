@@ -1,6 +1,14 @@
+import ReactGA from "react-ga4";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+
+// Inicialización de Google Analytics
+const GA_ID = import.meta.env.VITE_GA_ID;
+
+if (GA_ID) {
+  ReactGA.initialize(GA_ID);
+}
 
 // Registrar Service Worker para PWA
 if ('serviceWorker' in navigator) {
@@ -31,3 +39,8 @@ if ('serviceWorker' in navigator) {
 }
 
 createRoot(document.getElementById("root")!).render(<App />);
+
+
+
+
+
