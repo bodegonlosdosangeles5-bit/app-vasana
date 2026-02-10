@@ -1,312 +1,270 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Custom Color Palette - Modern & Elegant */
 @layer base {
   :root {
-    /* Light Mode Colors */
-    --background: 0 0% 100%;
-    --foreground: 210 100% 20%; /* #173F60 - Deep blue for text */
-    
-    --card: 35 100% 85%; /* #EACFA6 - Warm beige for cards */
-    --card-foreground: 210 100% 20%; /* #173F60 - Deep blue for card text */
-    
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
     --popover: 0 0% 100%;
-    --popover-foreground: 210 100% 20%;
-    
-    --primary: 350 70% 70%; /* #EA99A8 - Coral pink for primary buttons */
+    --popover-foreground: 222 47% 11%;
+
+    /* Brand Corporate Pink - Vital for Identity */
+    --primary: 350 80% 64%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 350 70% 65%; /* Darker coral for hover */
-    
-    --secondary: 35 100% 85%; /* #EACFA6 - Warm beige for secondary */
-    --secondary-foreground: 210 100% 20%; /* #173F60 - Deep blue for secondary text */
-    
-    --muted: 30 10% 70%; /* #A39F9E - Soft gray for muted elements */
-    --muted-foreground: 210 100% 20%; /* #173F60 - Deep blue for muted text */
-    
-    --accent: 210 100% 20%; /* #173F60 - Deep blue for accents */
-    --accent-foreground: 0 0% 100%;
-    
-    --destructive: 0 70% 50%;
-    --destructive-foreground: 0 0% 100%;
-    
-    --success: 120 50% 50%;
-    --success-foreground: 0 0% 100%;
-    
-    --warning: 45 80% 60%;
-    --warning-foreground: 210 100% 20%;
-    
-    --border: 30 10% 70%; /* #A39F9E - Soft gray for borders */
-    --input: 30 10% 70%;
-    --ring: 350 70% 70%; /* #EA99A8 - Coral pink for focus rings */
-    
-    /* Custom gradients */
-    --gradient-primary: linear-gradient(135deg, #EA99A8, #EACFA6);
-    --gradient-secondary: linear-gradient(135deg, #EACFA6, #A39F9E);
-    --gradient-accent: linear-gradient(135deg, #173F60, #EA99A8);
-    --gradient-background: linear-gradient(180deg, #ffffff, #f8f6f4);
-    
-    /* Shadows */
-    --shadow-elegant: 0 10px 30px -10px rgba(234, 153, 168, 0.3);
-    --shadow-soft: 0 4px 20px -8px rgba(234, 153, 168, 0.2);
-    --shadow-card: 0 2px 10px -4px rgba(23, 63, 96, 0.1);
-    
-    /* Transitions */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-spring: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-    
-    --radius: 0.5rem;
+
+    /* Slate Blue for Professional SaaS Secondary */
+    --secondary: 215 25% 27%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 350 80% 97%;
+    --accent-foreground: 350 80% 64%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 350 80% 64%;
+
+    --radius: 12px;
+
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dark {
-    /* Dark Mode Colors */
-    --background: 260 30% 15%; /* #382461 - Dark purple base */
-    --foreground: 35 100% 85%; /* #EACFA6 - Warm beige for text */
-    
-    --card: 260 30% 20%; /* Slightly lighter than background */
-    --card-foreground: 35 100% 85%; /* #EACFA6 - Warm beige for card text */
-    
-    --popover: 260 30% 15%;
-    --popover-foreground: 35 100% 85%;
-    
-    --primary: 350 70% 70%; /* #EA99A8 - Coral pink (same as light) */
-    --primary-foreground: 0 0% 100%;
-    --primary-hover: 350 70% 75%; /* Lighter coral for dark mode hover */
-    
-    --secondary: 260 30% 25%; /* Darker purple for secondary */
-    --secondary-foreground: 35 100% 85%; /* #EACFA6 - Warm beige */
-    
-    --muted: 260 20% 30%; /* Darker muted */
-    --muted-foreground: 35 100% 70%; /* Slightly darker beige for muted text */
-    
-    --accent: 35 100% 85%; /* #EACFA6 - Warm beige for accents in dark mode */
-    --accent-foreground: 260 30% 15%; /* Dark purple for accent text */
-    
-    --destructive: 0 70% 60%;
-    --destructive-foreground: 0 0% 100%;
-    
-    --success: 120 50% 60%;
-    --success-foreground: 0 0% 100%;
-    
-    --warning: 45 80% 70%;
-    --warning-foreground: 0 0% 100%;
-    
-    --border: 260 20% 30%; /* Darker borders */
-    --input: 260 20% 30%;
-    --ring: 350 70% 70%; /* #EA99A8 - Coral pink for focus rings */
-    
-    /* Dark mode gradients */
-    --gradient-primary: linear-gradient(135deg, #EA99A8, #382461);
-    --gradient-secondary: linear-gradient(135deg, #382461, #173F60);
-    --gradient-accent: linear-gradient(135deg, #EACFA6, #EA99A8);
-    --gradient-background: linear-gradient(180deg, #382461, #2a1a47);
-    
-    /* Dark mode shadows */
-    --shadow-elegant: 0 10px 30px -10px rgba(234, 153, 168, 0.2);
-    --shadow-soft: 0 4px 20px -8px rgba(234, 153, 168, 0.15);
-    --shadow-card: 0 2px 10px -4px rgba(0, 0, 0, 0.3);
-  }
-}
+    --background: 215 25% 12%;
+    /* Softer, slightly lighter dark blue background */
+    --foreground: 210 40% 98%;
 
-@layer base {
+    --card: 215 25% 9%;
+    /* Cards slightly darker than background as requested */
+    --card-foreground: 210 40% 98%;
+
+    --popover: 215 25% 9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 350 85% 70%;
+    --primary-foreground: 350 100% 5%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 215 25% 15%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 350 80% 15%;
+    --accent-foreground: 350 85% 70%;
+
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 215 25% 18%;
+    --input: 215 25% 18%;
+    --ring: 350 85% 70%;
+  }
+
   * {
-    @apply border-border;
+    border-color: hsl(var(--border)) !important;
+    font-family: 'Inter', sans-serif !important;
   }
 
   body {
-    @apply bg-background text-foreground transition-colors duration-300;
+    background-color: hsl(var(--background)) !important;
+    color: hsl(var(--foreground)) !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Typography with Brand Gradient */
+  h1 {
+    font-size: 2.75rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.05em !important;
+    line-height: 1.1 !important;
+    background: linear-gradient(135deg, hsl(var(--foreground)) 40%, hsl(var(--primary)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 0.75rem !important;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: hsl(var(--foreground)) !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.02em !important;
+  }
+
+  /* High Contrast KPIs - Numbers should be white and bold in dark mode */
+  .dark .metric-value,
+  .dark .text-3xl,
+  .dark .text-4xl,
+  .dark .font-black {
+    color: #ffffff !important;
+    font-weight: 900 !important;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .metric-value,
+  .text-3xl,
+  .text-4xl,
+  .font-black {
+    font-variant-numeric: tabular-nums !important;
+    letter-spacing: -0.04em !important;
   }
 }
 
-/* Custom component styles */
 @layer components {
-  /* Professional Card System */
+
+  /* Modern Card System */
+  .card,
+  [class*="Card_"],
+  div.bg-white,
+  div.bg-zinc-950,
+  div.bg-slate-900,
+  .metric-card,
   .card-elegant {
-    @apply bg-card border border-border/50 rounded-xl shadow-[var(--shadow-card)] transition-all duration-200 ease-in-out;
-    max-width: 360px;
-    padding: clamp(1rem, 1.25rem, 1.5rem);
-    box-shadow: 0 2px 8px -2px rgba(23, 63, 96, 0.08), 0 1px 4px -1px rgba(23, 63, 96, 0.04);
+    background-color: hsl(var(--card)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: var(--radius) !important;
+    box-shadow: var(--shadow-sm) !important;
+    padding: 1.5rem !important;
+    transition: var(--transition-base) !important;
+    color: hsl(var(--card-foreground)) !important;
+    background-image: none !important;
   }
-  
+
+  .card:hover,
   .card-elegant:hover {
-    @apply shadow-[var(--shadow-soft)];
     transform: translateY(-4px);
-    box-shadow: 0 8px 25px -5px rgba(23, 63, 96, 0.15), 0 4px 12px -2px rgba(23, 63, 96, 0.08);
-  }
-  
-  .card-elegant.status-change {
-    @apply animate-pulse;
+    box-shadow: var(--shadow-lg) !important;
+    border-color: hsl(var(--primary) / 0.4) !important;
   }
 
-  /* Responsive Card Grid */
-  .cards-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: clamp(0.75rem, 1rem, 1.5rem);
-    justify-content: center;
-    align-items: start;
-    width: 100%;
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 0 clamp(1rem, 2rem, 2rem);
+  /* Identity Reinforcement on Cards */
+  .card svg {
+    color: hsl(var(--primary)) !important;
   }
 
-  /* Mobile-first responsive adjustments */
-  @media (min-width: 640px) {
-    .cards-grid {
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 1rem;
-    }
-    
-    .card-elegant {
-      max-width: 300px;
-    }
+  /* Navbar Brand Identity */
+  nav,
+  .sidebar,
+  [role="navigation"] {
+    background-color: hsl(var(--card)) !important;
+    border-bottom: 2px solid hsl(var(--border)) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
 
-  @media (min-width: 768px) {
-    .cards-grid {
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 1.25rem;
-    }
+  nav button[data-state="active"],
+  nav button.bg-primary,
+  nav .bg-primary {
+    background-color: hsl(var(--primary) / 0.12) !important;
+    color: hsl(var(--primary)) !important;
+    font-weight: 700 !important;
+    box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.3) !important;
   }
 
-  @media (min-width: 1024px) {
-    .cards-grid {
-      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-      gap: 1.5rem;
-    }
-    
-    .card-elegant {
-      max-width: 360px;
-    }
+  /* Tables - High Definition SaaS Style */
+  table {
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
   }
 
-  @media (min-width: 1280px) {
-    .cards-grid {
-      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-    }
+  thead th {
+    background-color: hsl(var(--muted) / 0.5) !important;
+    color: hsl(var(--muted-foreground)) !important;
+    font-size: 0.7rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.08em !important;
+    padding: 1rem !important;
+    border-bottom: 2px solid hsl(var(--border)) !important;
   }
 
-  /* Card Content Styling */
-  .card-content {
-    @apply space-y-3;
+  tbody td {
+    padding: 1.25rem 1rem !important;
+    border-bottom: 1px solid hsl(var(--border) / 0.5) !important;
   }
 
-  .card-title {
-    @apply text-foreground font-semibold text-lg leading-tight;
-    font-size: clamp(1rem, 1.125rem, 1.25rem);
+  tr:hover td {
+    background-color: hsl(var(--primary) / 0.04) !important;
   }
 
-  .card-subtitle {
-    @apply text-muted-foreground text-sm leading-relaxed;
-    font-size: clamp(0.875rem, 0.9375rem, 1rem);
+  /* Brand Primary Call to Actions */
+  button.bg-primary,
+  .btn-primary,
+  button.bg-pink-500 {
+    background-color: hsl(var(--primary)) !important;
+    color: hsl(var(--primary-foreground)) !important;
+    font-weight: 700 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 14px 0 hsl(var(--primary) / 0.4) !important;
+    transition: var(--transition-base) !important;
+    border: none !important;
   }
 
-  .card-description {
-    @apply text-muted-foreground text-sm leading-relaxed;
-    font-size: clamp(0.8125rem, 0.875rem, 0.9375rem);
-    line-height: 1.5;
+  button.bg-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px 0 hsl(var(--primary) / 0.45) !important;
+    filter: saturate(1.1) brightness(1.05);
   }
 
-  /* Card Images and Graphics */
-  .card-image {
-    @apply w-full h-auto rounded-lg object-cover;
-    aspect-ratio: 16/9;
-    max-height: 200px;
+  /* Form Elements - Focused with Brand Color */
+  input:focus,
+  select:focus,
+  textarea:focus {
+    border-color: hsl(var(--primary)) !important;
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.15) !important;
+    outline: none !important;
   }
 
-  .card-icon {
-    @apply w-8 h-8 text-primary;
-    flex-shrink: 0;
+  /* Status Identity */
+  .bg-green-100,
+  .status-available {
+    background-color: hsl(142 76% 95%) !important;
+    color: hsl(142 76% 15%) !important;
+    border: 1px solid hsl(142 76% 85%) !important;
   }
 
-  /* Card Actions */
-  .card-actions {
-    @apply flex flex-wrap gap-2 mt-4;
+  .bg-red-100,
+  .status-critical {
+    background-color: hsl(0 84% 95%) !important;
+    color: hsl(0 84% 15%) !important;
+    border: 1px solid hsl(0 84% 85%) !important;
   }
 
-  .card-badge {
-    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium;
-    background-color: hsl(var(--muted) / 0.1);
-    color: hsl(var(--muted-foreground));
+  /* Informative uses of Secondary (Blue/Slate) */
+  .text-blue-500,
+  .bg-blue-500,
+  .text-cyan-600 {
+    color: hsl(var(--secondary)) !important;
   }
 
-  /* Status Indicators */
-  .status-indicator {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
-    font-size: clamp(0.75rem, 0.8125rem, 0.875rem);
-  }
-
-  /* Metric Cards */
-  .metric-card {
-    @apply card-elegant p-6 space-y-4;
-    min-height: 140px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-  }
-
-  .metric-value {
-    @apply text-2xl font-bold text-foreground;
-    font-size: clamp(1.5rem, 1.75rem, 2rem);
-  }
-
-  .metric-label {
-    @apply text-sm text-muted-foreground font-medium;
-    font-size: clamp(0.75rem, 0.8125rem, 0.875rem);
-  }
-  
-  .gradient-primary {
-    background: var(--gradient-primary);
-  }
-  
-  .gradient-secondary {
-    background: var(--gradient-secondary);
-  }
-  
-  .gradient-accent {
-    background: var(--gradient-accent);
-  }
-  
-  .text-gradient-primary {
-    background: var(--gradient-primary);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  
-  .metric-card {
-    @apply card-elegant p-6 space-y-4;
-  }
-  
-  .status-indicator {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
-  }
-
-  /* Custom button styles */
-  .btn-primary {
-    @apply bg-primary text-primary-foreground hover:bg-primary-hover transition-colors duration-300;
-  }
-  
-  .btn-secondary {
-    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors duration-300;
-  }
-  
-  .btn-accent {
-    @apply bg-accent text-accent-foreground hover:bg-accent/80 transition-colors duration-300;
-  }
-
-  /* Custom text styles */
-  .text-primary {
-    @apply text-foreground;
-  }
-  
-  .text-secondary {
-    @apply text-muted-foreground;
-  }
-  
-  .text-accent {
-    color: hsl(var(--accent));
+  /* Neutralize any legacy or hardcoded pink in JSX to use brand variable */
+  .bg-pink-50,
+  .bg-pink-100,
+  .bg-pink-500\/10,
+  .bg-pink-10,
+  .bg-pink-5 {
+    background-color: hsl(var(--primary) / 0.1) !important;
   }
 }
