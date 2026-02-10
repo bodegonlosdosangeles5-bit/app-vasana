@@ -29,13 +29,13 @@ export class MetricasService {
    */
   static async getComparativaHoyAyer(): Promise<ComparativaHoyAyer> {
     try {
-      const { data, error } = await supabase
-        .from('vista_comparativa_hoy_ayer' as any)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.from('vista_comparativa_hoy_ayer' as any) as any)
         .select('*')
         .maybeSingle();
 
       if (error) throw error;
-      return (data as any) || { hoy_total: 0, ayer_total: 0 };
+      return (data as unknown as ComparativaHoyAyer) || { hoy_total: 0, ayer_total: 0 };
     } catch (error) {
       console.error('Error fetching vista_comparativa_hoy_ayer:', error);
       return { hoy_total: 0, ayer_total: 0 };
@@ -47,13 +47,13 @@ export class MetricasService {
    */
   static async getProductionSummaryFromView(): Promise<ProductionViewData[]> {
     try {
-      const { data, error } = await supabase
-        .from('vista_metricas_produccion_total' as any)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.from('vista_metricas_produccion_total' as any) as any)
         .select('*')
         .order('fecha_produccion', { ascending: true });
 
       if (error) throw error;
-      return (data as any) || [];
+      return (data as unknown as ProductionViewData[]) || [];
     } catch (error) {
       console.error('Error fetching from vista_metricas_produccion_total:', error);
       return [];
@@ -107,15 +107,15 @@ export class MetricasService {
    */
   static async getLatestMetrica(): Promise<MetricaComparativa | null> {
     try {
-      const { data, error } = await supabase
-        .from('metricas_comparativas' as any)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.from('metricas_comparativas' as any) as any)
         .select('*')
         .order('recorded_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (error) throw error;
-      return data as any;
+      return data as unknown as MetricaComparativa;
     } catch (error) {
       console.error('Error fetching latest metrica:', error);
       return null;
@@ -128,14 +128,14 @@ export class MetricasService {
    */
   static async saveMetricaSnapshot(metrica: Omit<MetricaComparativa, 'id' | 'recorded_at'>): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('metricas_comparativas' as any)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('metricas_comparativas' as any) as any)
         .insert({
           weekly_total: metrica.weekly_total,
           monthly_total: metrica.monthly_total,
           target_kilos: metrica.target_kilos,
           period_label: metrica.period_label
-        } as any);
+        });
 
       if (error) throw error;
       return true;

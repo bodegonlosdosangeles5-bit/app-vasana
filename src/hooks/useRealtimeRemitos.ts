@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { RemitoService, RemitoWithItems, ProductionItem } from '@/services/remitoService';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 export const useRealtimeRemitos = () => {
   const [remitos, setRemitos] = useState<RemitoWithItems[]>([]);
@@ -8,7 +9,8 @@ export const useRealtimeRemitos = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [realtimeError, setRealtimeError] = useState(false);
-  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [isPolling, setIsPolling] = useState(false);
 
   // Cargar remitos iniciales
   const loadRemitos = useCallback(async () => {
@@ -49,27 +51,31 @@ export const useRealtimeRemitos = () => {
 
   // Configurar polling como fallback si Realtime falla
   const startPolling = useCallback(() => {
+    if (pollingIntervalRef.current) return;
+    
     console.log('🔄 Iniciando polling como fallback...');
+    setIsPolling(true);
     const interval = setInterval(() => {
       loadRemitos();
       loadCurrentRemito();
     }, 5000); // Polling cada 5 segundos
-    setPollingInterval(interval);
+    pollingIntervalRef.current = interval;
   }, [loadRemitos, loadCurrentRemito]);
 
   const stopPolling = useCallback(() => {
-    if (pollingInterval) {
+    if (pollingIntervalRef.current) {
       console.log('🛑 Deteniendo polling...');
-      clearInterval(pollingInterval);
-      setPollingInterval(null);
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+      setIsPolling(false);
     }
-  }, [pollingInterval]);
+  }, []);
 
   // Configurar Realtime para remitos
   useEffect(() => {
     console.log('🔌 Configurando Realtime para remitos...');
     
-    let remitosChannel: any = null;
+    let remitosChannel: RealtimeChannel | null = null;
     
     try {
       remitosChannel = supabase
@@ -234,7 +240,7 @@ export const useRealtimeRemitos = () => {
     loading,
     error,
     realtimeError,
-    isPolling: pollingInterval !== null,
+    isPolling,
     loadRemitos,
     loadCurrentRemito,
     generateRemitoForVillaMartelli,

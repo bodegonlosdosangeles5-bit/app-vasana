@@ -33,7 +33,8 @@ export class UserService {
         throw new Error('Error al obtener usuarios');
       }
 
-      return (data as any[]).map((user: any) => ({
+      const users = data || [];
+      return users.map((user) => ({
         id: user.id,
         user_name: user.user_name,
         role: user.role,
@@ -62,21 +63,28 @@ export class UserService {
         throw new Error(`Error al crear usuario: ${error.message}`);
       }
 
-      const result = data as any;
-      if (!result.success) {
-        throw new Error(result.error);
+      const result = data as { success: boolean, error?: string, user_id?: string } | null;
+      if (!result || !result.success) {
+        throw new Error(result?.error || 'Error desconocido');
       }
 
       // Obtener el usuario creado
       const { data: createdUserData, error: getUserError } = await supabase.rpc('get_user_by_id', {
-        user_id_param: result.user_id
+        user_id_param: result.user_id || ''
       });
 
-      if (getUserError || !(createdUserData as any).success) {
+      if (getUserError) {
         throw new Error('Error obteniendo usuario creado');
       }
 
-      const userResult = createdUserData as any;
+      const userResult = createdUserData as { 
+        id: string; user_name: string; role: string; created_at: string; updated_at: string; success: boolean 
+      } | null;
+      
+      if (!userResult || !userResult.success) {
+        throw new Error('Error obteniendo usuario creado');
+      }
+
       return {
         id: userResult.id,
         user_name: userResult.user_name,
@@ -107,9 +115,9 @@ export class UserService {
         throw new Error(`Error al actualizar usuario: ${error.message}`);
       }
 
-      const result = data as any;
-      if (!result.success) {
-        throw new Error(result.error);
+      const result = data as { success: boolean, error?: string, id: string; user_name: string; role: string; created_at: string; updated_at: string } | null;
+      if (!result || !result.success) {
+        throw new Error(result?.error || 'Error desconocido');
       }
 
       return {
@@ -139,8 +147,8 @@ export class UserService {
         throw new Error(`Error al eliminar usuario: ${error.message}`);
       }
 
-      const result = data as any;
-      return result.success;
+      const result = data as { success: boolean } | null;
+      return result?.success || false;
     } catch (error) {
       console.error('Error en deleteUser:', error);
       throw error;
@@ -163,8 +171,8 @@ export class UserService {
         throw new Error(`Error al cambiar contraseña: ${error.message}`);
       }
 
-      const result = data as any;
-      return result.success;
+      const result = data as { success: boolean } | null;
+      return result?.success || false;
     } catch (error) {
       console.error('Error en resetUserPassword:', error);
       throw error;
@@ -188,12 +196,12 @@ export class UserService {
         throw new Error('Error al obtener estadísticas');
       }
 
-      const result = data as any;
+      const result = data as { total?: number; users?: number; admins?: number; users_role?: number } | null;
       return {
-        total: result.total || 0,
-        users: result.users || 0,
-        admins: result.admins || 0,
-        users_role: result.users_role || 0
+        total: result?.total || 0,
+        users: result?.users || 0,
+        admins: result?.admins || 0,
+        users_role: result?.users_role || 0
       };
     } catch (error) {
       console.error('Error en getUserStats:', error);
@@ -236,8 +244,8 @@ export class UserService {
         return false;
       }
 
-      const result = data as any;
-      return result.success;
+      const result = data as { success: boolean } | null;
+      return result?.success || false;
     } catch (error) {
       console.error('Error en updateUserActivity:', error);
       return false;

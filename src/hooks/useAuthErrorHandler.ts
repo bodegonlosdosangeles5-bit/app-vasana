@@ -27,13 +27,14 @@ export const useAuthErrorHandler = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleAuthError = (error: any) => {
+  const handleAuthError = (error: unknown) => {
+    const err = error as { message?: string };
     console.error('🚨 Error de autenticación:', error);
     
     // Si es un error 403 o JWT, intentar refrescar la sesión
-    if (error?.message?.includes('403') || 
-        error?.message?.includes('JWT') || 
-        error?.message?.includes('Invalid JWT')) {
+    if (err?.message?.includes('403') || 
+        err?.message?.includes('JWT') || 
+        err?.message?.includes('Invalid JWT')) {
       
       console.log('🔄 Intentando refrescar sesión...');
       

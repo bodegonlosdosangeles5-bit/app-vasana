@@ -11,7 +11,6 @@ export class TestService {
   // Obtener todos los registros de prueba
   static async getTestRecords(): Promise<TestRecord[]> {
     try {
-      // @ts-ignore - Temporal para evitar errores de tipos
       const { data, error } = await supabase
         .from('test_connection')
         .select('*')
@@ -28,7 +27,6 @@ export class TestService {
   // Crear un nuevo registro de prueba
   static async createTestRecord(name: string, message: string): Promise<TestRecord | null> {
     try {
-      // @ts-ignore - Temporal para evitar errores de tipos
       const { data, error } = await supabase
         .from('test_connection')
         .insert({ name, message })
@@ -46,7 +44,6 @@ export class TestService {
   // Eliminar un registro de prueba
   static async deleteTestRecord(id: number): Promise<boolean> {
     try {
-      // @ts-ignore - Temporal para evitar errores de tipos
       const { error } = await supabase
         .from('test_connection')
         .delete()
@@ -63,7 +60,6 @@ export class TestService {
   // Probar la conexión
   static async testConnection(): Promise<boolean> {
     try {
-      // @ts-ignore - Temporal para evitar errores de tipos
       const { data, error } = await supabase
         .from('test_connection')
         .select('count')

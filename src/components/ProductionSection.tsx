@@ -123,7 +123,7 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
     return currentProduction.reduce((total, producto) => {
       // Filtrar solo los que están disponibles realmente (no entregados, no históricos viejos)
       // currentProduction ya filtra por 'available' y 'villamartelli', pero aseguramos que tenga stock
-      const stock = (producto as any).stock_actual !== undefined ? (producto as any).stock_actual : producto.batchSize;
+      const stock = producto.stock_actual;
       
       // Si el stock es 0, no suma (aunque esté available en la lista visual por alguna razón)
       if (stock <= 0) return total;
@@ -172,7 +172,7 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
     setEditingProducto(formula);
     setEditForm({
       name: formula.name,
-      lote: (formula as any).lote_code || (formula as any).lote || formula.id,
+      lote: formula.lote_code || formula.id,
       batchSize: formula.batchSize,
       destination: formula.destination,
       type: formula.type,
@@ -334,7 +334,7 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
                         
                         <div className="flex items-center gap-2 text-sm text-slate-600">
                           <span className="font-semibold text-pink-500">Lote:</span>
-                          <span className="truncate">{(formula as any).lote_code || (formula as any).lote || formula.id}</span>
+                          <span className="truncate">{formula.lote_code || formula.id}</span>
                         </div>
 
                         <div className="flex flex-col gap-0.5 text-sm text-slate-600">
@@ -344,7 +344,7 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
                           </div>
                           <div className="flex items-center gap-2">
                              <span className="font-semibold text-pink-500">Stock:</span>
-                             <span className="font-bold">{(formula as any).stock_actual !== undefined ? (formula as any).stock_actual : formula.batchSize} kg</span>
+                             <span className="font-bold">{formula.stock_actual} kg</span>
                           </div>
                         </div>
 
@@ -444,7 +444,7 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
                     <CardTitle className="text-base sm:text-lg font-semibold">
                       {envio.numero_envio}
                     </CardTitle>
-                    <Badge variant={getStatusColor(envio.estado) as any}>
+                    <Badge variant={getStatusColor(envio.estado) as 'default' | 'secondary' | 'destructive' | 'outline'}>
                       {getStatusText(envio.estado)}
                     </Badge>
                   </CardHeader>
@@ -535,7 +535,7 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Estado</Label>
-                  <Badge variant={getStatusColor(selectedRemito.estado) as any}>
+                  <Badge variant={getStatusColor(selectedRemito.estado) as 'default' | 'secondary' | 'destructive' | 'outline'}>
                     {getStatusText(selectedRemito.estado)}
                   </Badge>
                 </div>
@@ -625,7 +625,7 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
 
             <div className="space-y-2">
               <Label htmlFor="edit-type" className="text-zinc-400">Tipo</Label>
-              <Select value={editForm.type} onValueChange={(val: any) => setEditForm({ ...editForm, type: val })}>
+              <Select value={editForm.type} onValueChange={(val: "stock" | "client") => setEditForm({ ...editForm, type: val })}>
                 <SelectTrigger className="bg-zinc-900 border-zinc-800 text-white">
                   <SelectValue />
                 </SelectTrigger>

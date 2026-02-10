@@ -247,7 +247,7 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
         (index + 1).toString(),
         lot.date ? format(parseISO(lot.date), "dd/MM/yyyy") : "-",
         lot.name,
-        (lot as any).lote || lot.id,
+        lot.lote_code || lot.id,
         `${lot.batchSize} kg`,
         lot.clientName || "Stock"
       ]);
@@ -272,13 +272,20 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
     }
   };
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  interface CustomTooltipProps {
+    active?: boolean;
+    payload?: Array<{ value: number; name: string }>;
+    label?: string;
+  }
+
+  const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
     if (active && payload && payload.length) {
+      const value = payload[0].value;
       return (
         <div className="bg-white border-2 border-teal-500 p-4 rounded-xl shadow-2xl">
           <p className="text-teal-700 font-bold mb-1 text-sm">{label}</p>
           <p className="text-slate-700 text-sm">
-            Producción: <span className="font-mono font-bold text-teal-600">{payload[0].value.toLocaleString()} kg</span>
+            Producción: <span className="font-mono font-bold text-teal-600">{value.toLocaleString()} kg</span>
           </p>
         </div>
       );
@@ -359,7 +366,7 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
           </div>
 
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 flex-1 flex flex-col min-h-0 shadow-sm">
-            <Tabs value={viewType} onValueChange={(v) => setViewType(v as any)} className="w-full flex-1 flex flex-col">
+            <Tabs value={viewType} onValueChange={(v) => setViewType(v as "daily" | "weekly" | "monthly")} className="w-full flex-1 flex flex-col">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
                 <h4 className="font-bold flex items-center gap-2 text-slate-800 text-lg">
                   <Activity className="h-5 w-5 text-teal-600" strokeWidth={2} />

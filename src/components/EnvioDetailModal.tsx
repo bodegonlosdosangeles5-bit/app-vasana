@@ -40,8 +40,8 @@ export const EnvioDetailModal = ({
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
 
   const handleEditRemito = (remito: EnvioConRemitos['remitos'][0]) => {
-    setEditingRemito(remito as any);
-    setEditedItems([...remito.items] as RemitoItem[]); // Cast para compatibilidad de tipos
+    setEditingRemito(remito as unknown as RemitoWithItems);
+    setEditedItems([...remito.items] as RemitoItem[]);
     setEditForm({
       observaciones: remito.observaciones || ''
     });
@@ -49,7 +49,7 @@ export const EnvioDetailModal = ({
   };
 
   // Actualizar un item específico
-  const handleUpdateItem = (index: number, field: keyof RemitoItem, value: any) => {
+  const handleUpdateItem = (index: number, field: keyof RemitoItem, value: unknown) => {
     const newItems = [...editedItems];
     newItems[index] = { ...newItems[index], [field]: value };
     setEditedItems(newItems);

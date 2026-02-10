@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { Database } from '@/integrations/supabase/types';
 
 export interface Remito {
   id: string;
@@ -31,8 +32,10 @@ export interface RemitoWithItems extends Remito {
 
 export interface ProductionItem {
   id: string;
+  lote_code?: string;
   name: string;
   batchSize: number;
+  stock_actual?: number;
   destination: string;
   status: 'available' | 'incomplete' | 'procesado' | string; // Permitir otros status
   date?: string;
@@ -41,21 +44,6 @@ export interface ProductionItem {
 }
 
 export class RemitoService {
-  // Obtener todos los remitos
-  static async getAllRemitos(): Promise<Remito[]> {
-    try {
-      const { data: remitos, error } = await supabase
-        .from('remitos')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return remitos || [];
-    } catch (error) {
-      console.error('Error obteniendo remitos:', error);
-      return [];
-    }
-  }
 
   // Obtener remito con items
   static async getRemitoWithItems(remitoId: string): Promise<RemitoWithItems | null> {
@@ -81,8 +69,9 @@ export class RemitoService {
 
       return {
         ...remito,
+        estado: remito.estado as 'abierto' | 'cerrado',
         items: items || []
-      };
+      } as RemitoWithItems;
     } catch (error) {
       console.error('Error obteniendo remito con items:', error);
       return null;
@@ -129,7 +118,8 @@ export class RemitoService {
             lote: item.id, // Usar ID como lote
             cliente_o_stock: clienteStock,
             lotes: [],
-            items: []
+            items: [],
+            notas: null
           };
         }
         acc[key].kilos_sumados += item.batchSize;
@@ -137,7 +127,17 @@ export class RemitoService {
         acc[key].lotes.push(item.id);
         acc[key].items.push(item);
         return acc;
-      }, {} as Record<string, any>);
+      }, {} as Record<string, {
+        producto_id: string;
+        nombre_producto: string;
+        kilos_sumados: number;
+        cantidad_lotes: number;
+        lote: string;
+        cliente_o_stock: string;
+        lotes: string[];
+        items: ProductionItem[];
+        notas: string | null;
+      }>);
 
       const remitoItems = Object.values(groupedItems);
       const totalKilos = remitoItems.reduce((sum, item) => sum + item.kilos_sumados, 0);
@@ -177,7 +177,8 @@ export class RemitoService {
       }
 
       // Obtener el remito creado con sus items
-      const remito = await this.getRemitoById(data.remito_id);
+      const rpcData = data as { remito_id: string } | null;
+      const remito = rpcData ? await this.getRemitoById(rpcData.remito_id) : null;
       
       // Reiniciar la producción actual: cambiar status de las fórmulas incluidas
       if (remito) {
@@ -203,7 +204,16 @@ export class RemitoService {
   }
 
   // Fallback: generar remito usando operaciones individuales
-  private static async generateRemitoFallback(productionItems: ProductionItem[], remitoItems: any[], totalKilos: number): Promise<RemitoWithItems | null> {
+  private static async generateRemitoFallback(productionItems: ProductionItem[], remitoItems: Array<{
+    producto_id: string;
+    nombre_producto: string;
+    kilos_sumados: number;
+    cantidad_lotes: number;
+    lote: string;
+    cliente_o_stock: string;
+    items: ProductionItem[];
+    notas: string | null;
+  }>, totalKilos: number): Promise<RemitoWithItems | null> {
     try {
       const today = new Date().toISOString().split('T')[0];
       const remitoId = `REM-${Date.now()}`;
@@ -233,7 +243,10 @@ export class RemitoService {
           .single();
 
         if (updateError) throw updateError;
-        remito = updatedRemito;
+        remito = {
+          ...updatedRemito,
+          estado: updatedRemito.estado as 'abierto' | 'cerrado'
+        } as Remito;
 
         // Eliminar items existentes
         await supabase
@@ -256,7 +269,10 @@ export class RemitoService {
           .single();
 
         if (createError) throw createError;
-        remito = newRemito;
+        remito = {
+          ...newRemito,
+          estado: newRemito.estado as 'abierto' | 'cerrado'
+        } as Remito;
       }
 
       // 2. Insertar items del remito
@@ -384,8 +400,9 @@ export class RemitoService {
 
       return {
         ...remito,
+        estado: remito.estado as 'abierto' | 'cerrado',
         items: items || []
-      };
+      } as RemitoWithItems;
     } catch (error) {
       console.error('❌ Error obteniendo remito:', error);
       return null;
@@ -427,8 +444,9 @@ export class RemitoService {
 
       return {
         ...remito,
+        estado: remito.estado as 'abierto' | 'cerrado',
         items: items || []
-      };
+      } as RemitoWithItems;
     } catch (error) {
       console.error('❌ Error obteniendo remito abierto:', error);
       return null;
@@ -521,7 +539,7 @@ export class RemitoService {
       }
 
       // Preparar datos de actualización
-      const updateData: any = {
+      const updateData: Partial<Database['public']['Tables']['remitos']['Update']> = {
         updated_at: new Date().toISOString()
       };
 
@@ -564,7 +582,7 @@ export class RemitoService {
     }
   }
 
-  // Obtener todos los remitos
+  // Obtener todos los remitos con sus items
   static async getAllRemitos(): Promise<RemitoWithItems[]> {
     try {
       const { data: remitos, error: remitosError } = await supabase
@@ -588,8 +606,9 @@ export class RemitoService {
 
           return {
             ...remito,
+            estado: remito.estado as 'abierto' | 'cerrado',
             items: items || []
-          };
+          } as RemitoWithItems;
         })
       );
 

@@ -29,7 +29,7 @@ export const useRemitosPolling = () => {
   const loadCurrentRemito = useCallback(async () => {
     try {
       console.log('🔄 Cargando remito actual...');
-      const data = await RemitoService.getCurrentRemito();
+      const data = await RemitoService.getOpenRemitoForToday();
       console.log('📊 Remito actual cargado:', data);
       setCurrentRemito(data);
     } catch (err) {

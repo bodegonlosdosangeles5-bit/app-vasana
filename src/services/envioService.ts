@@ -101,20 +101,23 @@ export class EnvioService {
       if (enviosRemitosError) throw enviosRemitosError;
 
       // Formatear los datos
-      const remitos = (enviosRemitos || []).map(er => ({
-        id: er.remitos.id,
-        destino: er.remitos.destino,
-        fecha: er.remitos.fecha,
-        total_kilos: er.remitos.total_kilos,
-        estado: er.remitos.estado,
-        observaciones: er.remitos.observaciones,
-        items: er.remitos.remito_items || []
-      }));
+      const remitos = (enviosRemitos || []).map((er: unknown) => {
+        const item = er as { remitos: { id: string, destino: string, fecha: string, total_kilos: number, estado: string, observaciones: string | null, remito_items: unknown[] } };
+        return {
+          id: item.remitos.id,
+          destino: item.remitos.destino,
+          fecha: item.remitos.fecha,
+          total_kilos: item.remitos.total_kilos,
+          estado: item.remitos.estado,
+          observaciones: item.remitos.observaciones,
+          items: item.remitos.remito_items || []
+        };
+      });
 
       return {
         ...envio,
-        remitos
-      };
+        remitos: remitos as EnvioConRemitos['remitos']
+      } as EnvioConRemitos;
     } catch (error) {
       console.error('Error obteniendo envío con remitos:', error);
       return null;
@@ -122,7 +125,7 @@ export class EnvioService {
   }
 
   // Obtener remitos pendientes (no asignados a ningún envío)
-  static async getRemitosPendientes(): Promise<any[]> {
+  static async getRemitosPendientes(): Promise<Array<unknown>> {
     try {
       const { data: remitos, error } = await supabase
         .from('remitos')
@@ -245,7 +248,7 @@ export class EnvioService {
   ): Promise<Envio | null> {
     try {
       // Obtener remitos pendientes
-      const remitosPendientes = await this.getRemitosPendientes();
+      const remitosPendientes = await this.getRemitosPendientes() as Array<{ id: string, total_kilos: number }>;
       
       if (remitosPendientes.length === 0) {
         throw new Error('No hay remitos pendientes para crear el envío');

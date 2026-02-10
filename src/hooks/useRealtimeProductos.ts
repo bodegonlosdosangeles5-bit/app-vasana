@@ -33,9 +33,9 @@ export const useRealtimeProductos = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Cargar productos
-  const loadProductos = useCallback(async () => {
+  const loadProductos = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
       const productosData = await ProductoService.getProductos();
       setProductos(productosData);
@@ -43,7 +43,7 @@ export const useRealtimeProductos = () => {
       console.error('Error cargando productos:', err);
       setError('Error al cargar productos');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
@@ -65,7 +65,7 @@ export const useRealtimeProductos = () => {
         },
         (payload) => {
           console.log('🔄 Cambio en productos:', payload);
-          loadProductos(); // Recargar productos cuando hay cambios
+          loadProductos(true); // Recargar productos silenciosamente
         }
       )
       .on(
@@ -77,7 +77,7 @@ export const useRealtimeProductos = () => {
         },
         (payload) => {
           console.log('🔄 Cambio en ingredientes faltantes:', payload);
-          loadProductos(); // Recargar productos cuando hay cambios en ingredientes
+          loadProductos(true); // Recargar productos silenciosamente
         }
       )
       .on(
@@ -89,7 +89,7 @@ export const useRealtimeProductos = () => {
         },
         (payload) => {
           console.log('🔄 Cambio en ingredientes disponibles:', payload);
-          loadProductos(); // Recargar productos cuando hay cambios en ingredientes
+          loadProductos(true); // Recargar productos silenciosamente
         }
       )
       .subscribe();

@@ -40,7 +40,7 @@ export const requireAuth = async (): Promise<SecurityContext> => {
 // MIDDLEWARE DE VALIDACIÓN DE DATOS
 // =============================================
 
-export const validateInput = (input: any, type: 'formula' | 'ingredient' | 'inventory' | 'envio'): boolean => {
+export const validateInput = (input: unknown, type: 'formula' | 'ingredient' | 'inventory' | 'envio'): boolean => {
   // Verificar SQL Injection
   const inputString = JSON.stringify(input);
   if (containsSQLInjection(inputString)) {
@@ -56,9 +56,10 @@ export const validateInput = (input: any, type: 'formula' | 'ingredient' | 'inve
 
   // Sanitizar strings
   if (typeof input === 'object' && input !== null) {
-    for (const key in input) {
-      if (typeof input[key] === 'string') {
-        input[key] = sanitizeString(input[key]);
+    const inputObj = input as Record<string, unknown>;
+    for (const key in inputObj) {
+      if (typeof inputObj[key] === 'string') {
+        inputObj[key] = sanitizeString(inputObj[key] as string);
       }
     }
   }
@@ -96,7 +97,7 @@ export const rateLimit = (identifier: string, maxRequests: number = 100, windowM
 // MIDDLEWARE DE LOGGING DE SEGURIDAD
 // =============================================
 
-export const logSecurityEvent = (event: string, details: any, severity: 'low' | 'medium' | 'high' | 'critical' = 'medium') => {
+export const logSecurityEvent = (event: string, details: unknown, severity: 'low' | 'medium' | 'high' | 'critical' = 'medium') => {
   const timestamp = new Date().toISOString();
   const logEntry = {
     timestamp,
@@ -125,8 +126,8 @@ export const checkPermission = async (action: string, resource: string): Promise
     const context = await requireAuth();
     
     // Verificar si el usuario tiene permisos para la acción
-    const { data: permissions, error } = await supabase
-      .from('user_permissions')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: permissions, error } = await (supabase.from('user_permissions' as any) as any)
       .select('*')
       .eq('user_id', context.userId)
       .eq('action', action)
@@ -191,7 +192,7 @@ export const validateHeaders = (headers: Headers): boolean => {
 // MIDDLEWARE DE VALIDACIÓN DE TAMAÑO DE REQUEST
 // =============================================
 
-export const validateRequestSize = (data: any, maxSizeKB: number = 1024): boolean => {
+export const validateRequestSize = (data: unknown, maxSizeKB: number = 1024): boolean => {
   const size = new Blob([JSON.stringify(data)]).size;
   const sizeKB = size / 1024;
 
@@ -346,7 +347,7 @@ export const validateSession = async (): Promise<boolean> => {
 // MIDDLEWARE DE VALIDACIÓN DE REQUEST COMPLETO
 // =============================================
 
-export const validateRequest = async (request: Request, data: any): Promise<{ isValid: boolean; errors: string[] }> => {
+export const validateRequest = async (request: Request, data: unknown): Promise<{ isValid: boolean; errors: string[] }> => {
   const errors: string[] = [];
 
   try {

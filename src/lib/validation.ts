@@ -11,55 +11,67 @@ export interface ValidationResult {
 // VALIDACIÓN DE FÓRMULAS
 // =============================================
 
-export const validateFormula = (formula: any): ValidationResult => {
+interface RawFormula {
+  id?: string;
+  name?: string;
+  batchSize?: number;
+  destination?: string;
+  status?: string;
+  type?: string;
+  date?: string;
+  clientName?: string;
+}
+
+export const validateFormula = (formula: unknown): ValidationResult => {
   const errors: string[] = [];
+  const f = formula as RawFormula;
 
   // Validar ID
-  if (!formula.id || typeof formula.id !== 'string') {
+  if (!f.id || typeof f.id !== 'string') {
     errors.push('ID de fórmula es requerido y debe ser una cadena');
-  } else if (formula.id.length < 3 || formula.id.length > 50) {
+  } else if (f.id.length < 3 || f.id.length > 50) {
     errors.push('ID de fórmula debe tener entre 3 y 50 caracteres');
-  } else if (!/^[a-zA-Z0-9-_]+$/.test(formula.id)) {
+  } else if (!/^[a-zA-Z0-9-_]+$/.test(f.id)) {
     errors.push('ID de fórmula solo puede contener letras, números, guiones y guiones bajos');
   }
 
   // Validar nombre
-  if (!formula.name || typeof formula.name !== 'string') {
+  if (!f.name || typeof f.name !== 'string') {
     errors.push('Nombre de fórmula es requerido');
-  } else if (formula.name.length < 2 || formula.name.length > 100) {
+  } else if (f.name.length < 2 || f.name.length > 100) {
     errors.push('Nombre de fórmula debe tener entre 2 y 100 caracteres');
-  } else if (!/^[a-zA-Z0-9\s\-_áéíóúÁÉÍÓÚñÑ]+$/.test(formula.name)) {
+  } else if (!/^[a-zA-Z0-9\s\-_áéíóúÁÉÍÓÚñÑ]+$/.test(f.name)) {
     errors.push('Nombre de fórmula contiene caracteres no válidos');
   }
 
   // Validar batch size
-  if (typeof formula.batchSize !== 'number' || formula.batchSize <= 0) {
+  if (typeof f.batchSize !== 'number' || f.batchSize <= 0) {
     errors.push('Tamaño de lote debe ser un número positivo');
-  } else if (formula.batchSize > 10000) {
+  } else if (f.batchSize > 10000) {
     errors.push('Tamaño de lote no puede ser mayor a 10,000 kg');
   }
 
   // Validar destino
   const validDestinations = ['Villa Martelli', 'Florencio Varela'];
-  if (!formula.destination || !validDestinations.includes(formula.destination)) {
+  if (!f.destination || !validDestinations.includes(f.destination)) {
     errors.push('Destino debe ser "Villa Martelli" o "Florencio Varela"');
   }
 
   // Validar estado
   const validStatuses = ['available', 'incomplete'];
-  if (!formula.status || !validStatuses.includes(formula.status)) {
+  if (!f.status || !validStatuses.includes(f.status)) {
     errors.push('Estado debe ser uno de: available, incomplete');
   }
 
   // Validar tipo
   const validTypes = ['stock', 'client', 'cliente', 'exportacion'];
-  if (!formula.type || !validTypes.includes(formula.type)) {
+  if (!f.type || !validTypes.includes(f.type)) {
     errors.push('Tipo debe ser uno de: stock, client, cliente, exportacion');
   }
 
   // Validar fecha
-  if (formula.date) {
-    const date = new Date(formula.date);
+  if (f.date) {
+    const date = new Date(f.date);
     if (isNaN(date.getTime())) {
       errors.push('Fecha debe ser una fecha válida');
     } else if (date > new Date()) {
@@ -68,10 +80,10 @@ export const validateFormula = (formula: any): ValidationResult => {
   }
 
   // Validar nombre de cliente si es tipo cliente
-  if (formula.type === 'client' || formula.type === 'cliente') {
-    if (!formula.clientName || typeof formula.clientName !== 'string') {
+  if (f.type === 'client' || f.type === 'cliente') {
+    if (!f.clientName || typeof f.clientName !== 'string') {
       errors.push('Nombre de cliente es requerido para fórmulas de tipo cliente');
-    } else if (formula.clientName.length < 2 || formula.clientName.length > 100) {
+    } else if (f.clientName.length < 2 || f.clientName.length > 100) {
       errors.push('Nombre de cliente debe tener entre 2 y 100 caracteres');
     }
   }
@@ -86,28 +98,35 @@ export const validateFormula = (formula: any): ValidationResult => {
 // VALIDACIÓN DE INGREDIENTES FALTANTES
 // =============================================
 
-export const validateMissingIngredient = (ingredient: any): ValidationResult => {
+interface RawIngredient {
+  name?: string;
+  required?: number;
+  unit?: string;
+}
+
+export const validateMissingIngredient = (ingredient: unknown): ValidationResult => {
   const errors: string[] = [];
+  const ing = ingredient as RawIngredient;
 
   // Validar nombre
-  if (!ingredient.name || typeof ingredient.name !== 'string') {
+  if (!ing.name || typeof ing.name !== 'string') {
     errors.push('Nombre de ingrediente es requerido');
-  } else if (ingredient.name.length < 2 || ingredient.name.length > 100) {
+  } else if (ing.name.length < 2 || ing.name.length > 100) {
     errors.push('Nombre de ingrediente debe tener entre 2 y 100 caracteres');
-  } else if (!/^[a-zA-Z0-9\s\-_áéíóúÁÉÍÓÚñÑ]+$/.test(ingredient.name)) {
+  } else if (!/^[a-zA-Z0-9\s\-_áéíóúÁÉÍÓÚñÑ]+$/.test(ing.name)) {
     errors.push('Nombre de ingrediente contiene caracteres no válidos');
   }
 
   // Validar cantidad requerida
-  if (typeof ingredient.required !== 'number' || ingredient.required <= 0) {
+  if (typeof ing.required !== 'number' || ing.required <= 0) {
     errors.push('Cantidad requerida debe ser un número positivo');
-  } else if (ingredient.required > 1000) {
+  } else if (ing.required > 1000) {
     errors.push('Cantidad requerida no puede ser mayor a 1,000');
   }
 
   // Validar unidad
   const validUnits = ['kg', 'g', 'L', 'ml', 'unidades'];
-  if (!ingredient.unit || !validUnits.includes(ingredient.unit)) {
+  if (!ing.unit || !validUnits.includes(ing.unit)) {
     errors.push('Unidad debe ser una de: kg, g, L, ml, unidades');
   }
 
@@ -121,47 +140,57 @@ export const validateMissingIngredient = (ingredient: any): ValidationResult => 
 // VALIDACIÓN DE ITEMS DE INVENTARIO
 // =============================================
 
-export const validateInventoryItem = (item: any): ValidationResult => {
+interface RawInventoryItem {
+  name?: string;
+  certificate?: string;
+  currentStock?: number;
+  minStock?: number;
+  maxStock?: number;
+  location?: string;
+}
+
+export const validateInventoryItem = (item: unknown): ValidationResult => {
   const errors: string[] = [];
+  const i = item as RawInventoryItem;
 
   // Validar nombre
-  if (!item.name || typeof item.name !== 'string') {
+  if (!i.name || typeof i.name !== 'string') {
     errors.push('Nombre de item es requerido');
-  } else if (item.name.length < 2 || item.name.length > 100) {
+  } else if (i.name.length < 2 || i.name.length > 100) {
     errors.push('Nombre de item debe tener entre 2 y 100 caracteres');
   }
 
   // Validar certificado
-  if (!item.certificate || typeof item.certificate !== 'string') {
+  if (!i.certificate || typeof i.certificate !== 'string') {
     errors.push('Certificado es requerido');
-  } else if (item.certificate.length < 3 || item.certificate.length > 50) {
+  } else if (i.certificate.length < 3 || i.certificate.length > 50) {
     errors.push('Certificado debe tener entre 3 y 50 caracteres');
   }
 
   // Validar stock actual
-  if (typeof item.currentStock !== 'number' || item.currentStock < 0) {
+  if (typeof i.currentStock !== 'number' || i.currentStock < 0) {
     errors.push('Stock actual debe ser un número no negativo');
   }
 
   // Validar stock mínimo
-  if (typeof item.minStock !== 'number' || item.minStock < 0) {
+  if (typeof i.minStock !== 'number' || i.minStock < 0) {
     errors.push('Stock mínimo debe ser un número no negativo');
   }
 
   // Validar stock máximo
-  if (typeof item.maxStock !== 'number' || item.maxStock < 0) {
+  if (typeof i.maxStock !== 'number' || i.maxStock < 0) {
     errors.push('Stock máximo debe ser un número no negativo');
   }
 
   // Validar que stock mínimo no sea mayor que máximo
-  if (item.minStock > item.maxStock) {
+  if (i.minStock > i.maxStock) {
     errors.push('Stock mínimo no puede ser mayor que stock máximo');
   }
 
   // Validar ubicación
-  if (!item.location || typeof item.location !== 'string') {
+  if (!i.location || typeof i.location !== 'string') {
     errors.push('Ubicación es requerida');
-  } else if (item.location.length < 2 || item.location.length > 50) {
+  } else if (i.location.length < 2 || i.location.length > 50) {
     errors.push('Ubicación debe tener entre 2 y 50 caracteres');
   }
 
@@ -175,35 +204,44 @@ export const validateInventoryItem = (item: any): ValidationResult => {
 // VALIDACIÓN DE ENVÍOS
 // =============================================
 
-export const validateEnvio = (envio: any): ValidationResult => {
+interface RawEnvio {
+  numero_envio?: string;
+  destino?: string;
+  estado?: string;
+  total_kilos?: number;
+  total_remitos?: number;
+}
+
+export const validateEnvio = (envio: unknown): ValidationResult => {
   const errors: string[] = [];
+  const e = envio as RawEnvio;
 
   // Validar número de envío
-  if (!envio.numero_envio || typeof envio.numero_envio !== 'string') {
+  if (!e.numero_envio || typeof e.numero_envio !== 'string') {
     errors.push('Número de envío es requerido');
-  } else if (!/^ENV-\d{4}-\d{2}-\d{2}-\d{4}$/.test(envio.numero_envio)) {
+  } else if (!/^ENV-\d{4}-\d{2}-\d{2}-\d{4}$/.test(e.numero_envio)) {
     errors.push('Número de envío debe tener formato ENV-YYYY-MM-DD-XXXX');
   }
 
   // Validar destino
   const validDestinations = ['Villa Martelli', 'Florencio Varela'];
-  if (!envio.destino || !validDestinations.includes(envio.destino)) {
+  if (!e.destino || !validDestinations.includes(e.destino)) {
     errors.push('Destino debe ser "Villa Martelli" o "Florencio Varela"');
   }
 
   // Validar estado
   const validStatuses = ['pendiente', 'en_transito', 'entregado', 'cancelado'];
-  if (!envio.estado || !validStatuses.includes(envio.estado)) {
+  if (!e.estado || !validStatuses.includes(e.estado)) {
     errors.push('Estado debe ser uno de: pendiente, en_transito, entregado, cancelado');
   }
 
   // Validar total kilos
-  if (typeof envio.total_kilos !== 'number' || envio.total_kilos < 0) {
+  if (typeof e.total_kilos !== 'number' || e.total_kilos < 0) {
     errors.push('Total de kilos debe ser un número no negativo');
   }
 
   // Validar total remitos
-  if (typeof envio.total_remitos !== 'number' || envio.total_remitos < 0) {
+  if (typeof e.total_remitos !== 'number' || e.total_remitos < 0) {
     errors.push('Total de remitos debe ser un número no negativo');
   }
 
@@ -225,8 +263,8 @@ export const sanitizeString = (str: string): string => {
     .replace(/on\w+=/gi, ''); // Remover event handlers
 };
 
-export const sanitizeNumber = (num: any): number => {
-  const parsed = parseFloat(num);
+export const sanitizeNumber = (num: unknown): number => {
+  const parsed = typeof num === 'string' ? parseFloat(num) : (typeof num === 'number' ? num : 0);
   return isNaN(parsed) ? 0 : Math.max(0, parsed);
 };
 

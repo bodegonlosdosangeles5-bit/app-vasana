@@ -39,7 +39,7 @@ export const RemitoProduction = ({ productionItems }: RemitoProductionProps) => 
       
       const isTerminated = ['terminado', 'finalizado', 'completo', 'available'].includes(normalizedStatus);
       const isVillaMartelli = normalizedDestination === 'villamartelli';
-      const hasStock = (item as any).stock_actual !== undefined ? (item as any).stock_actual > 0 : true; // If undefined (legacy), assume it has stock if it's in the list
+      const hasStock = item.stock_actual !== undefined ? item.stock_actual > 0 : true; // If undefined (legacy), assume it has stock if it's in the list
       
       return isTerminated && isVillaMartelli && hasStock;
     });
@@ -146,7 +146,7 @@ export const RemitoProduction = ({ productionItems }: RemitoProductionProps) => 
             nombre_producto: product.name,
             kilos_sumados: product.batchSize,
             cantidad_lotes: 1,
-            lote: (product as any).lote_code || (product as any).lote || product.id,
+            lote: product.lote_code || product.id,
             cliente_o_stock: product.type === 'client' ? product.clientName : 'Stock'
           });
 
@@ -165,7 +165,7 @@ export const RemitoProduction = ({ productionItems }: RemitoProductionProps) => 
            // Fallback if stock_actual doesn't exist yet
         }
 
-        const currentStock = (currentProduct as any)?.stock_actual !== undefined ? (currentProduct as any).stock_actual : currentProduct?.batch_size;
+        const currentStock = currentProduct?.stock_actual !== undefined ? currentProduct.stock_actual : (currentProduct?.batch_size || 0);
         const newStock = Math.max(0, currentStock - product.batchSize);
 
         // Actualizamos stock_actual. NO tocamos batch_size (Producción Histórica).
@@ -174,9 +174,7 @@ export const RemitoProduction = ({ productionItems }: RemitoProductionProps) => 
           .from('productos')
           .update({ 
             stock_actual: newStock,
-            // status: newStock === 0 ? 'entregado' : 'available' // WARNING: If metrics filter by status, this hides it.
-            // Keeping status as is or 'available' ensures it stays in history view if view filters by status.
-          } as any)
+          })
           .eq('id', product.id);
 
         if (updateError) throw updateError;
@@ -188,9 +186,10 @@ export const RemitoProduction = ({ productionItems }: RemitoProductionProps) => 
       // Limpiar selección
       setSelectedItems(new Set());
 
-    } catch (error: any) {
-      console.error('❌ Error generando remito:', error);
-      setShowSuccessMessage(`❌ Error al generar el remito: ${error.message}`);
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error('❌ Error generando remito:', err);
+      setShowSuccessMessage(`❌ Error al generar el remito: ${err.message}`);
       setTimeout(() => setShowSuccessMessage(null), 5000);
     } finally {
       setIsGenerating(false);
@@ -359,7 +358,7 @@ export const RemitoProduction = ({ productionItems }: RemitoProductionProps) => 
                           </Badge>
                         </div>
                         <div className="text-xs text-muted-foreground space-y-1">
-                          <div>Lote: {(item as any).lote || item.id}</div>
+                          <div>Lote: {item.lote_code || item.id}</div>
                           <div>Cantidad: {item.batchSize} kg</div>
                           <div>
                             {item.type === 'client' ? `Cliente: ${item.clientName || 'N/A'}` : 'Stock'}

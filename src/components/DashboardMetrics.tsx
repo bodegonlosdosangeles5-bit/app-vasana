@@ -18,6 +18,24 @@ import { es } from "date-fns/locale";
 import { ProductionStatsModal } from "./ProductionStatsModal";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
+interface Metric {
+  title: string;
+  value: string;
+  subtitle: string;
+  icon: React.ElementType;
+  colorClass: string;
+  bgClass: string;
+  progress?: number;
+  hasNavigation?: boolean;
+  hasFormulasList?: boolean;
+  hasOutOfStock?: boolean;
+  hasSearch?: boolean;
+  hasProductionStats?: boolean;
+  isCritical?: boolean;
+  isReportCard?: boolean;
+  isSpecialDona?: boolean;
+}
+
 interface DashboardMetricsProps {
   formulas?: Producto[]; // Mantener para compatibilidad pero no usar
   onNavigateToProduction?: () => void;
@@ -296,7 +314,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
     }
   }, [progressOutOfStockTarget, outOfStockItems.length]);
 
-  const metrics = [
+  const metrics: Metric[] = [
     {
       title: "STOCK FINALIZADO",
       value: formulasTerminadas.length.toString(),
@@ -345,7 +363,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
     <div className="space-y-6 p-6 bg-gray-50 rounded-2xl">
       {/* Metrics Cards - Horizontal Layout */}
       <div className="flex flex-col sm:flex-row gap-6">
-        {metrics.map((metric: any, index) => {
+        {metrics.map((metric: Metric, index) => {
           const Icon = metric.icon;
           const isClickable = metric.hasOutOfStock || metric.hasSearch || metric.hasNavigation || metric.hasFormulasList || metric.hasProductionStats;
           
@@ -730,7 +748,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                             <FlaskConical className="h-4 w-4 text-accent" />
                             <span className="font-medium">Lote:</span>
                             <span className="text-accent font-semibold">
-                              {(formula as any).lote || formula.id}
+                              {formula.lote_code || formula.id}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">

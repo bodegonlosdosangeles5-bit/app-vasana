@@ -129,10 +129,10 @@ export class ProductoService {
 
       return productos.map(producto => ({
         id: producto.id,
-        lote_code: (producto as any).lote_code || producto.id, // Fallback to ID for old records
+        lote_code: producto.lote_code || producto.id, // Correctly typed now
         name: producto.name,
         batchSize: producto.batch_size,
-        stock_actual: (producto as any).stock_actual !== undefined ? (producto as any).stock_actual : producto.batch_size, // Fallback to batch_size
+        stock_actual: producto.stock_actual !== undefined ? producto.stock_actual : producto.batch_size,
         status: producto.status as 'available' | 'incomplete',
         destination: producto.destination,
         date: producto.date || undefined,

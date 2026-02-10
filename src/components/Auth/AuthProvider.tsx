@@ -73,10 +73,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return { error: error.message };
       }
 
-      const result = data as any;
+      interface AuthResponse {
+        success: boolean;
+        user_id: string;
+        error?: string;
+      }
+
+      const result = data as unknown as AuthResponse;
       if (!result.success) {
         console.log('❌ AuthProvider: authenticate_user falló:', result.error);
-        return { error: result.error };
+        return { error: result.error || 'Error de autenticación' };
       }
 
       console.log('✅ AuthProvider: authenticate_user exitoso, obteniendo datos del usuario...');
@@ -87,12 +93,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       console.log('👤 AuthProvider: Respuesta de get_user_by_id:', { userData, userError });
 
-      if (userError || !(userData as any).success) {
+      interface UserDataResponse {
+        id: string;
+        user_name: string;
+        role: string;
+        created_at: string;
+        success: boolean;
+        error?: string;
+      }
+
+      const userInfo = (userData as unknown as UserDataResponse);
+
+      if (userError || !userInfo || !userInfo.success) {
         console.error('❌ AuthProvider: Error en get_user_by_id:', userError);
         return { error: 'Error obteniendo información del usuario' };
       }
 
-      const userInfo = (userData as any);
       const userDataComplete = {
         id: userInfo.id,
         user_name: userInfo.user_name,
@@ -138,9 +154,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return { error: error.message };
       }
 
-      const result = data as any;
+      interface CreateUserResponse {
+        success: boolean;
+        user_id?: string;
+        error?: string;
+      }
+
+      const result = data as unknown as CreateUserResponse;
       if (!result.success) {
-        return { error: result.error };
+        return { error: result.error || 'Error al crear usuario' };
       }
 
       return { error: null };

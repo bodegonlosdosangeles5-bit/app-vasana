@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface RealtimeUpdate {
   table: string;
   event: 'INSERT' | 'UPDATE' | 'DELETE';
-  data: any;
+  data: unknown;
 }
 
 export const useRealtimeUpdates = () => {
