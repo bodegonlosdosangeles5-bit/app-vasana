@@ -108,14 +108,25 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
     const now = new Date();
 
     // 1. Kilos Disponibles (Stock Total actual en planta - real time desde hook)
+    // Solo contar productos con stock disponible real y status available
     const villaMartelliProducts = formulasData.filter(formula => {
       const normalizedStatus = normalizeText(formula?.status || "");
       const normalizedDestination = normalizeText(formula?.destination || "");
-      return normalizedStatus === 'available' && normalizedDestination === 'villamartelli';
+      const currentStock = formula?.stock_actual !== undefined ? formula.stock_actual : (formula?.batchSize || 0);
+      
+      return normalizedStatus === 'available' && 
+             normalizedDestination === 'villamartelli' &&
+             currentStock > 0;
     });
-    const totalAvailable = villaMartelliProducts.reduce((sum, p) => sum + (p?.batchSize || 0), 0);
+    
+    // Sumar el STOCK REAL, no el batchSize original
+    const totalAvailable = villaMartelliProducts.reduce((sum, p) => {
+        const stock = p?.stock_actual !== undefined ? p.stock_actual : (p?.batchSize || 0);
+        return sum + stock;
+    }, 0);
 
     // 2. Semanal (Desde el Lunes de esta semana - de la Vista SQL)
+    // Usamos d.total_kg que viene de la vista y ya suma batch_size (producción histórica)
     const weekly = viewData.reduce((sum, d) => {
       const dDate = parseISO(d.fecha_produccion);
       if (isSameWeek(dDate, now, { weekStartsOn: 1 })) {
@@ -125,6 +136,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
     }, 0);
 
     // 3. Mensual (Desde el día 1 de este mes - de la Vista SQL)
+    // Usamos d.total_kg que viene de la vista y ya suma batch_size (producción histórica)
     const monthly = viewData.reduce((sum, d) => {
       const dDate = parseISO(d.fecha_produccion);
       if (isSameMonth(dDate, now)) {
@@ -157,6 +169,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
     const filtered = formulasData.filter(formula => {
       const normalizedStatus = normalizeText(formula.status);
       const normalizedDestination = normalizeText(formula.destination);
+      const hasStock = (formula.stock_actual !== undefined ? formula.stock_actual : (formula.batchSize || 0)) > 0;
       
       const isTerminated = normalizedStatus === 'available';
       const isVillaMartelli = normalizedDestination === 'villamartelli';
@@ -166,12 +179,14 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
         normalizedStatus,
         destination: formula.destination,
         normalizedDestination,
+        stock: formula.stock_actual,
+        hasStock,
         isTerminated,
         isVillaMartelli,
-        passes: isTerminated && isVillaMartelli
+        passes: isTerminated && isVillaMartelli && hasStock
       });
       
-      return isTerminated && isVillaMartelli;
+      return isTerminated && isVillaMartelli && hasStock;
     });
     
     console.log(`✅ Productos filtrados para Villa Martelli: ${filtered.length}`);
@@ -778,7 +793,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
 
             {/* Resumen final */}
             <div className="text-sm text-muted-foreground text-center border-t pt-4">
-              Total de productos terminados: {formulasTerminadas.length} | Total de kilos: {totalAvailableKilosVM.toLocaleString()} kg
+              Total de productos terminados: {formulasTerminadas.length} | Total de kilos disponibles: {totalAvailableKilosVM.toLocaleString()} kg
             </div>
           </div>
         </DialogContent>

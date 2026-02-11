@@ -228,13 +228,38 @@ export class ProductoService {
   // Actualizar un producto
   static async updateProducto(id: string, updates: Partial<Producto>): Promise<Producto | null> {
     try {
+      // 1. Obtener producto actual para lógica inteligente de stock
+      const { data: currentProduct, error: fetchError } = await supabase
+        .from('productos')
+        .select('*')
+        .eq('id', id)
+        .single();
+        
+      if (fetchError) {
+        console.error('Error fetching current product for update:', fetchError);
+        // Continuamos, pero sin lógica de stock inteligente (fallback)
+      }
+
+      const currentBatchSize = currentProduct?.batch_size || 0;
+      const currentStock = currentProduct?.stock_actual !== undefined ? currentProduct.stock_actual : currentBatchSize;
+
+      let newStock = updates.stock_actual;
+
+      // Si se actualiza el batchSize y NO se especifica stock_actual manualmente,
+      // ajustamos el stock proporcionalmente (delta)
+      if (updates.batchSize !== undefined && updates.stock_actual === undefined && currentProduct) {
+        const delta = updates.batchSize - currentBatchSize;
+        newStock = Math.max(0, currentStock + delta);
+        console.log(`🔄 Ajustando stock proporcionalmente: Batch ${currentBatchSize} -> ${updates.batchSize} (Delta: ${delta}). Stock ${currentStock} -> ${newStock}`);
+      }
+
       const { data, error } = await supabase
         .from('productos')
         .update({
           name: updates.name,
           lote_code: updates.lote_code, // Allow updating lote_code
           batch_size: updates.batchSize,
-          stock_actual: updates.stock_actual, // Allow updating stock
+          stock_actual: newStock !== undefined ? newStock : undefined, // Usar el nuevo stock calculado o el pasado
           status: updates.status,
           destination: updates.destination,
           date: updates.date || null,

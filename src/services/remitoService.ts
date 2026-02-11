@@ -81,8 +81,7 @@ export class RemitoService {
   // Generar o actualizar remito del día para Villa Martelli
   static async generateRemitoForVillaMartelli(productionItems: ProductionItem[]): Promise<RemitoWithItems | null> {
     try {
-      console.log('🔄 Generando remito para Villa Martelli...');
-      console.log('📊 Production items recibidos en servicio:', productionItems);
+      console.log('🔄 Generando remito para Villa Martelli usando método atómico...');
       
       // Filtrar items de Villa Martelli que estén terminados
       const villaMartelliItems = productionItems.filter(item => {
@@ -91,111 +90,56 @@ export class RemitoService {
         
         const isTerminated = ['terminado', 'finalizado', 'completo', 'available'].includes(normalizedStatus);
         const isVillaMartelli = normalizedDestination === 'villamartelli';
+        const hasStock = (item.stock_actual !== undefined ? item.stock_actual : item.batchSize) > 0;
         
-        console.log(`🔍 Item: ${item.name}, Status: ${item.status} -> ${normalizedStatus}, Destination: ${item.destination} -> ${normalizedDestination}, isTerminated: ${isTerminated}, isVillaMartelli: ${isVillaMartelli}`);
-        
-        return isTerminated && isVillaMartelli;
+        return isTerminated && isVillaMartelli && hasStock;
       });
-
-      console.log('📊 Villa Martelli items filtrados en servicio:', villaMartelliItems);
 
       if (villaMartelliItems.length === 0) {
         console.log('⚠️ No hay items de Villa Martelli para generar remito');
         return null;
       }
 
-      // Agrupar por producto + cliente/stock para mejor detalle
-      const groupedItems = villaMartelliItems.reduce((acc, item) => {
-        const clienteStock = item.type === 'client' ? (item.clientName || 'Cliente') : 'Stock';
-        const key = `${item.id}-${clienteStock}`; // Clave única por producto + cliente/stock
-        
-        if (!acc[key]) {
-          acc[key] = {
-            producto_id: item.id,
-            nombre_producto: item.name,
-            kilos_sumados: 0,
-            cantidad_lotes: 0,
-            lote: item.id, // Usar ID como lote
-            cliente_o_stock: clienteStock,
-            lotes: [],
-            items: [],
-            notas: null
-          };
-        }
-        acc[key].kilos_sumados += item.batchSize;
-        acc[key].cantidad_lotes += 1;
-        acc[key].lotes.push(item.id);
-        acc[key].items.push(item);
-        return acc;
-      }, {} as Record<string, {
-        producto_id: string;
-        nombre_producto: string;
-        kilos_sumados: number;
-        cantidad_lotes: number;
-        lote: string;
-        cliente_o_stock: string;
-        lotes: string[];
-        items: ProductionItem[];
-        notas: string | null;
-      }>);
+      // Preparar items para el RPC
+      const itemsForRpc = villaMartelliItems.map(item => ({
+        producto_id: item.id,
+        nombre: item.name,
+        // El usuario dice "Si la cantidad enviada iguala al stock disponible...". 
+        // Asumimos que enviamos todo el lote disponible.
+        // Pero item.batchSize es la producción original. Deberíamos enviar item.stock_actual.
+        // Sin embargo, la UI actual parece enviar batchSize.
+        // Vamos a enviar batchSize, pero el RPC hace GREATEST(0, stock - qty).
+        // Mejor enviar el stock actual si es menor al batchSize original (caso parcial).
+        // Pero productionItems podrían tener stock_actual indefinido si son legacy.
+        cantidad: item.stock_actual !== undefined ? item.stock_actual : item.batchSize,
+        lote: item.lote_code || item.id,
+        tipo: item.type,
+        cliente: item.type === 'client' ? item.clientName : 'Stock'
+      }));
 
-      const remitoItems = Object.values(groupedItems);
-      const totalKilos = remitoItems.reduce((sum, item) => sum + item.kilos_sumados, 0);
+      const totalKilos = itemsForRpc.reduce((sum, item) => sum + (item.cantidad || 0), 0);
 
-      console.log(`📊 Items agrupados: ${remitoItems.length}, Total kilos: ${totalKilos}`);
-      console.log('📊 Remito items para RPC:', remitoItems);
-
-      // Usar transacción para crear/actualizar remito y sus items
-      const rpcParams = {
+      // Llamar al RPC transaccional
+      const { data, error } = await (supabase.rpc as any)('procesar_envio_remito', {
         p_destino: 'Villa Martelli',
-        p_fecha: new Date().toISOString().split('T')[0],
-        p_observaciones: null,
-        p_total_kilos: totalKilos,
-        p_items: remitoItems.map(item => ({
-          producto_id: item.producto_id,
-          nombre_producto: item.nombre_producto,
-          kilos_sumados: item.kilos_sumados,
-          cantidad_lotes: item.cantidad_lotes,
-          lote: item.lote,
-          cliente_o_stock: item.cliente_o_stock,
-          notas: item.notas || ''
-        }))
-      };
-      
-      console.log('🔄 Llamando RPC con parámetros:', rpcParams);
-      
-      const { data, error } = await supabase.rpc('generate_remito_villa_martelli', rpcParams);
-
-      console.log('📊 Respuesta RPC - data:', data);
-      console.log('📊 Respuesta RPC - error:', error);
+        p_fecha: new Date().toISOString(),
+        p_items: itemsForRpc
+      });
 
       if (error) {
-        console.error('❌ Error en RPC:', error);
-        console.error('❌ Error details:', error.message);
-        // Fallback: usar operaciones individuales
-        return await this.generateRemitoFallback(villaMartelliItems, remitoItems, totalKilos);
+        console.error('❌ Error en RPC procesar_envio_remito:', error);
+        throw error;
       }
 
-      // Obtener el remito creado con sus items
-      const rpcData = data as { remito_id: string } | null;
-      const remito = rpcData ? await this.getRemitoById(rpcData.remito_id) : null;
-      
-      // Reiniciar la producción actual: cambiar status de las fórmulas incluidas
-      if (remito) {
-        console.log('🔄 Iniciando reinicio de producción después de crear remito...');
-        console.log('📋 Items de Villa Martelli a procesar:', villaMartelliItems.length);
-        await this.resetProductionAfterRemito(villaMartelliItems);
-        console.log('✅ Reinicio de producción completado');
-        
-        // Crear automáticamente un envío con el remito generado
-        console.log('🚚 Creando envío automático para el remito...');
-        await this.createAutoEnvioForRemito(remito.id);
-        console.log('✅ Envío automático creado');
-      } else {
-        console.error('❌ No se pudo obtener el remito creado, no se reiniciará la producción');
+      console.log('✅ Remito generado exitosamente vía RPC:', data);
+
+      // Obtener el remito creado
+      const rpcResult = data as { success: boolean, remito_id: string };
+      if (rpcResult && rpcResult.remito_id) {
+        return await this.getRemitoById(rpcResult.remito_id);
       }
       
-      return remito;
+      return null;
 
     } catch (error) {
       console.error('❌ Error generando remito:', error);
@@ -321,62 +265,11 @@ export class RemitoService {
   }
 
   // Eliminar productos de la producción después de crear un remito
+  // DEPRECATED: Ya no eliminamos productos, solo se actualiza su stock a 0.
+  // Mantenemos la función para compatibilidad pero no hace nada.
   private static async resetProductionAfterRemito(productionItems: ProductionItem[]): Promise<void> {
-    try {
-      console.log('🔄 Eliminando productos de la producción después de crear remito...');
-      console.log('📋 Items de producción a eliminar:', productionItems.length);
-      
-      // Obtener los IDs de los productos que se incluyeron en el remito
-      const productoIds = productionItems.map(item => item.id);
-      console.log('🆔 IDs de productos a eliminar:', productoIds);
-      
-      if (productoIds.length === 0) {
-        console.log('⚠️ No hay productos para eliminar');
-        return;
-      }
-
-      // Eliminar los productos completamente de la tabla productos
-      console.log('🔄 Eliminando productos de la tabla productos...');
-      const { error: productosError } = await supabase
-        .from('productos')
-        .delete()
-        .in('id', productoIds);
-
-      if (productosError) {
-        console.error('❌ Error eliminando productos:', productosError);
-        throw productosError;
-      }
-
-      // También eliminar los ingredientes faltantes asociados
-      console.log('🔄 Eliminando ingredientes faltantes asociados...');
-      const { error: missingIngredientsError } = await supabase
-        .from('missing_ingredients')
-        .delete()
-        .in('producto_id', productoIds);
-
-      if (missingIngredientsError) {
-        console.error('❌ Error eliminando ingredientes faltantes:', missingIngredientsError);
-        // No lanzar error aquí, solo log
-      }
-
-      // También eliminar los ingredientes disponibles asociados
-      console.log('🔄 Eliminando ingredientes disponibles asociados...');
-      const { error: availableIngredientsError } = await supabase
-        .from('available_ingredients')
-        .delete()
-        .in('producto_id', productoIds);
-
-      if (availableIngredientsError) {
-        console.error('❌ Error eliminando ingredientes disponibles:', availableIngredientsError);
-        // No lanzar error aquí, solo log
-      }
-
-      console.log(`✅ ${productoIds.length} productos eliminados completamente de la gestión de productos`);
-      console.log('🎯 Los productos ya no aparecerán en "Gestión de Productos" ni en "Productos disponibles para Villa Martelli"');
-    } catch (error) {
-      console.error('❌ Error eliminando productos:', error);
-      // No lanzar el error para no interrumpir el flujo del remito
-    }
+    console.log('ℹ️ resetProductionAfterRemito llamado - No se realizará ninguna acción de eliminación (Legacy)');
+    return;
   }
 
   // Obtener remito por ID con sus items

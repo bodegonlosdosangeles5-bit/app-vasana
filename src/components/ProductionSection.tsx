@@ -112,8 +112,9 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
       
       const isTerminated = normalizedStatus === 'available';
       const isVillaMartelli = normalizedDestination === 'villamartelli';
+      const hasStock = (producto.stock_actual !== undefined ? producto.stock_actual : producto.batchSize) > 0;
       
-      return isTerminated && isVillaMartelli;
+      return isTerminated && isVillaMartelli && hasStock;
     });
   }, [productos]);
 

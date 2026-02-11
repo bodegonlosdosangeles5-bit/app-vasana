@@ -295,124 +295,175 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl bg-white border-slate-200 text-slate-900 shadow-2xl max-h-[95vh] flex flex-col p-8 overflow-hidden">
-        <DialogHeader className="relative pr-12 pb-6 border-b border-slate-200">
-          <DialogTitle className="flex items-center gap-3 text-3xl font-bold text-slate-800 uppercase tracking-tight">
-            <BarChart3 className="h-8 w-8 text-teal-600" strokeWidth={2} />
-            Estadísticas de Producción
-          </DialogTitle>
-          <DialogDescription className="text-slate-500 mt-2 text-base">
-            Resumen de rendimiento y kilos producidos para Villa Martelli.
-          </DialogDescription>
-          <div className="absolute right-0 top-0 flex gap-3">
-            <Button
-              onClick={handlePreviewPDF}
-              disabled={isPreviewing}
-              variant="outline"
-              size="default"
-              className="border-2 border-teal-500 text-teal-600 hover:bg-teal-50 hover:text-teal-700 gap-2 font-semibold rounded-xl px-6 no-print transition-all"
-            >
-              <Eye className="h-5 w-5" />
-              {isPreviewing ? "Generando..." : "Vista Previa"}
-            </Button>
-            <Button
-              onClick={handleExportPDF}
-              disabled={isExporting}
-              variant="outline"
-              size="default"
-              className="border-2 border-amber-500 text-amber-600 hover:bg-amber-50 hover:text-amber-700 gap-2 font-semibold rounded-xl px-6 no-print transition-all"
-            >
-              <FileText className="h-5 w-5" />
-              {isExporting ? "Exportando..." : "Exportar"}
-            </Button>
+      <DialogContent className="max-w-3xl bg-white border-slate-200 text-slate-900 shadow-2xl max-h-[90vh] flex flex-col p-5 overflow-hidden rounded-3xl">
+        
+        {/* Header Ultra Compacto */}
+        <div className="flex flex-col gap-2 pb-2 border-b border-slate-100">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div className="flex items-center gap-3">
+              <div className="p-1.5 bg-teal-50 rounded-lg shrink-0">
+                <BarChart3 className="h-5 w-5 text-teal-600" strokeWidth={2} />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-bold text-slate-800 uppercase tracking-tight leading-none">
+                  Estadísticas de Producción
+                </DialogTitle>
+                <DialogDescription className="text-slate-400 text-xs mt-0.5">
+                  Resumen de rendimiento para Villa Martelli.
+                </DialogDescription>
+              </div>
+            </div>
+            
+            <div className="flex gap-2 self-end sm:self-center">
+               <Button
+                onClick={handlePreviewPDF}
+                disabled={isPreviewing}
+                variant="outline"
+                size="sm"
+                className="h-7 text-[10px] border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 gap-1.5 font-medium rounded-md px-2.5 no-print transition-all"
+              >
+                <Eye className="h-3 w-3" />
+                {isPreviewing ? "..." : "Vista Previa"}
+              </Button>
+              <Button
+                onClick={handleExportPDF}
+                disabled={isExporting}
+                variant="outline"
+                size="sm"
+                className="h-7 text-[10px] border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:border-amber-300 gap-1.5 font-medium rounded-md px-2.5 no-print transition-all"
+              >
+                <Download className="h-3 w-3" />
+                {isExporting ? "..." : "Exportar"}
+              </Button>
+            </div>
           </div>
-        </DialogHeader>
+        </div>
 
-        <div className="mt-6 flex-1 flex flex-col gap-6 min-h-0 print-container" ref={reportRef}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 shrink-0">
+        <div className="mt-2 flex-1 flex flex-col gap-3 min-h-0 print-container" ref={reportRef}>
+          
+          {/* Tarjetas Ultra Compactas */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 shrink-0">
             {/* Tarjeta Semanal */}
-            <Card className="bg-white border-2 border-blue-400 shadow-lg hover:shadow-xl transition-shadow rounded-2xl overflow-hidden">
-              <CardContent className="py-6 px-6">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-blue-600" strokeWidth={2} />
-                    <p className="text-slate-600 text-xs font-semibold uppercase tracking-wider">Semanal</p>
+            <Card className="bg-white border-0 shadow-sm rounded-xl overflow-hidden relative group hover:shadow-md transition-all duration-300">
+              <CardContent className="py-3 px-4 relative z-10">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Semanal</p>
+                  <div className="h-6 w-6 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
+                    <Calendar className="h-3.5 w-3.5 text-blue-600" strokeWidth={2} />
                   </div>
                 </div>
-                <div className="flex items-baseline gap-2">
-                  <p className="text-5xl font-black text-blue-700">{stats.weeklyTotal.toLocaleString()}</p>
-                  <p className="text-2xl font-bold text-blue-500">kg</p>
+                <div className="flex items-baseline gap-1">
+                  <p className="text-2xl font-extrabold text-slate-900 tracking-tight">{stats.weeklyTotal.toLocaleString()}</p>
+                  <p className="text-xs font-bold text-slate-400">kg</p>
                 </div>
-                <p className="text-xs text-slate-500 mt-2">Última semana completa</p>
+                <div className="h-1 w-8 bg-blue-500 rounded-full mt-2 opacity-20"></div>
               </CardContent>
             </Card>
 
             {/* Tarjeta Mensual */}
-            <Card className="bg-white border-2 border-teal-400 shadow-lg hover:shadow-xl transition-shadow rounded-2xl overflow-hidden">
-              <CardContent className="py-6 px-6">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-teal-600" strokeWidth={2} />
-                    <p className="text-slate-600 text-xs font-semibold uppercase tracking-wider">Producción {stats.monthName}</p>
+            <Card className="bg-white border-0 shadow-sm rounded-xl overflow-hidden relative group hover:shadow-md transition-all duration-300">
+              <CardContent className="py-3 px-4 relative z-10">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">PRODUCCIÓN {stats.monthName}</p>
+                  <div className="h-6 w-6 rounded-full bg-gradient-to-br from-teal-50 to-teal-100 flex items-center justify-center">
+                    <TrendingUp className="h-3.5 w-3.5 text-teal-600" strokeWidth={2} />
                   </div>
                 </div>
-                <div className="flex items-baseline gap-2">
-                  <p className="text-5xl font-black text-teal-700">{stats.monthlyTotal.toLocaleString()}</p>
-                  <p className="text-2xl font-bold text-teal-500">kg</p>
+                <div className="flex items-baseline gap-1">
+                  <p className="text-2xl font-extrabold text-slate-900 tracking-tight">{stats.monthlyTotal.toLocaleString()}</p>
+                  <p className="text-xs font-bold text-slate-400">kg</p>
                 </div>
-                <p className="text-xs text-slate-500 mt-2">Mes calendario completo</p>
+                <div className="h-1 w-8 bg-teal-500 rounded-full mt-2 opacity-20"></div>
               </CardContent>
             </Card>
           </div>
 
-          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 flex-1 flex flex-col min-h-0 shadow-sm">
+          <div className="bg-slate-50/50 border border-slate-100 rounded-2xl p-3 flex-1 flex flex-col min-h-0">
             <Tabs value={viewType} onValueChange={(v) => setViewType(v as "daily" | "weekly" | "monthly")} className="w-full flex-1 flex flex-col">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
-                <h4 className="font-bold flex items-center gap-2 text-slate-800 text-lg">
-                  <Activity className="h-5 w-5 text-teal-600" strokeWidth={2} />
+              
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mb-2">
+                <h4 className="font-bold flex items-center gap-1.5 text-slate-700 text-sm">
                   Kilos Producidos
                 </h4>
-                <TabsList className="bg-white border-2 border-slate-200 p-1.5 h-auto rounded-xl no-print shadow-sm">
-                  <TabsTrigger value="daily" className="text-sm py-2 px-4 rounded-lg data-[state=active]:bg-teal-500 data-[state=active]:text-white font-medium">Diario</TabsTrigger>
-                  <TabsTrigger value="weekly" className="text-sm py-2 px-4 rounded-lg data-[state=active]:bg-teal-500 data-[state=active]:text-white font-medium">Semanal</TabsTrigger>
-                  <TabsTrigger value="monthly" className="text-sm py-2 px-4 rounded-lg data-[state=active]:bg-teal-500 data-[state=active]:text-white font-medium">Mensual</TabsTrigger>
+                
+                <TabsList className="bg-slate-100 p-0.5 h-auto rounded-full no-print flex gap-1 scale-90 origin-right">
+                  <TabsTrigger 
+                    value="daily" 
+                    className="text-[10px] font-semibold py-0.5 px-2.5 rounded-full text-slate-500 data-[state=active]:bg-teal-600 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all"
+                  >
+                    Diario
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="weekly" 
+                    className="text-[10px] font-semibold py-0.5 px-2.5 rounded-full text-slate-500 data-[state=active]:bg-teal-600 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all"
+                  >
+                    Semanal
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="monthly" 
+                    className="text-[10px] font-semibold py-0.5 px-2.5 rounded-full text-slate-500 data-[state=active]:bg-teal-600 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all"
+                  >
+                    Mensual
+                  </TabsTrigger>
                 </TabsList>
               </div>
 
-              <div className="w-full h-[350px] mt-auto relative bg-white rounded-xl p-4 border border-slate-200">
+              {/* Gráfico aún más bajo */}
+              <div className="w-full h-[200px] mt-auto relative">
                 {loadingView ? (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-teal-500"></div>
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-teal-500"></div>
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={stats.chartDynamicData}>
+                    <BarChart data={stats.chartDynamicData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
                       <defs>
                         <linearGradient id="barGradientClean" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#14b8a6" stopOpacity={1} />
-                          <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.8} />
+                          <stop offset="0%" stopColor="#0d9488" stopOpacity={1} />
+                          <stop offset="100%" stopColor="#0d9488" stopOpacity={0.6} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.3} />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.5} />
                       <XAxis 
                         dataKey="name" 
-                        stroke="#64748b" 
-                        fontSize={12} 
+                        stroke="#94a3b8" 
+                        fontSize={9} 
                         tickLine={false} 
-                        axisLine={{ stroke: '#cbd5e1', strokeWidth: 1 }}
-                        fontWeight={500}
+                        axisLine={false}
+                        fontWeight={600}
+                        dy={5}
+                        interval={viewType === 'daily' ? 1 : 0} 
                       />
                       <YAxis 
-                        stroke="#64748b" 
-                        fontSize={12} 
+                        stroke="#94a3b8" 
+                        fontSize={9} 
                         tickLine={false} 
-                        axisLine={{ stroke: '#cbd5e1', strokeWidth: 1 }} 
-                        tickFormatter={(v) => `${v}kg`}
+                        axisLine={false} 
+                        tickFormatter={(v) => `${v}`}
                         fontWeight={500}
+                        dx={-5}
                       />
-                      <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(20, 184, 166, 0.05)' }} />
-                      <Bar dataKey="total" radius={[12, 12, 0, 0]} animationDuration={1000}>
-                        {stats.chartDynamicData.map((_, i) => (
+                      <Tooltip 
+                        cursor={{ fill: '#f1f5f9', radius: 4 }}
+                        content={({ active, payload, label }) => {
+                          if (active && payload && payload.length) {
+                            return (
+                              <div className="bg-slate-900 text-white text-[10px] rounded-lg py-1 px-2 shadow-xl border border-slate-800">
+                                <p className="font-bold mb-0.5">{label}</p>
+                                <p className="text-teal-400 font-bold">{payload[0].value?.toLocaleString()} kg</p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Bar 
+                        dataKey="total" 
+                        radius={[3, 3, 3, 3]} 
+                        barSize={20}
+                        animationDuration={1000}
+                      >
+                         {stats.chartDynamicData.map((_, i) => (
                           <Cell key={`cell-${i}`} fill="url(#barGradientClean)" />
                         ))}
                       </Bar>

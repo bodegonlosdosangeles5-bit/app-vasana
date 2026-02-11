@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useRealtimeRemitos } from "@/hooks/useRealtimeRemitos";
 import { useRemitosPolling } from "@/hooks/useRemitosPolling";
-import { ProductionItem } from "@/services/remitoService";
+import { ProductionItem, RemitoService } from "@/services/remitoService";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner"; // Assuming sonner is used for toasts based on other files
 
@@ -117,74 +117,19 @@ export const RemitoProduction = ({ productionItems }: RemitoProductionProps) => 
 
     try {
       setIsGenerating(true);
-      const totalKilos = selectedProducts.reduce((sum, item) => sum + item.batchSize, 0);
       
-      // 1. Crear el Remito Header
-      const { data: remitoData, error: remitoError } = await supabase
-        .from('remitos')
-        .insert({
-          id: `R-${Date.now()}`,
-          fecha: new Date().toISOString(),
-          destino: 'Villa Martelli',
-          total_kilos: totalKilos,
-          estado: 'abierto'
-        })
-        .select()
-        .single();
+      // Delegar la generación al servicio que usa la transacción atómica
+      const result = await RemitoService.generateRemitoForVillaMartelli(selectedProducts);
 
-      if (remitoError) throw remitoError;
-
-      // 2. Procesar cada item
-      for (const product of selectedProducts) {
-        // a. Crear Item de Remito
-        const { error: itemError } = await supabase
-          .from('remito_items')
-          .insert({
-            id: `RI-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-            remito_id: remitoData.id,
-            producto_id: product.id,
-            nombre_producto: product.name,
-            kilos_sumados: product.batchSize,
-            cantidad_lotes: 1,
-            lote: product.lote_code || product.id,
-            cliente_o_stock: product.type === 'client' ? product.clientName : 'Stock'
-          });
-
-        if (itemError) throw itemError;
-
-        // b. Actualizar Stock del Producto (SOLO STOCK, NO PRODUCCIÓN)
-        // Obtenemos el producto actual para saber su stock
-        const { data: currentProduct, error: fetchError } = await supabase
-          .from('productos')
-          .select('stock_actual, batch_size')
-          .eq('id', product.id)
-          .single();
-
-        if (fetchError) { 
-           console.error("Error fetching product for stock update", fetchError);
-           // Fallback if stock_actual doesn't exist yet
-        }
-
-        const currentStock = currentProduct?.stock_actual !== undefined ? currentProduct.stock_actual : (currentProduct?.batch_size || 0);
-        const newStock = Math.max(0, currentStock - product.batchSize);
-
-        // Actualizamos stock_actual. NO tocamos batch_size (Producción Histórica).
-        // NO cambiamos status a 'entregado' si eso lo borra de las métricas.
-        const { error: updateError } = await supabase
-          .from('productos')
-          .update({ 
-            stock_actual: newStock,
-          })
-          .eq('id', product.id);
-
-        if (updateError) throw updateError;
+      if (result) {
+        setShowSuccessMessage(`✅ Remito generado exitosamente con ${selectedProducts.length} productos`);
+        setTimeout(() => setShowSuccessMessage(null), 5000);
+        
+        // Limpiar selección
+        setSelectedItems(new Set());
+      } else {
+        throw new Error("No se pudo generar el remito. Verifique los logs.");
       }
-
-      setShowSuccessMessage(`✅ Remito generado exitosamente con ${selectedProducts.length} productos (${totalKilos} kg)`);
-      setTimeout(() => setShowSuccessMessage(null), 5000);
-      
-      // Limpiar selección
-      setSelectedItems(new Set());
 
     } catch (error: unknown) {
       const err = error as Error;
