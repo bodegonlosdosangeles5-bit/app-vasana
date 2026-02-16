@@ -42,10 +42,21 @@ export function ThemeProvider({
         : "light";
 
       root.classList.add(systemTheme);
-      return;
+    } else {
+      root.classList.add(theme);
     }
 
-    root.classList.add(theme);
+    // Intelligent Time-based System
+    const hour = new Date().getHours();
+    root.classList.remove("time-morning", "time-afternoon", "time-night");
+    
+    if (hour >= 6 && hour < 12) {
+      root.classList.add("time-morning");
+    } else if (hour >= 12 && hour < 19) {
+      root.classList.add("time-afternoon");
+    } else {
+      root.classList.add("time-night");
+    }
   }, [theme]);
 
   const value = {

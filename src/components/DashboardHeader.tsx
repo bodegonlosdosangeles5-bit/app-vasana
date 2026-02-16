@@ -19,43 +19,46 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   enableDateDialog = false
 }) => {
   return (
-    <Card className={`bg-gradient-to-r from-primary/5 to-secondary/5 border-primary/20 ${className}`}>
-      <CardContent className="p-4">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-2 lg:space-y-0">
-          {/* Welcome Message */}
-          <div className="flex-1">
-            <h1 className="text-2xl lg:text-3xl font-bold text-foreground">
-              Control de Producción
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Sistema de gestión para PLANTA VARELA
-            </p>
-          </div>
-          
-          {/* Date and Time Display with Realtime Indicator */}
-          <div className="flex flex-col items-end space-y-2">
-            {enableDateDialog ? (
-              <Dialog>
-                <DialogTrigger asChild>
-                  <button className="text-left hover:opacity-90 transition-opacity">
-                    <DateTimeDisplay format="full" />
-                  </button>
-                </DialogTrigger>
-                <DialogContent className="w-auto max-w-fit p-0 gap-0">
-                  <Calendar 
-                    mode="single" 
-                    className="p-0 sm:p-0"
-                    classNames={{ nav_button_next: "absolute right-10", nav_button_previous: "absolute left-10" }}
-                  />
-                </DialogContent>
-              </Dialog>
-            ) : (
-              <DateTimeDisplay format="full" />
-            )}
-            <RealtimeIndicator />
-          </div>
+    <div className={`flex flex-col md:flex-row md:items-end justify-between gap-6 ${className}`}>
+      {/* Welcome Message */}
+      <div className="space-y-1">
+        <h1 className="text-3xl lg:text-4xl font-bold text-slate-800 dark:text-white tracking-tight">
+          Control de <span className="text-pink-600">Producción</span>
+        </h1>
+        <p className="text-sm lg:text-base text-slate-500 dark:text-slate-400 font-medium tracking-wide">
+          <span className="text-slate-900 dark:text-slate-200">Planta Varela</span>
+        </p>
+      </div>
+      
+      {/* Date and Time Display with Realtime Indicator */}
+      <div className="flex flex-col items-start md:items-end gap-3 bg-white dark:bg-slate-800/50 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-md">
+        {enableDateDialog ? (
+          <Dialog>
+            <DialogTrigger asChild>
+              <button className="text-left hover:opacity-90 transition-opacity">
+                <DateTimeDisplay format="full" className="scale-105" />
+              </button>
+            </DialogTrigger>
+            <DialogContent className="max-w-fit p-0 overflow-hidden rounded-3xl border-0 shadow-2xl">
+              <Calendar 
+                mode="single" 
+                className="p-4"
+                classNames={{ 
+                  nav_button_next: "absolute right-2", 
+                  nav_button_previous: "absolute left-2",
+                  day_selected: "bg-pink-500 text-white hover:bg-pink-600 focus:bg-pink-500"
+                }}
+              />
+            </DialogContent>
+          </Dialog>
+        ) : (
+          <DateTimeDisplay format="full" />
+        )}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Status</span>
+          <RealtimeIndicator />
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };

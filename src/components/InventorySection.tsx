@@ -277,22 +277,25 @@ export const InventorySection = () => {
 
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h2 className="text-xl sm:text-2xl font-bold text-foreground">Inventario de Materias Primas</h2>
-        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-          <div className="relative w-full sm:w-80 lg:w-96">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white dark:bg-slate-800/50 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm">
+        <div>
+          <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">Materias Primas</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Gestión y control de inventario base</p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <div className="relative flex-1 sm:w-80 lg:w-96 group">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4 transition-colors group-focus-within:text-pink-500" />
             <Input
-              placeholder="Buscar por nombre, certificado o ubicación..."
+              placeholder="Buscar por nombre, certificado..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-11 h-11 bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-pink-500/20"
             />
           </div>
-          <Button onClick={handleAddItem} className="w-full sm:w-auto">
-            <Plus className="h-4 w-4 mr-2" />
-            Agregar Materia Prima
+          <Button onClick={handleAddItem} className="h-11 px-6 rounded-2xl bg-pink-500 hover:bg-pink-600 text-white font-bold shadow-lg shadow-pink-500/20 transition-all hover:-translate-y-0.5">
+            <Plus className="h-5 w-5 mr-2" />
+            Nuevo Insumo
           </Button>
         </div>
       </div>
@@ -326,85 +329,99 @@ export const InventorySection = () => {
       )}
 
       {!loading && !error && filteredItems.length > 0 && (
-        <div className="cards-grid">
-          {filteredItems.map((item) => (
-          <Card key={item.id} className="bg-white/10 backdrop-blur-md rounded-2xl shadow-md
-                                        transition-all duration-300 ease-in-out
-                                        hover:shadow-xl hover:scale-105 hover:border hover:border-yellow-400/60 hover:bg-white/20">
-            <CardContent className="card-content">
-              <div className="flex items-start justify-between gap-2 mb-4">
-                <div className="min-w-0 flex-1">
-                  <h3 className="card-title truncate">
-                    {item.name}
-                  </h3>
-                  <p className="card-subtitle">
-                    Certificado: {item.certificate}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge 
-                    variant={getStatusColor(item.status) === "destructive" ? "destructive" : 
-                                getStatusColor(item.status) === "warning" ? "secondary" : "default"}
-                    className="card-badge"
-                  >
-                    {getStatusText(item.status)}
-                  </Badge>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleEditItem(item)}
-                    className="h-8 w-8 text-muted-foreground hover:text-foreground
-                               transition-all duration-300 ease-in-out
-                               hover:scale-110 hover:shadow-lg"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Package className="card-icon" />
-                    <span className="card-description font-medium">Stock Actual</span>
-                  </div>
-                  <span className="metric-value text-lg">
-                    {item.currentStock >= 1000 ? 
-                      `${(item.currentStock / 1000)} kg` : 
-                      `${item.currentStock} g`}
-                  </span>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <MapPin className="card-icon" />
-                    <span className="card-description font-medium">Ubicación</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="card-badge text-center">
-                      <span className="font-medium">Rack:</span> {item.rack}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+          {filteredItems.map((item) => {
+            const stockPercent = item.maxStock ? Math.min(100, (item.currentStock / item.maxStock) * 100) : 0;
+            const isLow = item.status !== 'normal';
+            
+            return (
+              <Card key={item.id} className="relative overflow-hidden bg-white dark:bg-slate-800/80 border-0 rounded-[2rem] shadow-sm hover:shadow-2xl transition-all duration-500 ease-out group hover:-translate-y-2 dark:backdrop-blur-xl border border-slate-100 dark:border-slate-700">
+                {/* Status Indicator Bar */}
+                <div className={`absolute top-0 left-0 w-full h-1.5 ${isLow ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between mb-6">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-xl font-bold text-slate-800 dark:text-white truncate tracking-tight group-hover:text-pink-500 transition-colors">
+                        {item.name}
+                      </h3>
+                      <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">
+                        Cert: {item.certificate}
+                      </p>
                     </div>
-                    <div className="card-badge text-center">
-                      <span className="font-medium">Lugar:</span> {item.place}
-                    </div>
-                    <div className="card-badge text-center">
-                      <span className="font-medium">Nivel:</span> {item.level}
+                    <div className="flex items-center gap-2">
+                       <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEditItem(item)}
+                        className="h-9 w-9 text-slate-400 hover:text-pink-500 hover:bg-pink-50 dark:hover:bg-pink-900/20 rounded-xl transition-all"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
-                </div>
 
+                  <div className="space-y-6">
+                    {/* Stock Detail */}
+                    <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-4 border border-slate-100 dark:border-slate-800">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <Package className="h-4 w-4 text-pink-500" />
+                          <span className="text-sm font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Existencias</span>
+                        </div>
+                        <span className={`text-lg font-black ${isLow ? 'text-amber-500' : 'text-slate-800 dark:text-white'}`}>
+                          {item.currentStock >= 1000 ? `${(item.currentStock / 1000).toLocaleString()} kg` : `${item.currentStock.toLocaleString()} g`}
+                        </span>
+                      </div>
+                      
+                      <div className="space-y-1.5">
+                        <div className="h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full transition-all duration-1000 ease-out rounded-full ${isLow ? 'bg-amber-500' : 'bg-pink-500'}`}
+                            style={{ width: `${stockPercent || 50}%` }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                           <span>Min: {item.minStock ? (item.minStock/1000) : 5}kg</span>
+                           <span>{getStatusText(item.status)}</span>
+                        </div>
+                      </div>
+                    </div>
 
-                {item.status !== "normal" && (
-                  <div className="flex items-start space-x-2 p-3 rounded-lg bg-warning/20 dark:bg-warning/30">
-                    <AlertTriangle className="h-4 w-4 text-warning flex-shrink-0 mt-0.5" />
-                    <span className="card-description text-warning-foreground leading-relaxed">
-                      {item.status === "critical" ? "Stock crítico - Ordenar urgente" : "Stock bajo - Considerar pedido"}
-                    </span>
+                    {/* Location detail */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1">
+                        <MapPin className="h-3.5 w-3.5" /> Ubicación en Planta
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-2 text-center transition-colors group-hover:border-pink-200 dark:group-hover:border-pink-900">
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase">Rack</p>
+                          <p className="text-sm font-black text-slate-700 dark:text-white">{item.rack}</p>
+                        </div>
+                        <div className="bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-2 text-center transition-colors group-hover:border-pink-200 dark:group-hover:border-pink-900">
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase">Lugar</p>
+                          <p className="text-sm font-black text-slate-700 dark:text-white">{item.place}</p>
+                        </div>
+                        <div className="bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-2 text-center transition-colors group-hover:border-pink-200 dark:group-hover:border-pink-900">
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase">Nivel</p>
+                          <p className="text-sm font-black text-slate-700 dark:text-white">{item.level}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {item.status !== "normal" && (
+                      <div className="flex items-center gap-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/30 animate-pulse">
+                        <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+                        <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-tight">
+                          {item.status === "critical" ? "Reabastecimiento urgente" : "Existencias bajas"}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 

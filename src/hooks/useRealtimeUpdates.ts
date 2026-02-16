@@ -23,9 +23,10 @@ export const useRealtimeUpdates = () => {
       'users',
       'remitos',
       'remito_items',
-      'envios',
-      'envios_remitos'
-      // Nota: 'materias_primas' removida porque no está en uso y causaba errores de suscripción
+      'envios'
+      // Nota: 'envios_remitos' removida porque causa errores de binding en Supabase
+      // La aplicación usa 'envios' y 'remitos' para sincronizar datos
+      // 'materias_primas' removida porque no está en uso y causaba errores de suscripción
       // La aplicación usa 'inventory_items' para las materias primas
     ];
 

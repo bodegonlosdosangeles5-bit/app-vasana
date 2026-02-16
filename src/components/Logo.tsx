@@ -26,77 +26,62 @@ export const Logo: React.FC<LogoProps> = ({
   className = '' 
 }) => {
   return (
-    <div className={`flex items-center space-x-3 ${className}`}>
-      {/* Logo SVG con V estilizada */}
-      <svg 
-        className={sizeClasses[size]}
-        viewBox="0 0 60 60" 
-        fill="none" 
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <defs>
-          {/* Gradiente dorado principal */}
-          <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#FFD700" />
-            <stop offset="25%" stopColor="#FFA500" />
-            <stop offset="50%" stopColor="#DAA520" />
-            <stop offset="75%" stopColor="#B8860B" />
-            <stop offset="100%" stopColor="#8B7355" />
-          </linearGradient>
+    <div className={`flex items-center gap-4 ${className}`}>
+      {/* Logo SVG con V estilizada - Versión Premium */}
+      <div className="relative group">
+        <svg 
+          className={`${sizeClasses[size]} transition-transform duration-500 group-hover:scale-110`}
+          viewBox="0 0 60 60" 
+          fill="none" 
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <defs>
+            {/* Gradiente de Identidad - Corporate Pink */}
+            <linearGradient id="brandGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#f43f5e" />
+              <stop offset="100%" stopColor="#e11d48" />
+            </linearGradient>
+            
+            <filter id="logoShadow" x="-10%" y="-10%" width="120%" height="120%">
+              <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#f43f5e" floodOpacity="0.2"/>
+            </filter>
+          </defs>
           
-          {/* Gradiente de sombra */}
-          <linearGradient id="shadowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#000000" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#000000" stopOpacity="0.1" />
-          </linearGradient>
+          {/* Fondo Circular Minimalista */}
+          <circle 
+            cx="30" cy="30" r="28" 
+            fill="url(#brandGradient)"
+            filter="url(#logoShadow)"
+          />
           
-          {/* Filtro de sombra */}
-          <filter id="dropShadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="2" dy="2" stdDeviation="2" floodColor="#000000" floodOpacity="0.3"/>
-          </filter>
-        </defs>
-        
-        {/* Fondo circular con gradiente */}
-        <circle 
-          cx="30" cy="30" r="28" 
-          fill="url(#goldGradient)"
-          filter="url(#dropShadow)"
-        />
-        
-        {/* Letra V estilizada más elegante */}
-        <path 
-          d="M18 18 L30 42 L42 18 L38 18 L30 35 L22 18 Z" 
-          fill="#FFFFFF"
-          stroke="#B8860B"
-          strokeWidth="0.8"
-        />
-        
-        {/* Detalle decorativo en la V */}
-        <path 
-          d="M25 25 L30 35 L35 25" 
-          fill="none"
-          stroke="#FFD700"
-          strokeWidth="1"
-          opacity="0.6"
-        />
-        
-        {/* Efecto de brillo */}
-        <ellipse 
-          cx="30" cy="25" 
-          rx="15" ry="8" 
-          fill="url(#shadowGradient)" 
-          opacity="0.2"
-        />
-      </svg>
+          {/* Letra V estilizada - Moderna y Gruesa */}
+          <path 
+            d="M15 18 L30 46 L45 18 H38 L30 36 L22 18 H15Z" 
+            fill="white"
+            className="drop-shadow-sm"
+          />
+          
+          {/* Detalle en la base de la V */}
+          <path 
+            d="M28 40 L30 44 L32 40" 
+            fill="none"
+            stroke="white"
+            strokeWidth="2"
+            strokeLinecap="round"
+            opacity="0.5"
+          />
+        </svg>
+      </div>
       
       {showText && (
-        <div className={`flex flex-col ${textSizeClasses[size]}`}>
-          <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 drop-shadow-sm leading-tight">
+        <div className={`flex flex-col tracking-tighter ${textSizeClasses[size]}`}>
+          <span className="font-black text-slate-800 dark:text-white leading-none">
             PLANTA
           </span>
-          <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 drop-shadow-sm leading-tight -mt-1">
+          <span className="font-black text-pink-500 leading-normal uppercase">
             VARELA
           </span>
+          <div className="h-1 w-6 bg-pink-500 rounded-full mt-1.5 opacity-50" />
         </div>
       )}
     </div>

@@ -98,13 +98,17 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
               return (
                 <Button
                   key={item.id}
-                  variant={activeSection === item.id ? "default" : "ghost"}
+                  variant="ghost"
                   onClick={() => onSectionChange(item.id)}
-                  className="flex items-center space-x-2 px-3"
+                  className={`flex items-center space-x-2 px-4 h-11 rounded-xl transition-all duration-300 ${
+                    activeSection === item.id 
+                      ? "bg-pink-500 text-white shadow-lg shadow-pink-500/25" 
+                      : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
+                  }`}
                   size="sm"
                 >
-                  <Icon className="h-4 w-4" />
-                  <span className="hidden lg:inline">{item.label}</span>
+                  <Icon className={`h-4 w-4 ${activeSection === item.id ? 'animate-pulse' : ''}`} />
+                  <span className="hidden lg:inline font-bold text-sm tracking-tight">{item.label}</span>
                 </Button>
               );
             })}

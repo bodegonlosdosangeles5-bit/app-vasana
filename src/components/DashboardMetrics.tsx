@@ -17,6 +17,7 @@ import { format, subDays, parseISO, startOfWeek, isSameMonth, isSameWeek, startO
 import { es } from "date-fns/locale";
 import { ProductionStatsModal } from "./ProductionStatsModal";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { Activity } from "lucide-react";
 
 interface Metric {
   title: string;
@@ -331,66 +332,67 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
 
   const metrics: Metric[] = [
     {
-      title: "STOCK FINALIZADO",
-      value: formulasTerminadas.length.toString(),
-      subtitle: "Unidades disponibles",
-      icon: PackageCheck,
-      colorClass: "text-[#D4AF37]",
-      bgClass: "bg-[#D4AF37]/15",
-      progress: animatedProgressTerminados,
-      hasNavigation: true,
-    },
-    {
-      title: "KILOS DISPONIBLES",
+      title: "Stock Villa Martelli",
       value: `${totalAvailableKilosVM.toLocaleString()} kg`,
-      subtitle: "Villa Martelli (Stock)",
+      subtitle: "disponibilidad actual",
       icon: Scale,
-      colorClass: "text-amber-500",
-      bgClass: "bg-amber-500/15",
+      colorClass: "text-blue-600 dark:text-blue-400",
+      bgClass: "bg-blue-500/10",
       progress: animatedProgressKilos,
       hasFormulasList: true,
     },
     {
-      title: "ALERTAS DE INSUMOS",
+      title: "Materias Primas",
       value: outOfStockItems.length.toString(),
-      subtitle: outOfStockItems.length > 0 ? "reabastecimiento crítico" : "niveles normales",
+      subtitle: outOfStockItems.length > 0 ? "reabastecimiento crítico" : "niveles óptimos",
       icon: Droplets,
-      colorClass: outOfStockItems.length > 0 ? "text-rose-500" : "text-emerald-500",
-      bgClass: outOfStockItems.length > 0 ? "bg-rose-500/15" : "bg-emerald-500/15",
+      colorClass: outOfStockItems.length > 0 ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400",
+      bgClass: outOfStockItems.length > 0 ? "bg-rose-500/10" : "bg-emerald-500/10",
       isCritical: outOfStockItems.length > 0,
       progress: animatedProgressOutOfStock,
       hasOutOfStock: true,
     },
     {
+      title: "Stock Finalizado",
+      value: formulasTerminadas.length.toString(),
+      subtitle: "unidades en planta",
+      icon: Package,
+      colorClass: "text-primary",
+      bgClass: "bg-primary/10",
+      progress: animatedProgressTerminados,
+      hasNavigation: true,
+    },
+    {
       title: "REPORTE DE PLANTA",
-      value: " ", // Intentionally empty to just show button/icon
-      subtitle: "Ver reporte",
-      icon: TrendingUp, // This icon will be handled in render
-      colorClass: "text-slate-200",
-      bgClass: "bg-slate-200/10",
+      value: " ",
+      subtitle: "Estadísticas Avanzadas",
+      icon: BarChart3,
+      colorClass: "text-white",
+      bgClass: "bg-white/10",
       hasProductionStats: true,
-      isReportCard: true // New flag to handle special rendering if needed
+      isReportCard: true
     },
   ];
 
 
   return (
-    <div className="space-y-6 p-6 bg-gray-50 rounded-2xl">
-      {/* Metrics Cards - Horizontal Layout */}
-      <div className="flex flex-col sm:flex-row gap-6">
+    <div className="space-y-10 pt-4 pb-12 layout-entry">
+      {/* Metrics Cards - Premium Grid Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 kpi-staggered">
         {metrics.map((metric: Metric, index) => {
           const Icon = metric.icon;
           const isClickable = metric.hasOutOfStock || metric.hasSearch || metric.hasNavigation || metric.hasFormulasList || metric.hasProductionStats;
           
-          
           return (
             <Card 
               key={index} 
-              className={`flex-1 bg-white border-0 rounded-2xl shadow-lg
-                          transition-all duration-300 ease-in-out
-                          hover:shadow-xl hover:scale-105
-                          ${isClickable ? 'cursor-pointer' : ''}
-                          ${metric.isReportCard ? 'flex flex-col justify-center items-center py-6 bg-gradient-to-br from-pink-50 to-white border-2 border-pink-200 hover:border-pink-300' : ''}`}
+              className={`relative overflow-hidden border-0 rounded-[2.5rem] shadow-sm hover:shadow-2xl
+                          transition-all duration-700 ease-in-out group
+                          ${isClickable ? 'cursor-pointer hover:-translate-y-3' : ''}
+                          ${metric.isReportCard 
+                            ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-pink-900/30 text-white border-none' 
+                            : 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-100 dark:border-slate-800'
+                          }`}
               onClick={() => {
                 if (metric.hasOutOfStock) {
                   setIsOutOfStockOpen(true);
@@ -405,57 +407,58 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                 }
               }}
             >
-              <CardContent className={`card-content ${metric.isReportCard ? 'flex flex-col items-center justify-center w-full h-full p-0' : 'p-6'}`}>
+              {/* Decorative Geometric Elements */}
+              {!metric.isReportCard && !metric.isSpecialDona && (
+                <>
+                  <div className={`absolute -right-4 -top-4 h-24 w-24 rounded-full opacity-10 blur-2xl transition-all duration-1000 group-hover:scale-150 ${metric.colorClass.replace('text-', 'bg-')}`} />
+                  <div className="absolute bottom-0 left-0 w-full h-1 opacity-20 bg-gradient-to-r from-transparent via-slate-200 dark:via-slate-700 to-transparent" />
+                </>
+              )}
+
+              <CardContent className={`relative h-full ${metric.isReportCard ? 'flex flex-col items-center justify-center p-8' : 'p-6'}`}>
                 
                 {metric.isReportCard ? (
-                  <div className="flex flex-col items-center gap-3">
-                     <div className="h-14 w-14 flex items-center justify-center rounded-full bg-pink-100 transition-transform duration-300 group-hover:scale-110">
-                      <Icon className="h-7 w-7 text-pink-500" strokeWidth={2} />
+                  <div className="flex flex-col items-center gap-4 z-10 px-2 text-center">
+                     <div className="h-14 w-14 flex items-center justify-center rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 transition-all duration-700 group-hover:scale-105 group-hover:bg-pink-500/10">
+                      <Icon className="h-6 w-6 text-white" strokeWidth={1.5} />
                     </div>
-                    <div className="text-center">
-                        <h3 className="text-slate-700 text-xs font-bold uppercase tracking-widest mb-1">
+                    <div className="space-y-1">
+                        <h3 className="text-white text-base font-bold tracking-wide uppercase">
                           {metric.title}
                         </h3>
-                        <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">
+                        <p className="text-[11px] text-pink-300 font-medium tracking-widest uppercase">
                           {metric.subtitle}
                         </p>
                     </div>
+                    <Button variant="ghost" size="sm" className="mt-2 h-9 rounded-xl px-7 bg-white/10 hover:bg-white/20 text-white border border-white/10 font-bold text-[10px] uppercase tracking-[0.15em]">
+                       VER REPORTE
+                    </Button>
                   </div>
                 ) : (
                   <>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-slate-600 text-xs font-semibold uppercase tracking-widest">
-                      {metric.title}
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      {metric.hasSearch && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setIsSearchOpen(true);
-                          }}
-                          className="h-8 w-8 p-0 hover:bg-pink-50 text-pink-500"
-                        >
-                          <Search className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <div className={`h-12 w-12 flex items-center justify-center rounded-full ${metric.bgClass.replace('bg-', 'bg-pink-').replace('/15', '-100')} ${metric.isCritical ? 'animate-pulse' : ''} flex-shrink-0 transition-transform duration-300 group-hover:scale-110`}>
-                        <Icon className={`h-6 w-6 ${metric.colorClass.includes('rose') ? 'text-rose-500' : metric.colorClass.includes('emerald') ? 'text-emerald-500' : 'text-pink-500'}`} strokeWidth={2} />
-                      </div>
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="space-y-1">
+                      <h3 className="text-slate-500 dark:text-slate-400 text-sm font-semibold tracking-tight">
+                        {metric.title}
+                      </h3>
+                      <div className="h-0.5 w-4 bg-pink-500/50 rounded-full" />
+                    </div>
+
+                    <div className={`h-10 w-10 flex items-center justify-center rounded-xl ${metric.bgClass} dark:bg-slate-800/80 transition-all duration-500 group-hover:scale-105`}>
+                      <Icon className={`h-5 w-5 ${metric.colorClass}`} strokeWidth={1.5} />
                     </div>
                   </div>
-                  <div className="space-y-3">
+
+                  <div className="space-y-4">
                     {metric.isSpecialDona ? (
-                      <div className="flex items-center gap-4 min-h-[80px]">
+                      <div className="flex items-center gap-5 min-h-[80px]">
                         {isMetricasLoading ? (
                           <div className="flex-1 flex items-center justify-center">
-                            <div className="h-5 w-5 border-2 border-pink-500 border-t-transparent animate-spin rounded-full" />
+                            <div className="h-6 w-6 border-2 border-pink-500 border-t-transparent animate-spin rounded-full" />
                           </div>
                         ) : (
                           <>
-                            <div className="h-20 w-20 shrink-0">
+                            <div className="h-24 w-24 shrink-0 relative bg-slate-50 dark:bg-slate-800/30 rounded-full p-1 border border-slate-100 dark:border-slate-800">
                               <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                   <Pie
@@ -463,47 +466,59 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                                       { name: 'Hoy', value: Math.max(0, comparativa?.hoy_total || 0) },
                                       { name: 'Ayer', value: Math.max(1, comparativa?.ayer_total || 0) }
                                     ]}
-                                    innerRadius="60%"
+                                    innerRadius="72%"
                                     outerRadius="100%"
-                                    paddingAngle={5}
+                                    paddingAngle={6}
                                     dataKey="value"
                                     stroke="none"
+                                    startAngle={90}
+                                    endAngle={-270}
                                   >
-                                    <Cell fill="#f472b6" />
-                                    <Cell fill="#e5e7eb" />
+                                    <Cell fill="#f43f5e" className="drop-shadow-[0_0_8px_rgba(244,63,94,0.4)]" />
+                                    <Cell fill="#cbd5e1" className="dark:fill-slate-700" />
                                   </Pie>
-                                  <Tooltip 
-                                    contentStyle={{ backgroundColor: '#fff', border: '2px solid #f472b6', fontSize: '10px', borderRadius: '8px' }}
-                                    itemStyle={{ color: '#1e293b' }}
-                                  />
                                 </PieChart>
                               </ResponsiveContainer>
+                              {/* Center value in donut */}
+                               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <Activity className="h-4 w-4 text-pink-500/50" />
+                              </div>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-2xl font-black text-slate-800">
-                                {(comparativa?.hoy_total || 0).toLocaleString()} kg
+                              <div className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
+                                {(comparativa?.hoy_total || 0).toLocaleString()} <span className="text-xl text-slate-400 dark:text-slate-600 font-bold">kg</span>
                               </div>
-                              <p className="text-xs text-slate-500 font-medium">
-                                {metric.subtitle} (Vs {(comparativa?.ayer_total || 0).toLocaleString()}kg)
+                              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
+                                {metric.subtitle} <span className="text-pink-500 font-bold ml-1">{(comparativa?.ayer_total || 0).toLocaleString()} kg</span>
                               </p>
                             </div>
                           </>
                         )}
                       </div>
                     ) : (
-                      <>
-                        <div className="text-3xl font-black text-slate-800">
-                          {metric.value}
+                      <div className="flex flex-col">
+                        <div className="flex items-baseline gap-1.5">
+                          <div className={`text-4xl font-bold leading-none kpi-number-entry ${metric.colorClass === 'text-primary' ? 'text-primary' : 'text-slate-900 dark:text-white'}`}>
+                            {metric.value.replace(' kg', '')}
+                          </div>
+                          {metric.value.includes('kg') && (
+                             <span className="text-sm text-slate-500 dark:text-slate-400 font-bold uppercase">kg</span>
+                          )}
                         </div>
-                        <p className="text-sm text-slate-600 font-medium">
+                        <p className="text-[13px] text-slate-400 dark:text-slate-500 mt-1.5 flex items-center gap-2">
+                           <span className={`h-1 w-1 rounded-full ${metric.colorClass.replace('text-', 'bg-')}`}></span>
                           {metric.subtitle}
                         </p>
+                        
                         {metric.progress !== undefined && (
-                          <div className="mt-4">
-                            <Progress value={metric.progress} className="h-2 bg-pink-100" />
+                          <div className="mt-4 relative h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                             <div 
+                                className="absolute top-0 left-0 h-full bg-gradient-to-r from-pink-500 to-rose-400 dark:from-pink-600 dark:to-rose-500 transition-all duration-1000 ease-out rounded-full"
+                                style={{ width: `${metric.progress}%` }}
+                             />
                           </div>
                         )}
-                      </>
+                      </div>
                     )}
                   </div>
                   </>

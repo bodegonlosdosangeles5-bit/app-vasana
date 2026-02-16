@@ -43,18 +43,6 @@ export const useRealtimeEnvios = () => {
           loadEnvios(); // Recargar envíos cuando hay cambios
         }
       )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'envios_remitos'
-        },
-        (payload) => {
-          console.log('🔄 Cambio en envíos-remitos:', payload);
-          loadEnvios(); // Recargar envíos cuando hay cambios en la relación
-        }
-      )
       .subscribe();
 
     return () => {

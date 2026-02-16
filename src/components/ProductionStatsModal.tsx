@@ -295,21 +295,21 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl bg-white border-slate-200 text-slate-900 shadow-2xl max-h-[90vh] flex flex-col p-5 overflow-hidden rounded-3xl">
+      <DialogContent className="max-w-3xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white shadow-2xl max-h-[95vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
         
-        {/* Header Ultra Compacto */}
-        <div className="flex flex-col gap-2 pb-2 border-b border-slate-100">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
-            <div className="flex items-center gap-3">
-              <div className="p-1.5 bg-teal-50 rounded-lg shrink-0">
-                <BarChart3 className="h-5 w-5 text-teal-600" strokeWidth={2} />
+        {/* Header Ultra Premium */}
+        <div className="p-6 bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 bg-pink-100 dark:bg-pink-900/30 rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
+                <BarChart3 className="h-6 w-6 text-pink-500" strokeWidth={2.5} />
               </div>
               <div>
-                <DialogTitle className="text-lg font-bold text-slate-800 uppercase tracking-tight leading-none">
-                  Estadísticas de Producción
+                <DialogTitle className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tight leading-none">
+                   Reporte de Planta
                 </DialogTitle>
-                <DialogDescription className="text-slate-400 text-xs mt-0.5">
-                  Resumen de rendimiento para Villa Martelli.
+                <DialogDescription className="text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-widest mt-1.5">
+                  Análisis Operativo • Villa Martelli
                 </DialogDescription>
               </div>
             </div>
@@ -339,77 +339,78 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
           </div>
         </div>
 
-        <div className="mt-2 flex-1 flex flex-col gap-3 min-h-0 print-container" ref={reportRef}>
+        <div className="p-6 flex-1 flex flex-col gap-6 min-h-0 print-container overflow-y-auto" ref={reportRef}>
           
-          {/* Tarjetas Ultra Compactas */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 shrink-0">
+          {/* Tarjetas Modernas */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 shrink-0">
             {/* Tarjeta Semanal */}
-            <Card className="bg-white border-0 shadow-sm rounded-xl overflow-hidden relative group hover:shadow-md transition-all duration-300">
-              <CardContent className="py-3 px-4 relative z-10">
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Semanal</p>
-                  <div className="h-6 w-6 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
-                    <Calendar className="h-3.5 w-3.5 text-blue-600" strokeWidth={2} />
+            <Card className="relative overflow-hidden bg-slate-50 dark:bg-slate-800/50 border-0 rounded-3xl shadow-sm group">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-150 duration-700" />
+              <CardContent className="py-5 px-6 relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">Semanal</p>
+                  <div className="h-8 w-8 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                    <Calendar className="h-4 w-4 text-blue-500" strokeWidth={2.5} />
                   </div>
                 </div>
                 <div className="flex items-baseline gap-1">
-                  <p className="text-2xl font-extrabold text-slate-900 tracking-tight">{stats.weeklyTotal.toLocaleString()}</p>
-                  <p className="text-xs font-bold text-slate-400">kg</p>
+                  <p className="text-4xl font-black text-slate-800 dark:text-white tracking-tighter">{stats.weeklyTotal.toLocaleString()}</p>
+                  <p className="text-sm font-bold text-blue-500 uppercase tracking-widest">kg</p>
                 </div>
-                <div className="h-1 w-8 bg-blue-500 rounded-full mt-2 opacity-20"></div>
               </CardContent>
             </Card>
 
             {/* Tarjeta Mensual */}
-            <Card className="bg-white border-0 shadow-sm rounded-xl overflow-hidden relative group hover:shadow-md transition-all duration-300">
-              <CardContent className="py-3 px-4 relative z-10">
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">PRODUCCIÓN {stats.monthName}</p>
-                  <div className="h-6 w-6 rounded-full bg-gradient-to-br from-teal-50 to-teal-100 flex items-center justify-center">
-                    <TrendingUp className="h-3.5 w-3.5 text-teal-600" strokeWidth={2} />
+            <Card className="relative overflow-hidden bg-slate-50 dark:bg-slate-800/50 border-0 rounded-3xl shadow-sm group">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-pink-500/10 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-150 duration-700" />
+              <CardContent className="py-5 px-6 relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">PRODUCCIÓN {stats.monthName}</p>
+                  <div className="h-8 w-8 rounded-xl bg-pink-500/20 flex items-center justify-center">
+                    <TrendingUp className="h-4 w-4 text-pink-500" strokeWidth={2.5} />
                   </div>
                 </div>
                 <div className="flex items-baseline gap-1">
-                  <p className="text-2xl font-extrabold text-slate-900 tracking-tight">{stats.monthlyTotal.toLocaleString()}</p>
-                  <p className="text-xs font-bold text-slate-400">kg</p>
+                  <p className="text-4xl font-black text-slate-800 dark:text-white tracking-tighter">{stats.monthlyTotal.toLocaleString()}</p>
+                  <p className="text-sm font-bold text-pink-500 uppercase tracking-widest">kg</p>
                 </div>
-                <div className="h-1 w-8 bg-teal-500 rounded-full mt-2 opacity-20"></div>
               </CardContent>
             </Card>
           </div>
 
-          <div className="bg-slate-50/50 border border-slate-100 rounded-2xl p-3 flex-1 flex flex-col min-h-0">
+          <div className="bg-slate-50/50 dark:bg-slate-800/20 border border-slate-100 dark:border-slate-800 rounded-[2rem] p-6 flex-1 flex flex-col min-h-0">
             <Tabs value={viewType} onValueChange={(v) => setViewType(v as "daily" | "weekly" | "monthly")} className="w-full flex-1 flex flex-col">
               
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mb-2">
-                <h4 className="font-bold flex items-center gap-1.5 text-slate-700 text-sm">
-                  Kilos Producidos
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+                <h4 className="font-bold flex items-center gap-2 text-slate-800 dark:text-white text-base">
+                  <Activity className="h-4 w-4 text-pink-500" />
+                  Rendimiento de Planta
                 </h4>
                 
-                <TabsList className="bg-slate-100 p-0.5 h-auto rounded-full no-print flex gap-1 scale-90 origin-right">
+                <TabsList className="bg-white dark:bg-slate-800 p-1 h-10 rounded-xl no-print flex gap-1 border border-slate-100 dark:border-slate-700 shadow-sm">
                   <TabsTrigger 
                     value="daily" 
-                    className="text-[10px] font-semibold py-0.5 px-2.5 rounded-full text-slate-500 data-[state=active]:bg-teal-600 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all"
+                    className="text-xs font-bold px-4 rounded-lg text-slate-500 data-[state=active]:bg-pink-500 data-[state=active]:text-white transition-all"
                   >
                     Diario
                   </TabsTrigger>
                   <TabsTrigger 
                     value="weekly" 
-                    className="text-[10px] font-semibold py-0.5 px-2.5 rounded-full text-slate-500 data-[state=active]:bg-teal-600 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all"
+                    className="text-xs font-bold px-4 rounded-lg text-slate-500 data-[state=active]:bg-pink-500 data-[state=active]:text-white transition-all"
                   >
                     Semanal
                   </TabsTrigger>
                   <TabsTrigger 
                     value="monthly" 
-                    className="text-[10px] font-semibold py-0.5 px-2.5 rounded-full text-slate-500 data-[state=active]:bg-teal-600 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all"
+                    className="text-xs font-bold px-4 rounded-lg text-slate-500 data-[state=active]:bg-pink-500 data-[state=active]:text-white transition-all"
                   >
                     Mensual
                   </TabsTrigger>
                 </TabsList>
               </div>
 
-              {/* Gráfico aún más bajo */}
-              <div className="w-full h-[200px] mt-auto relative">
+              {/* Chart Area */}
+              <div className="w-full h-[250px] mt-auto relative">
                 {loadingView ? (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-teal-500"></div>
@@ -418,9 +419,9 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={stats.chartDynamicData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
                       <defs>
-                        <linearGradient id="barGradientClean" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#0d9488" stopOpacity={1} />
-                          <stop offset="100%" stopColor="#0d9488" stopOpacity={0.6} />
+                        <linearGradient id="barGradientPremium" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#f43f5e" stopOpacity={1} />
+                          <stop offset="100%" stopColor="#f43f5e" stopOpacity={0.4} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.5} />
@@ -464,7 +465,7 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
                         animationDuration={1000}
                       >
                          {stats.chartDynamicData.map((_, i) => (
-                          <Cell key={`cell-${i}`} fill="url(#barGradientClean)" />
+                          <Cell key={`cell-${i}`} fill="url(#barGradientPremium)" />
                         ))}
                       </Bar>
                     </BarChart>

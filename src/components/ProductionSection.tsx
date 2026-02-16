@@ -295,15 +295,17 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
   const canEdit = user?.role === 'admin' || user?.user_name === 'jose';
 
   return (
-    <div className="space-y-6 p-6 bg-gray-50 rounded-2xl">
+    <div className="space-y-6 p-6 bg-white dark:bg-slate-900/50 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm layout-entry">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h2 className="text-2xl sm:text-3xl font-bold text-slate-800">Control de Producción</h2>
+        <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">Control de Producción</h2>
         <div className="flex items-center space-x-4">
           <div className="text-right">
-            <p className="text-xs sm:text-sm text-slate-600 font-medium">Kilos disponibles</p>
-            <p className="text-2xl sm:text-3xl font-black text-pink-500">{totalStockAvailable.toLocaleString()} kg</p>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">Kilos disponibles</p>
+            <p className="text-2xl sm:text-3xl font-black text-pink-600 dark:text-pink-500">{totalStockAvailable.toLocaleString()} kg</p>
           </div>
-          <TrendingUp className="h-8 w-8 text-pink-400" strokeWidth={2.5} />
+          <div className="p-3 bg-pink-50 dark:bg-pink-500/10 rounded-2xl">
+            <TrendingUp className="h-6 w-6 text-pink-600 dark:text-pink-400" strokeWidth={2.5} />
+          </div>
         </div>
       </div>
 
@@ -325,60 +327,60 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {currentProduction.map((formula) => (
-                <Card key={formula.id} className="bg-white border-0 rounded-2xl shadow-lg hover:shadow-xl transition-all min-h-[16rem] h-auto py-2">
-                  <CardHeader className="h-full">
+                <Card key={formula.id} className="relative overflow-hidden bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[2rem] shadow-sm hover:shadow-2xl transition-all duration-500 ease-out group min-h-[16rem] h-auto py-4 hover:-translate-y-1">
+                  <CardHeader className="h-full relative z-10">
                     <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0 flex-1 space-y-1.5">
-                        <CardTitle className="text-lg font-bold text-slate-800 break-words leading-tight mb-2">
+                      <div className="min-w-0 flex-1 space-y-3">
+                        <CardTitle className="text-xl font-bold text-slate-800 dark:text-white break-words leading-tight">
                           {formula.name}
                         </CardTitle>
                         
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <span className="font-semibold text-pink-500">Lote:</span>
-                          <span className="truncate">{formula.lote_code || formula.id}</span>
+                        <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                          <span className="font-semibold text-pink-500 bg-pink-50 dark:bg-pink-500/10 px-2 py-0.5 rounded-md text-xs uppercase tracking-wider">Lote</span>
+                          <span className="truncate font-mono font-medium">{formula.lote_code || formula.id}</span>
                         </div>
 
-                        <div className="flex flex-col gap-0.5 text-sm text-slate-600">
-                          <div className="flex items-center gap-2">
-                             <span className="font-semibold text-pink-500">Producción:</span>
-                             <span>{formula.batchSize} kg</span>
+                        <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 space-y-2 border border-slate-100 dark:border-slate-800">
+                          <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-300">
+                             <span className="font-medium">Producción</span>
+                             <span className="font-bold text-slate-900 dark:text-white">{formula.batchSize} kg</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                             <span className="font-semibold text-pink-500">Stock:</span>
-                             <span className="font-bold">{formula.stock_actual} kg</span>
+                          <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-300">
+                             <span className="font-medium">Stock Actual</span>
+                             <span className="font-bold text-pink-500">{formula.stock_actual} kg</span>
                           </div>
                         </div>
 
-                        <div className="flex flex-col gap-0.5 text-sm text-slate-600">
-                          <span className="font-semibold text-pink-500">Destino:</span>
-                          <span className="break-words whitespace-normal leading-snug">{formula.destination}</span>
+                        <div className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-400">
+                          <span className="text-xs uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider">Destino</span>
+                          <span className="break-words whitespace-normal leading-snug font-medium">{formula.destination}</span>
                         </div>
 
-                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-500">
                           <Calendar className="h-3.5 w-3.5" />
                           <span>{formula.date ? new Date(formula.date).toLocaleDateString('es-AR', {
                             day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC'
                           }) : 'No especificada'}</span>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-600 pt-1">
-                          <Badge variant="outline" className="text-[10px] uppercase font-bold border-pink-300 text-pink-600 bg-pink-50">
+                        <div className="flex flex-wrap items-center gap-2 pt-2">
+                          <Badge variant="outline" className="text-[10px] uppercase font-bold border-pink-200 dark:border-pink-800 text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-900/20">
                             {formula.type === "client" ? "Cliente" : "Stock"}
                           </Badge>
                           {formula.type === "client" && formula.clientName && (
-                            <span className="break-words italic font-medium">({formula.clientName})</span>
+                            <span className="break-words italic font-medium text-xs text-slate-500">({formula.clientName})</span>
                           )}
                         </div>
                       </div>
 
                       <div className="flex flex-col items-end gap-3 shrink-0">
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                           {canEdit && (
                             <>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8 text-slate-400 hover:text-pink-500 hover:bg-pink-50 transition-all rounded-lg"
+                                className="h-8 w-8 text-slate-400 hover:text-pink-500 hover:bg-pink-50 dark:hover:bg-pink-900/20 transition-all rounded-lg"
                                 onClick={() => handleEditClick(formula)}
                               >
                                 <Pencil className="h-4 w-4" />
@@ -386,7 +388,7 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all rounded-lg"
+                                className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all rounded-lg"
                                 onClick={() => {
                                   setProductToDelete(formula.id);
                                   setIsDeleteConfirmOpen(true);
@@ -399,7 +401,7 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
                         </div>
                         <Badge 
                           variant="default"
-                          className="bg-green-600 hover:bg-green-700 text-white shadow-sm px-2 py-0.5"
+                          className="bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider"
                         >
                           Terminada
                         </Badge>

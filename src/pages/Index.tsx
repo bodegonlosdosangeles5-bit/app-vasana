@@ -95,17 +95,18 @@ const Index = () => {
   return (
     <AuthProvider>
       <ProtectedRoute>
-        <div className="min-h-screen bg-gradient-to-b from-background to-muted">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-500">
+          <div className="particles-container"></div>
           <Navigation activeSection={activeSection} onSectionChange={setActiveSection} />
           
-          <main className="container mx-auto px-4 py-4 sm:py-6 lg:py-8">
+          <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
             {/* Dashboard Header with Date/Time */}
-            <div className="mb-6 sm:mb-8">
+            <div className="mb-10 lg:mb-14">
               <DashboardHeader enableDateDialog />
             </div>
             
-            <div className="px-8 sm:px-12 lg:px-16 xl:px-24">
-              <div className="max-w-6xl mx-auto">
+            <div className="max-w-7xl mx-auto">
+              <div className="transition-all duration-500 ease-in-out">
                 {renderSection()}
               </div>
             </div>

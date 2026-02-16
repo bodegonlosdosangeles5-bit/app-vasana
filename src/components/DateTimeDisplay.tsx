@@ -85,27 +85,27 @@ export const DateTimeDisplay: React.FC<DateTimeDisplayProps> = ({
   }
 
   return (
-    <div className={`flex flex-col space-y-1 ${className}`}>
+    <div className={`flex flex-col space-y-1.5 ${className}`}>
       {/* Saludo */}
-      <div className="text-xs text-muted-foreground font-medium">
+      <div className="text-[10px] text-pink-500 font-black uppercase tracking-[0.2em]">
         {getGreeting()}
       </div>
       
       {/* Fecha y Hora */}
-      <div className="flex items-center space-x-3 text-sm">
+      <div className="flex flex-col md:flex-row md:items-center gap-3">
         {showDate && (
-          <div className="flex items-center space-x-1">
-            <Calendar className="h-4 w-4 text-primary" />
-            <span className="text-foreground">
+          <div className="flex items-center gap-2 px-3 py-1 bg-slate-100 dark:bg-slate-900 rounded-lg">
+            <Calendar className="h-3.5 w-3.5 text-slate-500" />
+            <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
               {formatDate(currentTime)}
             </span>
           </div>
         )}
         
         {showTime && (
-          <div className="flex items-center space-x-1">
-            <Clock className="h-4 w-4 text-primary" />
-            <span className="text-foreground font-mono font-medium">
+          <div className="flex items-center gap-2 px-3 py-1 bg-slate-100 dark:bg-slate-900 rounded-lg">
+            <Clock className="h-3.5 w-3.5 text-slate-500" />
+            <span className="text-sm font-black text-slate-900 dark:text-white font-mono">
               {formatTime(currentTime)}
             </span>
           </div>
