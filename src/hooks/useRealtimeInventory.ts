@@ -33,8 +33,9 @@ export const useRealtimeInventory = () => {
   useEffect(() => {
     console.log('🔌 Configurando Realtime para materias primas...');
     
+    const channelId = `inventory_changes_${Math.random().toString(36).substring(7)}`;
     const inventoryChannel = supabase
-      .channel('inventory_changes')
+      .channel(channelId)
       .on(
         'postgres_changes',
         {
@@ -49,19 +50,20 @@ export const useRealtimeInventory = () => {
         }
       )
       .subscribe((status) => {
-        console.log('🔌 Estado de suscripción Realtime:', status);
         if (status === 'SUBSCRIBED') {
-          console.log('✅ Suscrito exitosamente a cambios en tiempo real');
+          // Suscrito
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Error en la suscripción Realtime');
           setError('Error de conexión en tiempo real');
         }
       });
 
     // Cleanup al desmontar
     return () => {
-      console.log('🔌 Desconectando Realtime...');
-      supabase.removeChannel(inventoryChannel);
+      // En React Strict Mode, esto puede causar un cierre abrupto del WebSocket si se llama inmediatamente.
+      // Un pequeño timeout evita el warning de "WebSocket is closed before the connection is established"
+      setTimeout(() => {
+        supabase.removeChannel(inventoryChannel);
+      }, 500);
     };
   }, [loadInventoryItems]);
 

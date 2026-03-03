@@ -39,9 +39,9 @@ export const useRealtimeFormulas = () => {
       console.log('🔍 Verificando conexión a Supabase...');
       
       // Verificar conexión a Supabase
-      const { data: testData, error: testError } = await supabase
-        .from('formulas')
-        .select('count', { count: 'exact', head: true });
+      const { data: testData, error: testError } = await (supabase
+        .from('formulas' as any)
+        .select('count', { count: 'exact', head: true }));
       
       if (testError) {
         console.error('❌ Error de conexión a Supabase:', testError);
@@ -87,8 +87,9 @@ export const useRealtimeFormulas = () => {
   useEffect(() => {
     console.log('🔌 Configurando Realtime para fórmulas...');
     
+    const channelId = `formulas_changes_${Math.random().toString(36).substring(7)}`;
     const formulasChannel = supabase
-      .channel('formulas-realtime-updates')
+      .channel(channelId)
       .on(
         'postgres_changes',
         {
@@ -130,19 +131,18 @@ export const useRealtimeFormulas = () => {
         }
       )
       .subscribe((status) => {
-        console.log('🔌 Estado de suscripción Realtime:', status);
         if (status === 'SUBSCRIBED') {
-          console.log('✅ Suscrito exitosamente a cambios en tiempo real');
+          // Suscrito
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Error en la suscripción Realtime');
           setError('Error de conexión en tiempo real');
         }
       });
 
     // Cleanup al desmontar
     return () => {
-      console.log('🔌 Desconectando Realtime...');
-      supabase.removeChannel(formulasChannel);
+      setTimeout(() => {
+        supabase.removeChannel(formulasChannel);
+      }, 500);
     };
   }, [loadFormulas]);
 

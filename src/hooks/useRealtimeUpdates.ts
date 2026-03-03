@@ -32,8 +32,9 @@ export const useRealtimeUpdates = () => {
 
     const subscriptions = channels.map(tableName => {
       try {
+        const channelId = `${tableName}_changes_global_${Math.random().toString(36).substring(7)}`;
         const channel = supabase
-          .channel(`${tableName}_changes`)
+          .channel(channelId)
           .on(
             'postgres_changes',
             {
@@ -60,16 +61,11 @@ export const useRealtimeUpdates = () => {
           )
           .subscribe((status, err) => {
             if (status === 'SUBSCRIBED') {
-              console.log(`✅ Suscrito exitosamente a ${tableName}`);
               setIsConnected(true);
             } else if (status === 'CHANNEL_ERROR') {
-              console.warn(`⚠️ Error en la suscripción a ${tableName}:`, err);
-              // No lanzar error, solo registrar advertencia
-              // Esto permite que otras suscripciones continúen funcionando
-            } else if (status === 'TIMED_OUT') {
-              console.warn(`⏱️ Timeout en la suscripción a ${tableName}`);
+              // Ignorar error de canal por unmount en Strict Mode
             } else if (status === 'CLOSED') {
-              console.warn(`🔒 Canal cerrado para ${tableName}`);
+              // Ignorar cierre normal del canal
             }
           });
 
@@ -83,16 +79,17 @@ export const useRealtimeUpdates = () => {
 
     // Cleanup al desmontar
     return () => {
-      console.log('🔌 Desconectando actualizaciones en tiempo real...');
-      subscriptions.forEach(channel => {
-        try {
-          if (channel) {
-            supabase.removeChannel(channel);
+      setTimeout(() => {
+        subscriptions.forEach(channel => {
+          try {
+            if (channel) {
+              supabase.removeChannel(channel);
+            }
+          } catch (error) {
+            console.warn('⚠️ Error al remover canal:', error);
           }
-        } catch (error) {
-          console.warn('⚠️ Error al remover canal:', error);
-        }
-      });
+        });
+      }, 500);
       setIsConnected(false);
     };
   }, []);

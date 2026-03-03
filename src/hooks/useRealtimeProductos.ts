@@ -54,8 +54,9 @@ export const useRealtimeProductos = () => {
 
   // Configurar suscripción en tiempo real
   useEffect(() => {
+    const channelId = `productos_changes_${Math.random().toString(36).substring(7)}`;
     const channel = supabase
-      .channel('productos_changes')
+      .channel(channelId)
       .on(
         'postgres_changes',
         {
@@ -95,7 +96,9 @@ export const useRealtimeProductos = () => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      setTimeout(() => {
+        supabase.removeChannel(channel);
+      }, 500);
     };
   }, [loadProductos]);
 

@@ -44,8 +44,9 @@ export const useRealtimeUsers = () => {
   useEffect(() => {
     console.log('🔌 Configurando Realtime para usuarios...');
     
+    const channelId = `users_changes_${Math.random().toString(36).substring(7)}`;
     const usersChannel = supabase
-      .channel('users_changes')
+      .channel(channelId)
       .on(
         'postgres_changes',
         {
@@ -60,19 +61,18 @@ export const useRealtimeUsers = () => {
         }
       )
       .subscribe((status) => {
-        console.log('🔌 Estado de suscripción Realtime usuarios:', status);
         if (status === 'SUBSCRIBED') {
-          console.log('✅ Suscrito exitosamente a cambios de usuarios en tiempo real');
+          // Suscrito
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Error en la suscripción Realtime usuarios');
           setError('Error de conexión en tiempo real');
         }
       });
 
     // Cleanup al desmontar
     return () => {
-      console.log('🔌 Desconectando Realtime usuarios...');
-      supabase.removeChannel(usersChannel);
+      setTimeout(() => {
+        supabase.removeChannel(usersChannel);
+      }, 500);
     };
   }, [loadUsers]);
 

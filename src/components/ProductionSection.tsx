@@ -574,9 +574,8 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
         </DialogContent>
       </Dialog>
 
-      {/* Modal de Edición de Producto */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="max-w-md bg-zinc-950 border-zinc-800 text-zinc-100">
+        <DialogContent className="max-w-md bg-background border-border text-foreground">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-yellow-500 text-xl font-bold">
               <Pencil className="h-5 w-5" />

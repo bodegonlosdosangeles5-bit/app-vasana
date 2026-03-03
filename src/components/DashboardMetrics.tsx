@@ -1,7 +1,7 @@
 import { 
   Package, FlaskConical, Search, X, MapPin, 
   BarChart3, TrendingDown, Calendar, Scale, AlertCircle,
-  PackageCheck, Droplets, TrendingUp
+  PackageCheck, Droplets, TrendingUp, Download, Eye
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -13,11 +13,13 @@ import { Producto } from "@/services/productoService";
 import { useRealtimeInventory } from "@/hooks/useRealtimeInventory";
 import { useRealtimeProductos } from "@/hooks/useRealtimeProductos";
 import { MetricasService, ComparativaHoyAyer, ProductionViewData } from "@/services/metricasService";
-import { format, subDays, parseISO, startOfWeek, isSameMonth, isSameWeek, startOfMonth } from "date-fns";
+import { format, subDays, parseISO, startOfWeek, isSameMonth, isSameWeek, startOfMonth, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { ProductionStatsModal } from "./ProductionStatsModal";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Activity } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface Metric {
   title: string;
@@ -52,6 +54,8 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
   const [isOutOfStockOpen, setIsOutOfStockOpen] = useState(false);
   const [isFormulasListOpen, setIsFormulasListOpen] = useState(false);
   const [isProductionStatsOpen, setIsProductionStatsOpen] = useState(false);
+  const [isExportingProductos, setIsExportingProductos] = useState(false);
+  const [isPreviewingProductos, setIsPreviewingProductos] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [animatedProgressKilos, setAnimatedProgressKilos] = useState(0);
   const [animatedProgressTerminados, setAnimatedProgressTerminados] = useState(0);
@@ -97,6 +101,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
 
   // Función para normalizar texto (quitar tildes, espacios y convertir a minúsculas)
   const normalizeText = (text: string) => {
+    if (!text) return "";
     return text
       .toLowerCase()
       .normalize('NFD')
@@ -105,11 +110,25 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
   };
 
   // Calcular los totales filtrados por tiempo usando la vista SQL para precisión absoluta
-  const { weeklyTotal, monthlyTotal, totalAvailableKilosVM } = useMemo(() => {
+  const { weeklyTotal, monthlyTotal, totalAvailableKilosVM, todayTotal } = useMemo(() => {
     const now = new Date();
 
-    // 1. Kilos Disponibles (Stock Total actual en planta - real time desde hook)
-    // Solo contar productos con stock disponible real y status available
+    // 1. Producción del Día (Reemplazo del 'Stock Disponible' que se va a 0 al remitir)
+    // El usuario quiere ver reflejada la producción de HOY en el Dashboard, independientemente de si ya se remitió.
+    const todayTotal = viewData.reduce((sum, d) => {
+      if (!d?.fecha_produccion) return sum;
+      try {
+        const dDate = parseISO(d.fecha_produccion);
+        if (isSameDay(dDate, now)) {
+          return sum + Number(d.total_kg || 0);
+        }
+      } catch (e) {
+        console.error("Error parsing date in todayTotal", e);
+      }
+      return sum;
+    }, 0);
+
+    // Kilos en Inventario Real (con stock > 0)
     const villaMartelliProducts = formulasData.filter(formula => {
       const normalizedStatus = normalizeText(formula?.status || "");
       const normalizedDestination = normalizeText(formula?.destination || "");
@@ -119,8 +138,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
              normalizedDestination === 'villamartelli' &&
              currentStock > 0;
     });
-    
-    // Sumar el STOCK REAL, no el batchSize original
+
     const totalAvailable = villaMartelliProducts.reduce((sum, p) => {
         const stock = p?.stock_actual !== undefined ? p.stock_actual : (p?.batchSize || 0);
         return sum + stock;
@@ -129,9 +147,14 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
     // 2. Semanal (Desde el Lunes de esta semana - de la Vista SQL)
     // Usamos d.total_kg que viene de la vista y ya suma batch_size (producción histórica)
     const weekly = viewData.reduce((sum, d) => {
-      const dDate = parseISO(d.fecha_produccion);
-      if (isSameWeek(dDate, now, { weekStartsOn: 1 })) {
-        return sum + Number(d.total_kg || 0);
+      if (!d?.fecha_produccion) return sum;
+      try {
+        const dDate = parseISO(d.fecha_produccion);
+        if (isSameWeek(dDate, now, { weekStartsOn: 1 })) {
+          return sum + Number(d.total_kg || 0);
+        }
+      } catch (e) {
+        console.error("Error parsing date in weekly", e);
       }
       return sum;
     }, 0);
@@ -139,9 +162,14 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
     // 3. Mensual (Desde el día 1 de este mes - de la Vista SQL)
     // Usamos d.total_kg que viene de la vista y ya suma batch_size (producción histórica)
     const monthly = viewData.reduce((sum, d) => {
-      const dDate = parseISO(d.fecha_produccion);
-      if (isSameMonth(dDate, now)) {
-        return sum + Number(d.total_kg || 0);
+      if (!d?.fecha_produccion) return sum;
+      try {
+        const dDate = parseISO(d.fecha_produccion);
+        if (isSameMonth(dDate, now)) {
+          return sum + Number(d.total_kg || 0);
+        }
+      } catch (e) {
+        console.error("Error parsing date in monthly", e);
       }
       return sum;
     }, 0);
@@ -149,12 +177,13 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
     return { 
       weeklyTotal: weekly, 
       monthlyTotal: monthly, 
-      totalAvailableKilosVM: totalAvailable 
+      totalAvailableKilosVM: totalAvailable,
+      todayTotal
     };
   }, [formulasData, viewData]);
 
   // Metas de progreso para animaciones
-  const progressTotalKilosTarget = Math.min(100, Math.max(0, Math.round((totalAvailableKilosVM / 10000) * 100)));
+  const progressTotalKilosTarget = Math.min(100, Math.max(0, Math.round((todayTotal / 5000) * 100)));
 
   // Calcular productos terminados para Villa Martelli
   const formulasTerminadas = useMemo(() => {
@@ -168,26 +197,26 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
     })));
     
     const filtered = formulasData.filter(formula => {
-      const normalizedStatus = normalizeText(formula.status);
-      const normalizedDestination = normalizeText(formula.destination);
-      const hasStock = (formula.stock_actual !== undefined ? formula.stock_actual : (formula.batchSize || 0)) > 0;
+      const normalizedStatus = normalizeText(formula?.status || "");
+      const normalizedDestination = normalizeText(formula?.destination || "");
       
       const isTerminated = normalizedStatus === 'available';
       const isVillaMartelli = normalizedDestination === 'villamartelli';
       
-      console.log(`🔍 Producto ${formula.name}:`, {
-        status: formula.status,
-        normalizedStatus,
-        destination: formula.destination,
-        normalizedDestination,
-        stock: formula.stock_actual,
-        hasStock,
-        isTerminated,
-        isVillaMartelli,
-        passes: isTerminated && isVillaMartelli && hasStock
-      });
+      // Para "Stock Finalizado" y listado del día, chequeamos si fue producido hoy
+      // o si tiene stock. 
+      let isToday = false;
+      try {
+        if (formula?.date) {
+            isToday = isSameDay(parseISO(formula.date), new Date());
+        }
+      } catch (e) {
+         // Silently ignore invalid dates
+      }
+      const hasStock = (formula?.stock_actual !== undefined ? formula.stock_actual : (formula?.batchSize || 0)) > 0;
       
-      return isTerminated && isVillaMartelli && hasStock;
+      // Mostrar si tiene stock O si fue producido hoy (para que no desaparezcan el mismo día que se remiten)
+      return isTerminated && isVillaMartelli && (hasStock || isToday);
     });
     
     console.log(`✅ Productos filtrados para Villa Martelli: ${filtered.length}`);
@@ -332,9 +361,9 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
 
   const metrics: Metric[] = [
     {
-      title: "Stock Villa Martelli",
-      value: `${totalAvailableKilosVM.toLocaleString()} kg`,
-      subtitle: "disponibilidad actual",
+      title: "Producción",
+      value: `${todayTotal.toLocaleString()} kg`,
+      subtitle: totalAvailableKilosVM > 0 ? `(${totalAvailableKilosVM.toLocaleString()} kg sin remitir)` : "Total procesado",
       icon: Scale,
       colorClass: "text-blue-600 dark:text-blue-400",
       bgClass: "bg-blue-500/10",
@@ -353,14 +382,14 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
       hasOutOfStock: true,
     },
     {
-      title: "Stock Finalizado",
+      title: "Lotes Finalizados",
       value: formulasTerminadas.length.toString(),
-      subtitle: "unidades en planta",
+      subtitle: "unidades procesadas/en planta",
       icon: Package,
       colorClass: "text-primary",
       bgClass: "bg-primary/10",
       progress: animatedProgressTerminados,
-      hasNavigation: true,
+      hasFormulasList: true,
     },
     {
       title: "REPORTE DE PLANTA",
@@ -374,6 +403,131 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
     },
   ];
 
+  // ── PDF helpers para el modal de Productos Terminados ──────────────────────
+  const buildProductosTableData = () =>
+    formulasTerminadas.map((f, i) => [
+      (i + 1).toString(),
+      f.name || '—',
+      f.lote_code || f.id || '—',
+      `${f.batchSize || 0} kg`,
+      f.clientName || 'Sin cliente',
+      f.date ? new Date(f.date).toLocaleDateString('es-AR') : '—',
+    ]);
+
+  const handleExportProductosPDF = async () => {
+    try {
+      setIsExportingProductos(true);
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const today = new Date().toLocaleDateString('es-AR', {
+        day: '2-digit', month: 'long', year: 'numeric'
+      });
+
+      // Cabecera
+      pdf.setFillColor(15, 23, 42);              // slate-900
+      pdf.rect(0, 0, pdfWidth, 38, 'F');
+      pdf.setTextColor(244, 63, 94);              // pink-500
+      pdf.setFontSize(18);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('PLANTA VARELA', 15, 15);
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(11);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Listado de Productos Terminados — Villa Martelli', 15, 24);
+      pdf.setFontSize(8);
+      pdf.setTextColor(148, 163, 184);           // slate-400
+      pdf.text(`Generado: ${today}`, 15, 32);
+      pdf.text(`Total: ${formulasTerminadas.length} productos | ${totalAvailableKilosVM.toLocaleString()} kg`, pdfWidth - 15, 32, { align: 'right' });
+
+      // Tabla
+      autoTable(pdf, {
+        startY: 45,
+        head: [['N°', 'Producto', 'Lote', 'Peso', 'Cliente', 'Fecha']],
+        body: buildProductosTableData(),
+        theme: 'striped',
+        headStyles: { fillColor: [244, 63, 94], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+        bodyStyles: { fontSize: 8.5, textColor: [30, 41, 59] },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        columnStyles: {
+          0: { cellWidth: 10, halign: 'center' },
+          1: { cellWidth: 55 },
+          2: { cellWidth: 30 },
+          3: { cellWidth: 22, halign: 'right' },
+          4: { cellWidth: 40 },
+          5: { cellWidth: 28, halign: 'center' },
+        },
+        margin: { left: 15, right: 15 },
+      });
+
+      // Pie de página
+      const pageCount = (pdf as any).internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(7);
+        pdf.setTextColor(148, 163, 184);
+        pdf.text(`Pág. ${i} / ${pageCount}`, pdfWidth / 2, 290, { align: 'center' });
+        pdf.text('Sistema de Gestión — Planta Varela', 15, 290);
+      }
+
+      pdf.save(`Productos_Terminados_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (err) {
+      console.error('Error al exportar PDF:', err);
+    } finally {
+      setIsExportingProductos(false);
+    }
+  };
+
+  const handlePreviewProductosPDF = async () => {
+    try {
+      setIsPreviewingProductos(true);
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const today = new Date().toLocaleDateString('es-AR', {
+        day: '2-digit', month: 'long', year: 'numeric'
+      });
+
+      pdf.setFontSize(20);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(15, 23, 42);
+      pdf.text('PLANTA VARELA', 15, 20);
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(71, 85, 105);
+      pdf.text('Listado de Productos Terminados — Villa Martelli', 15, 29);
+      pdf.setFontSize(9);
+      pdf.text(`Fecha: ${today}   |   Total: ${formulasTerminadas.length} productos, ${totalAvailableKilosVM.toLocaleString()} kg`, 15, 37);
+      pdf.setLineWidth(0.4);
+      pdf.setDrawColor(226, 232, 240);
+      pdf.line(15, 40, pdfWidth - 15, 40);
+
+      autoTable(pdf, {
+        startY: 45,
+        head: [['N°', 'Producto', 'Lote', 'Peso', 'Cliente', 'Fecha']],
+        body: buildProductosTableData(),
+        theme: 'striped',
+        headStyles: { fillColor: [244, 63, 94], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+        bodyStyles: { fontSize: 8.5, textColor: [30, 41, 59] },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        columnStyles: {
+          0: { cellWidth: 10, halign: 'center' },
+          1: { cellWidth: 55 },
+          2: { cellWidth: 30 },
+          3: { cellWidth: 22, halign: 'right' },
+          4: { cellWidth: 40 },
+          5: { cellWidth: 28, halign: 'center' },
+        },
+        margin: { left: 15, right: 15 },
+      });
+
+      const blob = pdf.output('bloburl');
+      window.open(blob as unknown as string, '_blank');
+    } catch (err) {
+      console.error('Error al previsualizar PDF:', err);
+    } finally {
+      setIsPreviewingProductos(false);
+    }
+  };
+  // ──────────────────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-10 pt-4 pb-12 layout-entry">
@@ -391,7 +545,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                           ${isClickable ? 'cursor-pointer hover:-translate-y-3' : ''}
                           ${metric.isReportCard 
                             ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-pink-900/30 text-white border-none' 
-                            : 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-100 dark:border-slate-800'
+                            : 'bg-card/80 dark:bg-card/40 backdrop-blur-xl border border-border'
                           }`}
               onClick={() => {
                 if (metric.hasOutOfStock) {
@@ -411,7 +565,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
               {!metric.isReportCard && !metric.isSpecialDona && (
                 <>
                   <div className={`absolute -right-4 -top-4 h-24 w-24 rounded-full opacity-10 blur-2xl transition-all duration-1000 group-hover:scale-150 ${metric.colorClass.replace('text-', 'bg-')}`} />
-                  <div className="absolute bottom-0 left-0 w-full h-1 opacity-20 bg-gradient-to-r from-transparent via-slate-200 dark:via-slate-700 to-transparent" />
+                  <div className="absolute bottom-0 left-0 w-full h-1 opacity-20 bg-gradient-to-r from-transparent via-border to-transparent" />
                 </>
               )}
 
@@ -438,13 +592,13 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                   <>
                   <div className="flex items-center justify-between mb-5">
                     <div className="space-y-1">
-                      <h3 className="text-slate-500 dark:text-slate-400 text-sm font-semibold tracking-tight">
+                      <h3 className="text-muted-foreground text-sm font-semibold tracking-tight">
                         {metric.title}
                       </h3>
-                      <div className="h-0.5 w-4 bg-pink-500/50 rounded-full" />
+                      <div className="h-0.5 w-4 bg-primary/50 rounded-full" />
                     </div>
 
-                    <div className={`h-10 w-10 flex items-center justify-center rounded-xl ${metric.bgClass} dark:bg-slate-800/80 transition-all duration-500 group-hover:scale-105`}>
+                    <div className={`h-10 w-10 flex items-center justify-center rounded-xl ${metric.bgClass} dark:bg-muted/80 transition-all duration-500 group-hover:scale-105`}>
                       <Icon className={`h-5 w-5 ${metric.colorClass}`} strokeWidth={1.5} />
                     </div>
                   </div>
@@ -475,7 +629,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                                     endAngle={-270}
                                   >
                                     <Cell fill="#f43f5e" className="drop-shadow-[0_0_8px_rgba(244,63,94,0.4)]" />
-                                    <Cell fill="#cbd5e1" className="dark:fill-slate-700" />
+                                    <Cell fill="currentColor" className="text-muted/30 dark:text-muted/10" />
                                   </Pie>
                                 </PieChart>
                               </ResponsiveContainer>
@@ -485,10 +639,10 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                               </div>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
-                                {(comparativa?.hoy_total || 0).toLocaleString()} <span className="text-xl text-slate-400 dark:text-slate-600 font-bold">kg</span>
+                              <div className="text-3xl font-black text-foreground tracking-tight">
+                                {(comparativa?.hoy_total || 0).toLocaleString()} <span className="text-xl text-muted-foreground font-bold">kg</span>
                               </div>
-                              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
+                              <p className="text-xs text-muted-foreground font-medium mt-1">
                                 {metric.subtitle} <span className="text-pink-500 font-bold ml-1">{(comparativa?.ayer_total || 0).toLocaleString()} kg</span>
                               </p>
                             </div>
@@ -498,22 +652,22 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                     ) : (
                       <div className="flex flex-col">
                         <div className="flex items-baseline gap-1.5">
-                          <div className={`text-4xl font-bold leading-none kpi-number-entry ${metric.colorClass === 'text-primary' ? 'text-primary' : 'text-slate-900 dark:text-white'}`}>
+                          <div className={`text-4xl font-bold leading-none kpi-number-entry ${metric.colorClass === 'text-primary' ? 'text-primary' : 'text-foreground'}`}>
                             {metric.value.replace(' kg', '')}
                           </div>
                           {metric.value.includes('kg') && (
-                             <span className="text-sm text-slate-500 dark:text-slate-400 font-bold uppercase">kg</span>
+                             <span className="text-sm text-muted-foreground font-bold uppercase">kg</span>
                           )}
                         </div>
-                        <p className="text-[13px] text-slate-400 dark:text-slate-500 mt-1.5 flex items-center gap-2">
+                        <p className="text-[13px] text-muted-foreground mt-1.5 flex items-center gap-2">
                            <span className={`h-1 w-1 rounded-full ${metric.colorClass.replace('text-', 'bg-')}`}></span>
                           {metric.subtitle}
                         </p>
                         
                         {metric.progress !== undefined && (
-                          <div className="mt-4 relative h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                          <div className="mt-4 relative h-1.5 w-full bg-muted dark:bg-muted/30 rounded-full overflow-hidden">
                              <div 
-                                className="absolute top-0 left-0 h-full bg-gradient-to-r from-pink-500 to-rose-400 dark:from-pink-600 dark:to-rose-500 transition-all duration-1000 ease-out rounded-full"
+                                className="absolute top-0 left-0 h-full bg-gradient-to-r from-pink-500 to-rose-400 dark:from-primary dark:to-primary/80 transition-all duration-1000 ease-out rounded-full"
                                 style={{ width: `${metric.progress}%` }}
                              />
                           </div>
@@ -532,9 +686,9 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
 
       {/* Modal de búsqueda de inventario */}
       <Dialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden bg-white rounded-2xl">
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden bg-background border-border rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-slate-800">
+            <DialogTitle className="flex items-center gap-2 text-foreground">
               <Search className="h-5 w-5 text-pink-500" />
               Buscar Materias Primas
             </DialogTitle>
@@ -543,19 +697,19 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
           <div className="space-y-4">
             {/* Barra de búsqueda */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar por nombre, certificado o ubicación..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 border-pink-200 focus:border-pink-400 rounded-xl"
+                className="pl-10 border-border focus:border-primary rounded-xl bg-muted/20"
               />
               {searchTerm && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setSearchTerm("")}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-pink-50 text-pink-500"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-muted text-muted-foreground"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -603,13 +757,13 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                       <div className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
                           <Package className="h-4 w-4 text-pink-500" />
-                          <span className="font-medium text-slate-700">Stock:</span>
-                          <span className="text-slate-600">{item.currentStock} {item.unit}</span>
+                          <span className="font-medium text-foreground">Stock:</span>
+                          <span className="text-muted-foreground">{item.currentStock} {item.unit}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <MapPin className="h-4 w-4 text-pink-500" />
-                          <span className="font-medium text-slate-700">Ubicación:</span>
-                          <span className="truncate text-slate-600">{item.location}</span>
+                          <span className="font-medium text-foreground">Ubicación:</span>
+                          <span className="truncate text-muted-foreground">{item.location}</span>
                         </div>
                       </div>
                     </div>
@@ -619,7 +773,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
             </div>
 
             {/* Resumen */}
-            <div className="text-sm text-slate-500 text-center">
+            <div className="text-sm text-muted-foreground text-center border-t border-border pt-4">
               {searchTerm ? 
                 `Mostrando ${filteredInventory.length} de ${inventoryItems.length} materias primas` :
                 `Total: ${inventoryItems.length} materias primas`
@@ -631,7 +785,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
 
       {/* Modal de materias primas sin stock */}
       <Dialog open={isOutOfStockOpen} onOpenChange={setIsOutOfStockOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden bg-background border-border text-foreground">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Package className="h-5 w-5 text-destructive" />
@@ -710,7 +864,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
             </div>
 
             {/* Resumen final */}
-            <div className="text-sm text-muted-foreground text-center border-t pt-4">
+            <div className="text-sm text-muted-foreground text-center border-t border-border pt-4">
               Total de materias primas sin stock: {outOfStockItems.length}
             </div>
           </div>
@@ -719,18 +873,40 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
 
       {/* Modal de lista de fórmulas terminadas */}
       <Dialog open={isFormulasListOpen} onOpenChange={setIsFormulasListOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FlaskConical className="h-5 w-5 text-accent" />
-              Productos Terminados - Villa Martelli
-            </DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden bg-background border-border text-foreground">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-2 border-b border-border">
+            <div className="flex items-center gap-2">
+              <FlaskConical className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-semibold text-foreground">Productos Terminados — Villa Martelli</h2>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <Button
+                onClick={handlePreviewProductosPDF}
+                disabled={isPreviewingProductos}
+                variant="outline"
+                size="sm"
+                className="h-8 text-[11px] border-border text-muted-foreground hover:bg-muted hover:text-foreground gap-1.5 font-medium rounded-lg px-3 transition-all"
+              >
+                <Eye className="h-3.5 w-3.5" />
+                {isPreviewingProductos ? 'Generando...' : 'Vista Previa'}
+              </Button>
+              <Button
+                onClick={handleExportProductosPDF}
+                disabled={isExportingProductos}
+                variant="outline"
+                size="sm"
+                className="h-8 text-[11px] border-primary/40 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground gap-1.5 font-bold rounded-lg px-3 transition-all"
+              >
+                <Download className="h-3.5 w-3.5" />
+                {isExportingProductos ? 'Exportando...' : 'Exportar PDF'}
+              </Button>
+            </div>
+          </div>
           
           <div className="space-y-4">
             {/* Resumen */}
-            <div className="bg-accent/10 border border-accent/20 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-accent">
+            <div className="bg-primary/10 border border-primary/30 rounded-lg p-4">
+              <div className="flex items-center gap-2 text-primary">
                 <TrendingUp className="h-5 w-5" />
                 <span className="font-semibold">
                   {formulasTerminadas.length} productos terminados
@@ -752,12 +928,12 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                   {formulasTerminadas.map((formula) => (
                     <div
                       key={formula.id}
-                      className="p-4 border border-accent/20 rounded-lg bg-accent/5 hover:bg-accent/10 transition-colors space-y-3"
+                      className="p-4 border border-border rounded-lg bg-muted/20 hover:bg-muted/40 transition-colors space-y-3"
                     >
                       {/* Información principal */}
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-lg text-accent truncate">
+                          <h4 className="font-semibold text-lg text-foreground truncate">
                             {formula.name}
                           </h4>
                           <p className="text-sm text-muted-foreground">
@@ -765,7 +941,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                           </p>
                         </div>
                         <div className="text-right">
-                          <div className="text-sm font-medium px-2 py-1 rounded-full bg-accent text-accent-foreground">
+                          <div className="text-sm font-bold px-3 py-1 rounded-full bg-primary text-primary-foreground">
                             Terminada
                           </div>
                         </div>
@@ -775,28 +951,28 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                       <div className="flex items-center justify-between text-sm">
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center gap-2">
-                            <FlaskConical className="h-4 w-4 text-accent" />
-                            <span className="font-medium">Lote:</span>
-                            <span className="text-accent font-semibold">
+                            <FlaskConical className="h-4 w-4 text-primary" />
+                            <span className="font-medium text-foreground">Lote:</span>
+                            <span className="text-primary font-semibold">
                               {formula.lote_code || formula.id}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="w-4" /> {/* Espaciador para alinear con el icono de arriba */}
-                            <span className="font-medium">Cantidad:</span>
-                            <span className="text-accent font-semibold">
+                            <span className="font-medium text-foreground">Cantidad:</span>
+                            <span className="text-primary font-semibold">
                               {formula.batchSize || 0} kg
                             </span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">Tipo:</span>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <span className="font-medium text-foreground">Tipo:</span>
                           <span className="truncate">{formula.type || 'Sin tipo'}</span>
                         </div>
                       </div>
 
                       {/* Información adicional */}
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border pt-2">
                         <span>Fecha: {formula.date ? new Date(formula.date).toLocaleDateString() : 'Sin fecha'}</span>
                         <span>Destino: {formula.destination || 'Sin destino'}</span>
                       </div>
@@ -807,7 +983,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
             </div>
 
             {/* Resumen final */}
-            <div className="text-sm text-muted-foreground text-center border-t pt-4">
+            <div className="text-sm text-muted-foreground text-center border-t border-border pt-4">
               Total de productos terminados: {formulasTerminadas.length} | Total de kilos disponibles: {totalAvailableKilosVM.toLocaleString()} kg
             </div>
           </div>

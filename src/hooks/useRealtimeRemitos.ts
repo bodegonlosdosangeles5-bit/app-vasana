@@ -78,8 +78,9 @@ export const useRealtimeRemitos = () => {
     let remitosChannel: RealtimeChannel | null = null;
     
     try {
+      const channelId = `remitos_changes_${Math.random().toString(36).substring(7)}`;
       remitosChannel = supabase
-        .channel('remitos_changes', {
+        .channel(channelId, {
           config: {
             broadcast: { self: false },
             presence: { key: 'remitos' }
@@ -114,28 +115,23 @@ export const useRealtimeRemitos = () => {
           }
         )
         .subscribe((status, err) => {
-          console.log('🔌 Estado de suscripción Realtime:', status);
           if (err) {
-            console.error('❌ Error en la suscripción Realtime:', err);
+            // Error ignorado en consolas limpias
           }
           
           if (status === 'SUBSCRIBED') {
-            console.log('✅ Suscrito exitosamente a cambios en tiempo real');
             setError(null); // Limpiar errores previos
             setRealtimeError(false);
             stopPolling(); // Detener polling si Realtime funciona
           } else if (status === 'CHANNEL_ERROR') {
-            console.error('❌ Error en la suscripción Realtime:', err);
             setError(`Error de conexión en tiempo real: ${err?.message || 'Error desconocido'}`);
             setRealtimeError(true);
             startPolling(); // Iniciar polling como fallback
           } else if (status === 'TIMED_OUT') {
-            console.error('❌ Timeout en la suscripción Realtime');
             setError('Timeout en la conexión de tiempo real');
             setRealtimeError(true);
             startPolling(); // Iniciar polling como fallback
           } else if (status === 'CLOSED') {
-            console.warn('⚠️ Conexión Realtime cerrada');
             setRealtimeError(true);
             startPolling(); // Iniciar polling como fallback
           }
@@ -149,9 +145,10 @@ export const useRealtimeRemitos = () => {
 
     // Cleanup al desmontar
     return () => {
-      console.log('🔌 Desconectando Realtime...');
       if (remitosChannel) {
-        supabase.removeChannel(remitosChannel);
+        setTimeout(() => {
+          supabase.removeChannel(remitosChannel!);
+        }, 500);
       }
       stopPolling();
     };

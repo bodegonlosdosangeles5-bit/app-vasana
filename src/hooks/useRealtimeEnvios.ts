@@ -29,8 +29,9 @@ export const useRealtimeEnvios = () => {
 
   // Configurar suscripción en tiempo real
   useEffect(() => {
+    const channelId = `envios_changes_${Math.random().toString(36).substring(7)}`;
     const channel = supabase
-      .channel('envios_changes')
+      .channel(channelId)
       .on(
         'postgres_changes',
         {
@@ -46,7 +47,9 @@ export const useRealtimeEnvios = () => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      setTimeout(() => {
+        supabase.removeChannel(channel);
+      }, 500);
     };
   }, [loadEnvios]);
 

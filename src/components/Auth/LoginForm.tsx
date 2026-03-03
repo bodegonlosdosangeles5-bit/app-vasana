@@ -43,7 +43,7 @@ export const LoginForm: React.FC = () => {
     }
 
     try {
-      const { error } = await signIn(username, password);
+      const { error } = await signIn(username.trim(), password);
       
       if (error) {
         setError(error);

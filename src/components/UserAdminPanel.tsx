@@ -83,7 +83,7 @@ export const UserAdminPanel: React.FC = () => {
     e.preventDefault();
     try {
       await createUser({
-        user_name: newUser.user_name,
+        user_name: newUser.user_name.trim(),
         password: newUser.password,
         role: newUser.role || 'user'
       });

@@ -25,9 +25,8 @@
     --secondary-foreground: 210 40% 98%;
 
     --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 40%;
-    /* #475569 - Slate 600 */
-
+    --muted-foreground: 215 25% 27%;
+    /* #334155 - Slate 700 para mejor legibilidad en fondo claro */
     --accent: 346 84% 97%;
     --accent-foreground: 346 84% 50%;
 
@@ -67,8 +66,8 @@
     --secondary-foreground: 210 40% 98%;
 
     --muted: 215 25% 12%;
-    --muted-foreground: 215 20% 65%;
-    /* #94A3B8 */
+    --muted-foreground: 215 20% 75%;
+    /* #CBD5E1 - Slate 300 para mejor legibilidad en fondo oscuro */
 
     --accent: 350 80% 12%;
     --accent-foreground: 350 85% 70%;
