@@ -308,8 +308,8 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
         <div className="p-6 bg-muted/20 border-b border-border">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="h-12 w-12 bg-pink-100 dark:bg-pink-900/30 rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
-                <BarChart3 className="h-6 w-6 text-pink-500" strokeWidth={2.5} />
+              <div className="h-12 w-12 bg-[#023F86]/10 rounded-2xl flex items-center justify-center shrink-0 shadow-inner border border-[#023F86]/20">
+                <BarChart3 className="h-6 w-6 text-[#023F86]" strokeWidth={2.5} />
               </div>
               <div>
                 <DialogTitle className="text-xl font-black text-foreground uppercase tracking-tight leading-none">
@@ -373,13 +373,13 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
               <CardContent className="py-5 px-6 relative z-10">
                 <div className="flex items-center justify-between mb-4">
                   <p className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.2em]">PRODUCCIÓN {stats.monthName}</p>
-                  <div className="h-8 w-8 rounded-xl bg-pink-500/20 flex items-center justify-center">
-                    <TrendingUp className="h-4 w-4 text-pink-500" strokeWidth={2.5} />
+                  <div className="h-8 w-8 rounded-xl bg-[#F7A600]/20 flex items-center justify-center">
+                    <TrendingUp className="h-4 w-4 text-[#F7A600]" strokeWidth={2.5} />
                   </div>
                 </div>
                 <div className="flex items-baseline gap-1">
                   <p className="text-4xl font-black text-foreground tracking-tighter">{stats.monthlyTotal.toLocaleString()}</p>
-                  <p className="text-sm font-bold text-pink-500 uppercase tracking-widest">kg</p>
+                  <p className="text-sm font-bold text-[#F7A600] uppercase tracking-widest">kg</p>
                 </div>
               </CardContent>
             </Card>
@@ -397,19 +397,19 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
                 <TabsList className="bg-muted/50 p-1 h-10 rounded-xl no-print flex gap-1 border border-border shadow-sm">
                   <TabsTrigger 
                     value="daily" 
-                    className="text-xs font-bold px-4 rounded-lg text-muted-foreground data-[state=active]:bg-pink-500 data-[state=active]:text-white transition-all"
+                    className="text-xs font-bold px-4 rounded-lg text-muted-foreground data-[state=active]:bg-[#023F86] data-[state=active]:text-white transition-all"
                   >
                     Diario
                   </TabsTrigger>
                   <TabsTrigger 
                     value="weekly" 
-                    className="text-xs font-bold px-4 rounded-lg text-muted-foreground data-[state=active]:bg-pink-500 data-[state=active]:text-white transition-all"
+                    className="text-xs font-bold px-4 rounded-lg text-muted-foreground data-[state=active]:bg-[#023F86] data-[state=active]:text-white transition-all"
                   >
                     Semanal
                   </TabsTrigger>
                   <TabsTrigger 
                     value="monthly" 
-                    className="text-xs font-bold px-4 rounded-lg text-muted-foreground data-[state=active]:bg-pink-500 data-[state=active]:text-white transition-all"
+                    className="text-xs font-bold px-4 rounded-lg text-muted-foreground data-[state=active]:bg-[#023F86] data-[state=active]:text-white transition-all"
                   >
                     Mensual
                   </TabsTrigger>

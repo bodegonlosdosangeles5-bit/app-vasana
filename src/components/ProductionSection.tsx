@@ -298,22 +298,22 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
   return (
     <div className="space-y-6 p-6 bg-white dark:bg-slate-900/50 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm layout-entry">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">Control de Producción</h2>
+        <h2 className="text-2xl sm:text-3xl font-bold text-[#023F86]">Control de Producción</h2>
         <div className="flex items-center space-x-4">
           <div className="text-right">
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">Kilos disponibles</p>
-            <p className="text-2xl sm:text-3xl font-black text-pink-600 dark:text-pink-500">{totalStockAvailable.toLocaleString()} kg</p>
+            <p className="text-xs sm:text-sm text-slate-500 font-medium">Kilos en Viaje</p>
+            <p className="text-2xl sm:text-3xl font-black text-[#023F86]">{totalStockAvailable.toLocaleString()} kg</p>
           </div>
-          <div className="p-3 bg-pink-50 dark:bg-pink-500/10 rounded-2xl">
-            <TrendingUp className="h-6 w-6 text-pink-600 dark:text-pink-400" strokeWidth={2.5} />
+          <div className="p-3 bg-[#023F86]/10 rounded-2xl">
+            <TrendingUp className="h-6 w-6 text-[#023F86]" strokeWidth={2.5} />
           </div>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 bg-white border-2 border-slate-200 p-1.5 rounded-xl shadow-sm">
-          <TabsTrigger value="remito" className="text-sm font-semibold rounded-lg data-[state=active]:bg-pink-400 data-[state=active]:text-white">Remito Villa Martelli</TabsTrigger>
-          <TabsTrigger value="shipments" className="text-sm font-semibold rounded-lg data-[state=active]:bg-pink-400 data-[state=active]:text-white">Envíos</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 bg-slate-100 border-2 border-slate-200 p-1.5 rounded-xl shadow-sm">
+          <TabsTrigger value="remito" className="text-sm font-bold rounded-lg data-[state=active]:bg-[#023F86] data-[state=active]:text-white transition-all">Remito Villa Martelli</TabsTrigger>
+          <TabsTrigger value="shipments" className="text-sm font-bold rounded-lg data-[state=active]:bg-[#023F86] data-[state=active]:text-white transition-all">Envíos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="remito" className="space-y-4">
@@ -599,8 +599,8 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
       <div className="mt-12 pt-8 border-t border-zinc-800/50">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-yellow-500/10 rounded-lg">
-              <History className="h-5 w-5 text-yellow-500" />
+            <div className="p-2 bg-[#F7A600]/10 rounded-lg">
+              <History className="h-5 w-5 text-[#F7A600]" />
             </div>
             <div>
               <h3 className="text-lg font-bold text-black dark:text-white">Historial de Cambios</h3>

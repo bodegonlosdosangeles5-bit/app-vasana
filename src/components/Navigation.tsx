@@ -102,8 +102,8 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
                   onClick={() => onSectionChange(item.id)}
                   className={`flex items-center space-x-2 px-4 h-11 rounded-xl transition-all duration-300 ${
                     activeSection === item.id 
-                      ? "bg-pink-500 text-white shadow-lg shadow-pink-500/25" 
-                      : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
+                      ? "bg-[#023F86] text-white shadow-lg shadow-blue-500/20" 
+                      : "text-slate-500 hover:text-[#023F86] dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
                   }`}
                   size="sm"
                 >

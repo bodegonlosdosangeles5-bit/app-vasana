@@ -241,7 +241,7 @@ export const RemitoProduction = ({ productionItems, onSuccess }: RemitoProductio
           <Button
             onClick={onGenerateClick}
             disabled={isGenerating || loading || selectedProducts.length === 0}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+            className="flex items-center gap-2 bg-[#023F86] hover:bg-[#0555B1] shadow-lg shadow-blue-500/20"
           >
             {isGenerating ? (
               <RefreshCw className="h-4 w-4 animate-spin" />
@@ -305,8 +305,8 @@ export const RemitoProduction = ({ productionItems, onSuccess }: RemitoProductio
                 <p className="text-sm text-muted-foreground">
                   {villaMartelliItems.length} productos disponibles
                 </p>
-                <p className="text-sm font-medium text-primary">
-                  {selectedProducts.length} seleccionados
+                <p className="text-sm font-medium text-[#023F86]">
+                   {selectedProducts.length} seleccionados
                 </p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -315,8 +315,8 @@ export const RemitoProduction = ({ productionItems, onSuccess }: RemitoProductio
                     key={item.id} 
                     className={`p-4 rounded-lg border-2 transition-all ${
                       selectedItems.has(item.id) 
-                        ? 'border-primary bg-primary/5' 
-                        : 'border-muted bg-muted/50'
+                        ? 'border-[#023F86] bg-[#023F86]/5' 
+                        : 'border-slate-200 bg-white shadow-sm'
                     }`}
                   >
                     <div className="flex items-start gap-3">
@@ -397,14 +397,14 @@ export const RemitoProduction = ({ productionItems, onSuccess }: RemitoProductio
               variant="outline"
               onClick={() => setIsConfirmOpen(false)}
               disabled={isGenerating}
-              className="flex-1"
+              className="flex-1 rounded-xl"
             >
               Cancelar
             </Button>
             <Button
               onClick={handleGenerateRemito}
               disabled={isGenerating}
-              className="flex-1 bg-blue-600 hover:bg-blue-700"
+              className="flex-1 bg-[#023F86] hover:bg-[#0555B1] rounded-xl shadow-lg shadow-blue-500/20"
             >
               {isGenerating ? (
                 <>

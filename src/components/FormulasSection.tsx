@@ -532,34 +532,38 @@ export const FormulasSection = ({
       
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <h2 className="text-xl sm:text-2xl font-bold text-foreground">
-            {showOnlyIncomplete ? "Productos Incompletos" : "Gestión de Productos"}
+          <h2 className="text-xl sm:text-2xl font-black text-[#023F86] uppercase tracking-tighter">
+            {showOnlyIncomplete ? "Lotes Incompletos" : "Gestión de Productos"}
           </h2>
           <div className="flex flex-col sm:flex-row gap-2">
             <Button
               variant={showOnlyIncomplete ? "default" : "outline"}
               size="sm"
               onClick={() => setShowOnlyIncomplete(!showOnlyIncomplete)}
-              className="flex items-center gap-2"
+              className={`flex items-center gap-2 font-bold px-4 h-9 rounded-xl ${
+                showOnlyIncomplete 
+                  ? "bg-[#F7A600] text-[#023F86] hover:bg-[#F7A600]/90 border-none" 
+                  : "border-slate-200 text-slate-600 hover:bg-slate-50"
+              }`}
             >
               <Filter className="h-4 w-4" />
-              {showOnlyIncomplete ? "Mostrar Todas" : "Solo Incompletas"}
+              {showOnlyIncomplete ? "Ver Historial Completo" : "Solo Incompletas"}
             </Button>
             {isAdmin && (
               <Button
-                variant="secondary"
+                variant="outline"
                 size="sm"
                 onClick={handleUpdateIncompleteFormulas}
                 disabled={isUpdatingStatus}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 h-9 px-4 rounded-xl border-[#023F86]/20 text-[#023F86] font-bold hover:bg-[#023F86]/5"
               >
                 <CheckCircle className="h-4 w-4" />
-                {isUpdatingStatus ? "Actualizando..." : "Actualizar Completadas"}
+                {isUpdatingStatus ? "Actualizando..." : "Completar Lotes"}
               </Button>
             )}
             {!showOnlyIncomplete && (
               <Select value={destinationFilter} onValueChange={setDestinationFilter}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-[180px] h-9 rounded-xl border-slate-200">
                   <SelectValue placeholder="Filtrar por destino" />
                 </SelectTrigger>
                 <SelectContent>
@@ -574,9 +578,9 @@ export const FormulasSection = ({
         {isAdmin && (
           <Button 
             onClick={() => setIsLoadModalOpen(true)}
-            className="bg-green-600 hover:bg-green-700 text-white text-base font-medium px-6 py-2"
+            className="bg-[#023F86] hover:bg-[#0555B1] text-white font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-500/20"
           >
-            <Upload className="h-4 w-4 mr-2" />
+            <Plus className="h-5 w-5 mr-2" />
             Cargar Producto
           </Button>
         )}
@@ -609,20 +613,22 @@ export const FormulasSection = ({
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div>
-                    <CardTitle className="text-base font-semibold flex items-center space-x-2 text-foreground dark:text-white">
-                      <Beaker className="h-6 w-6 text-foreground dark:text-white" />
+                    <CardTitle className="text-xl font-bold flex items-center space-x-2 text-[#023F86]">
+                      <Beaker className="h-6 w-6 text-[#F7A600]" />
                       <span>{formula.name}</span>
                     </CardTitle>
-                    <p className="text-base text-foreground dark:text-white mt-1">
+                    <p className="text-sm font-bold text-slate-500 mt-1 uppercase tracking-tight">
                       Lote: {(formula as any).lote_code || (formula as any).lote || formula.id}
                     </p>
-                    <div className="flex flex-col gap-1 mt-1">
-                      <p className="text-base text-foreground dark:text-white">
-                        <span className="font-medium">Prod:</span> {formula.batchSize} kg
+                    <div className="flex flex-col gap-1 mt-2">
+                      <p className="text-sm text-slate-600">
+                        <span className="font-medium text-[#023F86]">Producción:</span> {formula.batchSize} kg
                       </p>
-                      <p className="text-sm font-semibold text-green-600 dark:text-green-400">
-                        Stock: {(formula as any).stock_actual !== undefined ? (formula as any).stock_actual : formula.batchSize} kg
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs font-bold border-[#F7A600] text-[#023F86] bg-[#F7A600]/10">
+                          Stock planta: {(formula as any).stock_actual !== undefined ? (formula as any).stock_actual : formula.batchSize} kg
+                        </Badge>
+                      </div>
                     </div>
                     {!showOnlyIncomplete && (
                       <p className="text-base text-foreground dark:text-white font-medium mt-1">
@@ -645,7 +651,7 @@ export const FormulasSection = ({
                     {getStatusIcon(actualStatus)}
                     <Badge 
                       variant={actualStatus === "available" ? "default" : "destructive"}
-                      className={actualStatus === "available" ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                      className={actualStatus === "available" ? "bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg" : "font-bold rounded-lg"}
                     >
                       {getStatusText(actualStatus)}
                     </Badge>
@@ -675,7 +681,7 @@ export const FormulasSection = ({
                           variant="outline"
                           size="sm"
                           onClick={() => handleAddIngredient(formula)}
-                          className="flex items-center gap-2 text-foreground dark:text-white border-border dark:border-white hover:bg-muted dark:hover:bg-white hover:text-foreground dark:hover:text-black transition-colors"
+                          className="flex items-center gap-2 text-[#023F86] border-[#023F86]/20 hover:bg-[#023F86]/5 transition-colors font-bold rounded-lg h-8"
                         >
                           <Plus className="h-4 w-4" />
                           Agregar
@@ -687,17 +693,17 @@ export const FormulasSection = ({
                     {formula.missingIngredients && formula.missingIngredients.length > 0 ? (
                       <div className="space-y-2 max-h-96 overflow-y-auto">
                         {formula.missingIngredients.map((ingredient: any, index: number) => (
-                          <div key={`${formula.id}-${ingredient.name}-${ingredient.required}-${index}`} className="group flex items-center justify-between p-3 rounded-lg bg-red-500/10 border border-red-500/20 hover:bg-red-500/15 transition-colors">
+                          <div key={`${formula.id}-${ingredient.name}-${ingredient.required}-${index}`} className="group flex items-center justify-between p-3 rounded-lg bg-red-50 border border-red-200 dark:bg-red-950/20 dark:border-red-900/40 hover:bg-red-100 dark:hover:bg-red-950/30 transition-colors">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
-                                <Package className="h-4 w-4 text-red-400 flex-shrink-0" />
-                                <p className="text-base font-semibold text-foreground dark:text-white truncate" title={ingredient.name}>
+                                <Package className="h-4 w-4 text-red-600 flex-shrink-0" />
+                                <p className="text-base font-bold text-red-900 dark:text-red-200 truncate" title={ingredient.name}>
                                   {ingredient.name}
                                 </p>
                               </div>
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground dark:text-white/90">
-                                <span className="font-medium">Cantidad faltante:</span>
-                                <span className="bg-red-500/20 px-2 py-1 rounded text-red-200 font-mono">
+                              <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-300">
+                                <span className="font-semibold">Cantidad faltante:</span>
+                                <span className="bg-red-100 dark:bg-red-900/40 px-2 py-0.5 rounded-md text-red-700 dark:text-red-200 font-bold font-mono">
                                   {ingredient.required} {ingredient.unit}
                                 </span>
                               </div>

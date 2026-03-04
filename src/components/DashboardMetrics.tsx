@@ -417,10 +417,10 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
     {
       title: "Producción",
       value: `${kilosViajeActual.toLocaleString()} kg`,
-      subtitle: `${productosViajeActual.length} productos (viaje actual)`,
+      subtitle: "Total viaje actual",
       icon: Scale,
-      colorClass: "text-blue-600 dark:text-blue-400",
-      bgClass: "bg-blue-500/10",
+      colorClass: "text-[#023F86]",
+      bgClass: "bg-[#023F86]/10",
       progress: animatedProgressKilos,
       hasProductionList: true,
     },
@@ -429,7 +429,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
       value: outOfStockItems.length.toString(),
       subtitle: outOfStockItems.length > 0 ? "reabastecimiento crítico" : "niveles óptimos",
       icon: Droplets,
-      colorClass: outOfStockItems.length > 0 ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400",
+      colorClass: outOfStockItems.length > 0 ? "text-rose-600" : "text-emerald-600",
       bgClass: outOfStockItems.length > 0 ? "bg-rose-500/10" : "bg-emerald-500/10",
       isCritical: outOfStockItems.length > 0,
       progress: animatedProgressOutOfStock,
@@ -438,10 +438,10 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
     {
       title: "Lotes Finalizados",
       value: formulasTerminadas.length.toString(),
-      subtitle: "unidades procesadas/en planta",
+      subtitle: "Unidades en planta",
       icon: Package,
-      colorClass: "text-primary",
-      bgClass: "bg-primary/10",
+      colorClass: "text-[#F7A600]",
+      bgClass: "bg-[#F7A600]/10",
       progress: animatedProgressTerminados,
       hasFormulasList: true,
     },
@@ -554,9 +554,9 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
       });
 
       // Cabecera
-      pdf.setFillColor(15, 23, 42);              // slate-900
+      pdf.setFillColor(2, 63, 134);              // Boca Blue
       pdf.rect(0, 0, pdfWidth, 38, 'F');
-      pdf.setTextColor(244, 63, 94);              // pink-500
+      pdf.setTextColor(247, 166, 0);              // Boca Gold
       pdf.setFontSize(18);
       pdf.setFont('helvetica', 'bold');
       pdf.text('PLANTA VARELA', 15, 15);
@@ -575,7 +575,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
         head: [['N°', 'Producto', 'Lote', 'Peso', 'Cliente', 'Fecha']],
         body: buildProductosTableData(),
         theme: 'striped',
-        headStyles: { fillColor: [244, 63, 94], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+        headStyles: { fillColor: [2, 63, 134], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
         bodyStyles: { fontSize: 8.5, textColor: [30, 41, 59] },
         alternateRowStyles: { fillColor: [248, 250, 252] },
         columnStyles: {
@@ -799,8 +799,8 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                           transition-all duration-700 ease-in-out group
                           ${isClickable ? 'cursor-pointer hover:-translate-y-3' : ''}
                           ${metric.isReportCard 
-                            ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-pink-900/30 text-white border-none' 
-                            : 'bg-card/80 dark:bg-card/40 backdrop-blur-xl border border-border'
+                            ? 'bg-gradient-to-br from-[#023F86] via-[#0555B1] to-[#023F86] text-white border-none' 
+                            : 'bg-white dark:bg-card/40 border border-slate-200'
                           }`}
               onClick={() => {
                 if (metric.hasOutOfStock) {
@@ -830,18 +830,18 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                 
                 {metric.isReportCard ? (
                   <div className="flex flex-col items-center gap-4 z-10 px-2 text-center">
-                     <div className="h-14 w-14 flex items-center justify-center rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 transition-all duration-700 group-hover:scale-105 group-hover:bg-pink-500/10">
+                     <div className="h-14 w-14 flex items-center justify-center rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 transition-all duration-700 group-hover:scale-105 group-hover:bg-white/20">
                       <Icon className="h-6 w-6 text-white" strokeWidth={1.5} />
                     </div>
                     <div className="space-y-1">
                         <h3 className="text-white text-base font-bold tracking-wide uppercase">
                           {metric.title}
                         </h3>
-                        <p className="text-[11px] text-pink-300 font-medium tracking-widest uppercase">
+                        <p className="text-[11px] text-blue-100 font-medium tracking-widest uppercase opacity-80">
                           {metric.subtitle}
                         </p>
                     </div>
-                    <Button variant="ghost" size="sm" className="mt-2 h-9 rounded-xl px-7 bg-white/10 hover:bg-white/20 text-white border border-white/10 font-bold text-[10px] uppercase tracking-[0.15em]">
+                    <Button variant="ghost" size="sm" className="mt-2 h-9 rounded-xl px-7 bg-[#F7A600] hover:bg-[#F7A600]/90 text-[#023F86] border-none font-bold text-[10px] uppercase tracking-[0.15em]">
                        VER REPORTE
                     </Button>
                   </div>
@@ -922,9 +922,9 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                         </p>
                         
                         {metric.progress !== undefined && (
-                          <div className="mt-4 relative h-1.5 w-full bg-muted dark:bg-muted/30 rounded-full overflow-hidden">
+                          <div className="mt-4 relative h-2 w-full bg-slate-100 dark:bg-muted/30 rounded-full overflow-hidden">
                              <div 
-                                className="absolute top-0 left-0 h-full bg-gradient-to-r from-pink-500 to-rose-400 dark:from-primary dark:to-primary/80 transition-all duration-1000 ease-out rounded-full"
+                                className="absolute top-0 left-0 h-full bg-[#F7A600] transition-all duration-1000 ease-out rounded-full"
                                 style={{ width: `${metric.progress}%` }}
                              />
                           </div>
@@ -945,8 +945,8 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
       <Dialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden bg-background border-border rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-foreground">
-              <Search className="h-5 w-5 text-pink-500" />
+            <DialogTitle className="flex items-center gap-2 text-[#023F86]">
+              <Search className="h-5 w-5 text-[#F7A600]" />
               Buscar Materias Primas
             </DialogTitle>
           </DialogHeader>
@@ -1013,12 +1013,12 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                       {/* Información de stock y ubicación */}
                       <div className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
-                          <Package className="h-4 w-4 text-pink-500" />
+                          <Package className="h-4 w-4 text-[#F7A600]" />
                           <span className="font-medium text-foreground">Stock:</span>
                           <span className="text-muted-foreground">{item.currentStock} {item.unit}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-pink-500" />
+                          <MapPin className="h-4 w-4 text-[#F7A600]" />
                           <span className="font-medium text-foreground">Ubicación:</span>
                           <span className="truncate text-muted-foreground">{item.location}</span>
                         </div>
