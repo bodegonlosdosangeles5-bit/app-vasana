@@ -7,17 +7,25 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useRealtimeRemitos } from "@/hooks/useRealtimeRemitos";
 import { useRemitosPolling } from "@/hooks/useRemitosPolling";
 import { ProductionItem, RemitoService } from "@/services/remitoService";
+import { EnvioService } from "@/services/envioService";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner"; // Assuming sonner is used for toasts based on other files
+import { toast } from "sonner"; 
+import { useAuth } from "@/components/Auth/AuthProvider";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 interface RemitoProductionProps {
   productionItems: ProductionItem[];
+  onSuccess?: () => void;
 }
 
-export const RemitoProduction = ({ productionItems }: RemitoProductionProps) => {
+export const RemitoProduction = ({ productionItems, onSuccess }: RemitoProductionProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  
+  const { user } = useAuth();
+  const canGenerateRemito = user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'developer' || user?.user_name === 'jose';
 
   const realtimeHook = useRealtimeRemitos();
   const pollingHook = useRemitosPolling()
@@ -107,37 +115,71 @@ export const RemitoProduction = ({ productionItems }: RemitoProductionProps) => 
   const handleGenerateRemito = async () => {
     console.log('🔄 Iniciando generación de remito...');
     
+    // 1. Usar toast.promise para mayor visibilidad
+    toast.promise(
+      (async () => {
+        // Generar remito
+        const result = await RemitoService.generateRemitoForVillaMartelli(selectedProducts);
+        
+        if (!result || !result.id) {
+          throw new Error("No se pudo generar el remito base.");
+        }
+
+        // Crear envío asociado
+        const nuevoEnvio = await EnvioService.crearEnvioConRemitoEspecifico(
+          result.id, 
+          "Villa Martelli",
+          new Date().toISOString(),
+          "Envío automático generado para Villa Martelli",
+          "entregado"
+        );
+
+        if (!nuevoEnvio) {
+          throw new Error("Remito generado, pero hubo un error al crear el envío automático.");
+        }
+
+        return { remito: result, envio: nuevoEnvio };
+      })(),
+      {
+        loading: 'Generando remito y registrando envío...',
+        success: (data) => {
+          // Limpiar UI
+          setSelectedItems(new Set());
+          setIsConfirmOpen(false);
+          setIsGenerating(false);
+          
+          // Notificar éxito visual
+          setShowSuccessMessage(`✅ Remito ${data.remito.id} generado y enviado correctamente.`);
+          
+          // Ejecutar callback para cambiar de pestaña si existe
+          if (onSuccess) {
+            setTimeout(onSuccess, 1000);
+          }
+
+          return `✅ Remito Villa Martelli generado exitosamente.`;
+        },
+        error: (err) => {
+          setIsGenerating(false);
+          setIsConfirmOpen(false);
+          return `❌ Error: ${err.message}`;
+        }
+      }
+    );
+  };
+
+  const onGenerateClick = () => {
     if (selectedProducts.length === 0) {
-      console.log('⚠️ No hay productos seleccionados para generar remito');
-      setShowSuccessMessage("⚠️ Selecciona al menos un producto para generar el remito");
-      setTimeout(() => setShowSuccessMessage(null), 3000);
+      toast.warning("⚠️ Selecciona al menos un producto para generar el remito");
+      return;
+    }
+    
+    if (!canGenerateRemito) {
+      toast.error("❌ No tienes permisos para generar remitos. Solo personal autorizado (Admin) puede realizar esta acción.");
       return;
     }
 
-    try {
-      setIsGenerating(true);
-      
-      // Delegar la generación al servicio que usa la transacción atómica
-      const result = await RemitoService.generateRemitoForVillaMartelli(selectedProducts);
-
-      if (result) {
-        setShowSuccessMessage(`✅ Remito generado exitosamente con ${selectedProducts.length} productos`);
-        setTimeout(() => setShowSuccessMessage(null), 5000);
-        
-        // Limpiar selección
-        setSelectedItems(new Set());
-      } else {
-        throw new Error("No se pudo generar el remito. Verifique los logs.");
-      }
-
-    } catch (error: unknown) {
-      const err = error as Error;
-      console.error('❌ Error generando remito:', err);
-      setShowSuccessMessage(`❌ Error al generar el remito: ${err.message}`);
-      setTimeout(() => setShowSuccessMessage(null), 5000);
-    } finally {
-      setIsGenerating(false);
-    }
+    // Abrir confirmación
+    setIsConfirmOpen(true);
   };
 
 
@@ -197,9 +239,9 @@ export const RemitoProduction = ({ productionItems }: RemitoProductionProps) => 
             <span>{selectedProducts.length} de {villaMartelliItems.length} productos seleccionados</span>
           </div>
           <Button
-            onClick={handleGenerateRemito}
+            onClick={onGenerateClick}
             disabled={isGenerating || loading || selectedProducts.length === 0}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
           >
             {isGenerating ? (
               <RefreshCw className="h-4 w-4 animate-spin" />
@@ -318,8 +360,67 @@ export const RemitoProduction = ({ productionItems }: RemitoProductionProps) => 
         </CardContent>
       </Card>
 
+      {/* Modal de confirmación para Generar Remito */}
+      <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <DialogContent className="max-w-md bg-background border-border text-foreground">
+          <DialogHeader className="border-b border-border pb-4">
+            <DialogTitle className="flex items-center gap-3 text-amber-500 text-xl">
+              <AlertCircle className="h-6 w-6" />
+              Confirmar Generación de Remito
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="py-6 space-y-4">
+            <p className="text-foreground font-medium">
+              ¿Estás seguro de que deseas generar el remito para <span className="text-blue-600 font-bold">{selectedProducts.length} productos</span>?
+            </p>
+            
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 space-y-2">
+              <p className="text-sm text-amber-700 dark:text-amber-400 font-semibold flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                ¡ATENCIÓN! ACCIÓN IRREVERSIBLE:
+              </p>
+              <ul className="text-xs text-amber-600 dark:text-amber-300 list-disc list-inside space-y-1">
+                <li>La producción actual de estos productos se **REINICIARÁ A CERO**.</li>
+                <li>Se descontará el stock de planta definitivamente.</li>
+                <li>Se creará un nuevo registro de envío en el historial.</li>
+              </ul>
+            </div>
+            
+            <p className="text-sm text-muted-foreground italic">
+              Este proceso libera la tarjeta de producción del tablero principal para nuevos lotes.
+            </p>
+          </div>
 
-
+          <DialogFooter className="gap-2 sm:gap-0 pt-4 border-t border-border mt-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsConfirmOpen(false)}
+              disabled={isGenerating}
+              className="flex-1"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleGenerateRemito}
+              disabled={isGenerating}
+              className="flex-1 bg-blue-600 hover:bg-blue-700"
+            >
+              {isGenerating ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Generando...
+                </>
+              ) : (
+                <>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Generar Remito Ahora
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

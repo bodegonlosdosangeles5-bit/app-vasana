@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { ProductoService } from "@/services/productoService";
 import { useRealtimeProductos } from "@/hooks/useRealtimeProductos";
+import { useAuth } from "@/components/Auth/AuthProvider";
 
 interface FormulasSectionProps {
   formulas?: any[]; // Mantener para compatibilidad pero no usar
@@ -37,6 +38,9 @@ export const FormulasSection = ({
   loading: propLoading = false,
   error: propError = null
 }: FormulasSectionProps) => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin' || user?.user_name === 'jose';
+
   // Usar el hook de productos en tiempo real
   const { 
     productos, 
@@ -194,6 +198,7 @@ export const FormulasSection = ({
 
   // Función para actualizar automáticamente fórmulas incompletas sin faltantes
   const handleUpdateIncompleteFormulas = async () => {
+    if (!isAdmin) return;
     if (!updateIncompleteFormulasStatus) return;
     
     try {
@@ -245,6 +250,7 @@ export const FormulasSection = ({
 
   const handleLoadFormula = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAdmin) return;
     
     const createFunction = createProducto || createFormula;
     if (!createFunction) {
@@ -324,6 +330,7 @@ export const FormulasSection = ({
 
   const handleUpdateFormula = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAdmin) return;
     if (editingFormula) {
       try {
         const success = await updateProducto(editingFormula.id, {
@@ -350,6 +357,7 @@ export const FormulasSection = ({
   };
 
   const handleDeleteFormula = async () => {
+    if (!isAdmin) return;
     if (!productToDelete) return;
     
     try {
@@ -388,7 +396,7 @@ export const FormulasSection = ({
 
   const handleSubmitIngredient = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedFormulaForIngredient || !newIngredient.name.trim() || !newIngredient.required) {
+    if (!isAdmin || !selectedFormulaForIngredient || !newIngredient.name.trim() || !newIngredient.required) {
       return;
     }
 
@@ -447,6 +455,7 @@ export const FormulasSection = ({
   };
 
   const handleRemoveIngredient = async (formulaId: string, ingredientName: string) => {
+    if (!isAdmin) return;
     try {
       console.log(`🗑️ Eliminando ingrediente: ${ingredientName} de fórmula: ${formulaId}`);
       
@@ -536,16 +545,18 @@ export const FormulasSection = ({
               <Filter className="h-4 w-4" />
               {showOnlyIncomplete ? "Mostrar Todas" : "Solo Incompletas"}
             </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleUpdateIncompleteFormulas}
-              disabled={isUpdatingStatus}
-              className="flex items-center gap-2"
-            >
-              <CheckCircle className="h-4 w-4" />
-              {isUpdatingStatus ? "Actualizando..." : "Actualizar Completadas"}
-            </Button>
+            {isAdmin && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleUpdateIncompleteFormulas}
+                disabled={isUpdatingStatus}
+                className="flex items-center gap-2"
+              >
+                <CheckCircle className="h-4 w-4" />
+                {isUpdatingStatus ? "Actualizando..." : "Actualizar Completadas"}
+              </Button>
+            )}
             {!showOnlyIncomplete && (
               <Select value={destinationFilter} onValueChange={setDestinationFilter}>
                 <SelectTrigger className="w-[180px]">
@@ -560,13 +571,15 @@ export const FormulasSection = ({
             )}
           </div>
         </div>
-        <Button 
-          onClick={() => setIsLoadModalOpen(true)}
-          className="bg-green-600 hover:bg-green-700 text-white text-base font-medium px-6 py-2"
-        >
-          <Upload className="h-4 w-4 mr-2" />
-          Cargar Producto
-        </Button>
+        {isAdmin && (
+          <Button 
+            onClick={() => setIsLoadModalOpen(true)}
+            className="bg-green-600 hover:bg-green-700 text-white text-base font-medium px-6 py-2"
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            Cargar Producto
+          </Button>
+        )}
       </div>
 
       {filteredFormulas.length === 0 ? (
@@ -656,16 +669,18 @@ export const FormulasSection = ({
                           </Badge>
                         )}
                       </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleAddIngredient(formula)}
-                        className="flex items-center gap-2 text-foreground dark:text-white border-border dark:border-white hover:bg-muted dark:hover:bg-white hover:text-foreground dark:hover:text-black transition-colors"
-                      >
-                        <Plus className="h-4 w-4" />
-                        Agregar
-                      </Button>
+                      {isAdmin && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleAddIngredient(formula)}
+                          className="flex items-center gap-2 text-foreground dark:text-white border-border dark:border-white hover:bg-muted dark:hover:bg-white hover:text-foreground dark:hover:text-black transition-colors"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Agregar
+                        </Button>
+                      )}
                     </div>
                     
                     {/* Lista de ingredientes faltantes */}
@@ -687,16 +702,18 @@ export const FormulasSection = ({
                                 </span>
                               </div>
                             </div>
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleRemoveIngredient(formula.id, ingredient.name)}
-                              className="ml-3 opacity-80 hover:opacity-100 transition-opacity flex-shrink-0 hover:bg-red-600 hover:scale-105"
-                              title="Eliminar materia prima faltante"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
+                            {isAdmin && (
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleRemoveIngredient(formula.id, ingredient.name)}
+                                className="ml-3 opacity-80 hover:opacity-100 transition-opacity flex-shrink-0 hover:bg-red-600 hover:scale-105"
+                                title="Eliminar materia prima faltante"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
                         ))}
                         
@@ -743,27 +760,31 @@ export const FormulasSection = ({
                 )}
 
                 <div className="flex justify-end pt-2 gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="icon"
-                    onClick={() => handleEditFormula(formula)}
-                    className="h-9 w-9 text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-900/50"
-                    title="Editar producto"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="icon"
-                    onClick={() => {
-                      setProductToDelete(formula.id);
-                      setIsDeleteConfirmOpen(true);
-                    }}
-                    className="h-9 w-9 text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-900/50"
-                    title="Eliminar producto"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {isAdmin && (
+                    <>
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => handleEditFormula(formula)}
+                        className="h-9 w-9 text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-900/50"
+                        title="Editar producto"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => {
+                          setProductToDelete(formula.id);
+                          setIsDeleteConfirmOpen(true);
+                        }}
+                        className="h-9 w-9 text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-900/50"
+                        title="Eliminar producto"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>

@@ -168,7 +168,8 @@ export class EnvioService {
     remitoId: string,
     destino: string,
     fecha?: string,
-    observaciones?: string
+    observaciones?: string,
+    estado: string = 'pendiente'
   ): Promise<Envio | null> {
     try {
       // Obtener el remito específico
@@ -208,7 +209,7 @@ export class EnvioService {
           observaciones,
           total_kilos: remito.total_kilos,
           total_remitos: 1,
-          estado: 'pendiente'
+          estado: estado
         })
         .select()
         .single();

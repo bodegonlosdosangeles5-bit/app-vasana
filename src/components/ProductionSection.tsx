@@ -293,7 +293,7 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
     }
   };
 
-  const canEdit = user?.role === 'admin' || user?.user_name === 'jose';
+  const canEdit = user?.role === 'admin' || user?.role === 'superadmin' || user?.user_name === 'jose';
 
   return (
     <div className="space-y-6 p-6 bg-white dark:bg-slate-900/50 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm layout-entry">
@@ -317,7 +317,10 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
         </TabsList>
 
         <TabsContent value="remito" className="space-y-4">
-          <RemitoProduction productionItems={currentProduction} />
+          <RemitoProduction 
+            productionItems={currentProduction} 
+            onSuccess={() => setActiveTab("shipments")}
+          />
         </TabsContent>
 
         <TabsContent value="shipments" className="space-y-4">

@@ -9,8 +9,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { useRealtimeInventory } from "@/hooks/useRealtimeInventory";
 import { InventoryItem } from "@/services/inventoryService";
+import { useAuth } from "@/components/Auth/AuthProvider";
 
 export const InventorySection = () => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin' || user?.user_name === 'jose';
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -122,6 +126,10 @@ export const InventorySection = () => {
   };
 
   const handleSaveEdit = async () => {
+    if (!isAdmin) {
+      alert('No tienes permisos para realizar esta acción');
+      return;
+    }
     if (editingItem) {
       try {
         // Convertir a gramos para almacenamiento usando la lógica inteligente
@@ -173,6 +181,10 @@ export const InventorySection = () => {
   };
 
   const handleSaveNewItem = async () => {
+    if (!isAdmin) {
+      alert('No tienes permisos para realizar esta acción');
+      return;
+    }
     // Validar campos requeridos
     if (!newItem.name.trim()) {
       alert('Por favor ingresa el nombre de la materia prima');
@@ -293,10 +305,12 @@ export const InventorySection = () => {
               className="pl-11 h-11 bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-pink-500/20"
             />
           </div>
-          <Button onClick={handleAddItem} className="h-11 px-6 rounded-2xl bg-pink-500 hover:bg-pink-600 text-white font-bold shadow-lg shadow-pink-500/20 transition-all hover:-translate-y-0.5">
-            <Plus className="h-5 w-5 mr-2" />
-            Nuevo Insumo
-          </Button>
+          {isAdmin && (
+            <Button onClick={handleAddItem} className="h-11 px-6 rounded-2xl bg-pink-500 hover:bg-pink-600 text-white font-bold shadow-lg shadow-pink-500/20 transition-all hover:-translate-y-0.5">
+              <Plus className="h-5 w-5 mr-2" />
+              Nuevo Insumo
+            </Button>
+          )}
         </div>
       </div>
 
@@ -350,14 +364,16 @@ export const InventorySection = () => {
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                       <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEditItem(item)}
-                        className="h-9 w-9 text-slate-400 hover:text-pink-500 hover:bg-pink-50 dark:hover:bg-pink-900/20 rounded-xl transition-all"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
+                       {isAdmin && (
+                         <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditItem(item)}
+                          className="h-9 w-9 text-slate-400 hover:text-pink-500 hover:bg-pink-50 dark:hover:bg-pink-900/20 rounded-xl transition-all"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
 

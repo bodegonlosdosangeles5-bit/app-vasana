@@ -66,7 +66,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
   const [isExportingViaje, setIsExportingViaje] = useState(false);
   const [isPreviewingViaje, setIsPreviewingViaje] = useState(false);
   const { user } = useAuth();
-  const canEdit = user?.role === 'admin' || user?.role === 'superadmin';
+  const canEdit = user?.role === 'admin' || user?.role === 'superadmin' || user?.user_name === 'jose';
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingProducto, setEditingProducto] = useState<Producto | null>(null);
   const [editForm, setEditForm] = useState({
@@ -240,8 +240,8 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
       }
       const hasStock = (formula?.stock_actual ?? (formula?.batchSize || 0)) > 0;
       
-      // Mostrar si tiene stock O si fue producido hoy (para que no desaparezcan el mismo día que se remiten)
-      return isTerminated && isVillaMartelli && (hasStock || isToday);
+      // Mostrar solo si tiene stock. El usuario pidió que se reinicie el contador al generar remito.
+      return isTerminated && isVillaMartelli && hasStock;
     });
     
     console.log(`✅ Productos filtrados para Villa Martelli: ${filtered.length}`);
