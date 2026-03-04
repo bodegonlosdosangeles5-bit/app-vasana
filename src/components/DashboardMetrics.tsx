@@ -1,13 +1,18 @@
 import { 
   Package, FlaskConical, Search, X, MapPin, 
   BarChart3, TrendingDown, Calendar, Scale, AlertCircle,
-  PackageCheck, Droplets, TrendingUp, Download, Eye
+  PackageCheck, Droplets, TrendingUp, Download, Eye, Pencil, Trash2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
+import { useAuth } from "@/components/Auth/AuthProvider";
+import { LogService } from "@/services/logService";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useMemo, useState, useEffect } from "react";
 import { Producto } from "@/services/productoService";
 import { useRealtimeInventory } from "@/hooks/useRealtimeInventory";
@@ -31,6 +36,7 @@ interface Metric {
   progress?: number;
   hasNavigation?: boolean;
   hasFormulasList?: boolean;
+  hasProductionList?: boolean;
   hasOutOfStock?: boolean;
   hasSearch?: boolean;
   hasProductionStats?: boolean;
@@ -46,7 +52,7 @@ interface DashboardMetricsProps {
 
 export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: DashboardMetricsProps) => {
   // Usar el hook de productos en tiempo real
-  const { productos, loading: productosLoading, error: productosError } = useRealtimeProductos();
+  const { productos, loading: productosLoading, error: productosError, updateProducto, deleteProducto } = useRealtimeProductos();
   
   // Usar los datos del hook en tiempo real o los props como fallback
   const formulasData = productos.length > 0 ? productos : formulas;
@@ -54,8 +60,27 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
   const [isOutOfStockOpen, setIsOutOfStockOpen] = useState(false);
   const [isFormulasListOpen, setIsFormulasListOpen] = useState(false);
   const [isProductionStatsOpen, setIsProductionStatsOpen] = useState(false);
+  const [isProductionListOpen, setIsProductionListOpen] = useState(false);
   const [isExportingProductos, setIsExportingProductos] = useState(false);
   const [isPreviewingProductos, setIsPreviewingProductos] = useState(false);
+  const [isExportingViaje, setIsExportingViaje] = useState(false);
+  const [isPreviewingViaje, setIsPreviewingViaje] = useState(false);
+  const { user } = useAuth();
+  const canEdit = user?.role === 'admin' || user?.role === 'superadmin';
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingProducto, setEditingProducto] = useState<Producto | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    lote: "",
+    batchSize: 0,
+    destination: "",
+    type: "stock" as "stock" | "client",
+    clientName: "",
+    date: ""
+  });
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<string | null>(null);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [animatedProgressKilos, setAnimatedProgressKilos] = useState(0);
   const [animatedProgressTerminados, setAnimatedProgressTerminados] = useState(0);
@@ -200,7 +225,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
       const normalizedStatus = normalizeText(formula?.status || "");
       const normalizedDestination = normalizeText(formula?.destination || "");
       
-      const isTerminated = normalizedStatus === 'available';
+      const isTerminated = ['terminado', 'finalizado', 'completo', 'available'].includes(normalizedStatus);
       const isVillaMartelli = normalizedDestination === 'villamartelli';
       
       // Para "Stock Finalizado" y listado del día, chequeamos si fue producido hoy
@@ -213,7 +238,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
       } catch (e) {
          // Silently ignore invalid dates
       }
-      const hasStock = (formula?.stock_actual !== undefined ? formula.stock_actual : (formula?.batchSize || 0)) > 0;
+      const hasStock = (formula?.stock_actual ?? (formula?.batchSize || 0)) > 0;
       
       // Mostrar si tiene stock O si fue producido hoy (para que no desaparezcan el mismo día que se remiten)
       return isTerminated && isVillaMartelli && (hasStock || isToday);
@@ -246,6 +271,35 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
   const totalKilosTeoricos = useMemo(() => {
     return formulasData.reduce((sum, f) => sum + (f.batchSize || 0), 0);
   }, [formulasData]);
+
+  // Productos del viaje actual: disponibles en Villa Martelli con stock > 0
+  // Cuando se genera un remito el stock baja a 0 y desaparecen → la tarjeta se reinicia
+  const productosViajeActual = useMemo(() => {
+    return formulasData.filter(f => {
+      const normalizedStatus = normalizeText(f?.status || "");
+      const normalizedDestination = normalizeText(f?.destination || "");
+      const currentStock = f?.stock_actual ?? (f?.batchSize || 0);
+      
+      const isTerminated = ['terminado', 'finalizado', 'completo', 'available'].includes(normalizedStatus);
+      const isVillaMartelli = normalizedDestination === 'villamartelli';
+      
+      return isTerminated && isVillaMartelli && currentStock > 0;
+    });
+  }, [formulasData]);
+
+  // Kilos fabricados para el viaje actual
+  const kilosViajeActual = useMemo(() => {
+    return productosViajeActual.reduce((sum, f) => sum + (f.batchSize || 0), 0);
+  }, [productosViajeActual]);
+
+  // Lista de productos del viaje actual ordenados por fecha
+  const productosViajeSorted = useMemo(() => {
+    return [...productosViajeActual].sort((a, b) => {
+      const dateA = a.date ? new Date(a.date).getTime() : 0;
+      const dateB = b.date ? new Date(b.date).getTime() : 0;
+      return dateB - dateA;
+    });
+  }, [productosViajeActual]);
 
   // Progreso de materias primas sin stock basado en 200 items como máximo
   const MAX_OUT_OF_STOCK = 200;
@@ -362,13 +416,13 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
   const metrics: Metric[] = [
     {
       title: "Producción",
-      value: `${todayTotal.toLocaleString()} kg`,
-      subtitle: totalAvailableKilosVM > 0 ? `(${totalAvailableKilosVM.toLocaleString()} kg sin remitir)` : "Total procesado",
+      value: `${kilosViajeActual.toLocaleString()} kg`,
+      subtitle: `${productosViajeActual.length} productos (viaje actual)`,
       icon: Scale,
       colorClass: "text-blue-600 dark:text-blue-400",
       bgClass: "bg-blue-500/10",
       progress: animatedProgressKilos,
-      hasFormulasList: true,
+      hasProductionList: true,
     },
     {
       title: "Materias Primas",
@@ -404,6 +458,82 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
   ];
 
   // ── PDF helpers para el modal de Productos Terminados ──────────────────────
+
+  const handleEditClick = (formula: Producto) => {
+    setEditingProducto(formula);
+    setEditForm({
+      name: formula.name,
+      lote: formula.lote_code || formula.id,
+      batchSize: formula.batchSize,
+      destination: formula.destination,
+      type: formula.type,
+      clientName: formula.clientName || "",
+      date: formula.date ? new Date(formula.date).toISOString().split('T')[0] : ""
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdate = async () => {
+    if (!editingProducto) return;
+    if (!canEdit) {
+      toast.error("No tienes permisos para realizar esta acción");
+      return;
+    }
+    try {
+      const success = await updateProducto(editingProducto.id, {
+        name: editForm.name,
+        lote_code: editForm.lote,
+        batchSize: editForm.batchSize,
+        destination: editForm.destination,
+        type: editForm.type,
+        clientName: editForm.type === "client" ? editForm.clientName : undefined,
+        date: editForm.date || undefined
+      });
+      if (success) {
+        toast.success("Producto actualizado correctamente");
+        LogService.saveLog({
+          action: 'Edición de Lote',
+          detail: `Editado producto "${editForm.name}" (${editForm.batchSize}kg). Destino: ${editForm.destination}`,
+          user_name: user?.user_name || 'Admin',
+          user_email: user?.user_name,
+          product_id: editingProducto.id
+        });
+        setIsEditModalOpen(false);
+        setEditingProducto(null);
+      } else {
+        toast.error("Error al actualizar el producto");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Error al conectar con la base de datos");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!productToDelete) return;
+    if (!canEdit) {
+      toast.error("No tienes permisos para realizar esta acción");
+      return;
+    }
+    const targetProduct = productos.find(p => p.id === productToDelete);
+    const success = await deleteProducto(productToDelete);
+    if (success) {
+      toast.success("Producto eliminado correctamente");
+      if (targetProduct) {
+        LogService.saveLog({
+          action: 'Eliminación de Lote',
+          detail: `Eliminado producto "${targetProduct.name}" (${targetProduct.batchSize}kg)`,
+          user_name: user?.user_name || 'Admin',
+          user_email: user?.user_name,
+        });
+      }
+      setIsDeleteConfirmOpen(false);
+      setProductToDelete(null);
+    } else {
+      toast.error("No se pudo eliminar el producto");
+    }
+  };
+
   const buildProductosTableData = () =>
     formulasTerminadas.map((f, i) => [
       (i + 1).toString(),
@@ -527,6 +657,131 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
       setIsPreviewingProductos(false);
     }
   };
+
+  // ── PDF helpers para el modal de Viaje Actual ──────────────────────
+  const buildViajeTableData = () =>
+    productosViajeSorted.map((f, i) => [
+      (i + 1).toString(),
+      f.name || '—',
+      f.lote_code || f.id || '—',
+      `${f.batchSize || 0} kg`,
+      f.type === 'client' ? (f.clientName || 'Cliente') : 'Stock',
+      f.date ? new Date(f.date).toLocaleDateString('es-AR') : '—',
+    ]);
+
+  const handleExportViajePDF = async () => {
+    try {
+      setIsExportingViaje(true);
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const today = new Date().toLocaleDateString('es-AR', {
+        day: '2-digit', month: 'long', year: 'numeric'
+      });
+
+      // Cabecera
+      pdf.setFillColor(15, 23, 42);
+      pdf.rect(0, 0, pdfWidth, 38, 'F');
+      pdf.setTextColor(59, 130, 246);              // blue-500
+      pdf.setFontSize(18);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('PLANTA VARELA', 15, 15);
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(11);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Producción — Viaje Actual', 15, 24);
+      pdf.setFontSize(8);
+      pdf.setTextColor(148, 163, 184);           // slate-400
+      pdf.text(`Generado: ${today}`, 15, 32);
+      pdf.text(`Total: ${productosViajeActual.length} productos | ${kilosViajeActual.toLocaleString()} kg`, pdfWidth - 15, 32, { align: 'right' });
+
+      // Tabla
+      autoTable(pdf, {
+        startY: 45,
+        head: [['N°', 'Producto', 'Lote', 'Ctd. Frbc.', 'Destinatario', 'Fecha']],
+        body: buildViajeTableData(),
+        theme: 'striped',
+        headStyles: { fillColor: [59, 130, 246], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+        bodyStyles: { fontSize: 8.5, textColor: [30, 41, 59] },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        columnStyles: {
+          0: { cellWidth: 10, halign: 'center' },
+          1: { cellWidth: 55 },
+          2: { cellWidth: 30 },
+          3: { cellWidth: 22, halign: 'right' },
+          4: { cellWidth: 40 },
+          5: { cellWidth: 28, halign: 'center' },
+        },
+        margin: { left: 15, right: 15 },
+      });
+
+      // Pie de página
+      const pageCount = (pdf as any).internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(7);
+        pdf.setTextColor(148, 163, 184);
+        pdf.text(`Pág. ${i} / ${pageCount}`, pdfWidth / 2, 290, { align: 'center' });
+        pdf.text('Sistema de Gestión — Planta Varela', 15, 290);
+      }
+
+      pdf.save(`Viaje_Actual_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (err) {
+      console.error('Error al exportar PDF:', err);
+    } finally {
+      setIsExportingViaje(false);
+    }
+  };
+
+  const handlePreviewViajePDF = async () => {
+    try {
+      setIsPreviewingViaje(true);
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const today = new Date().toLocaleDateString('es-AR', {
+        day: '2-digit', month: 'long', year: 'numeric'
+      });
+
+      pdf.setFontSize(20);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(15, 23, 42);
+      pdf.text('PLANTA VARELA', 15, 20);
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(71, 85, 105);
+      pdf.text('Producción — Viaje Actual', 15, 29);
+      pdf.setFontSize(9);
+      pdf.text(`Fecha: ${today}   |   Total: ${productosViajeActual.length} productos, ${kilosViajeActual.toLocaleString()} kg`, 15, 37);
+      pdf.setLineWidth(0.4);
+      pdf.setDrawColor(226, 232, 240);
+      pdf.line(15, 40, pdfWidth - 15, 40);
+
+      autoTable(pdf, {
+        startY: 45,
+        head: [['N°', 'Producto', 'Lote', 'Ctd. Fbrc.', 'Destinatario', 'Fecha']],
+        body: buildViajeTableData(),
+        theme: 'striped',
+        headStyles: { fillColor: [59, 130, 246], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+        bodyStyles: { fontSize: 8.5, textColor: [30, 41, 59] },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        columnStyles: {
+          0: { cellWidth: 10, halign: 'center' },
+          1: { cellWidth: 55 },
+          2: { cellWidth: 30 },
+          3: { cellWidth: 22, halign: 'right' },
+          4: { cellWidth: 40 },
+          5: { cellWidth: 28, halign: 'center' },
+        },
+        margin: { left: 15, right: 15 },
+      });
+
+      const blob = pdf.output('bloburl');
+      window.open(blob as unknown as string, '_blank');
+    } catch (err) {
+      console.error('Error al previsualizar PDF:', err);
+    } finally {
+      setIsPreviewingViaje(false);
+    }
+  };
   // ──────────────────────────────────────────────────────────────────────────
 
   return (
@@ -535,7 +790,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 kpi-staggered">
         {metrics.map((metric: Metric, index) => {
           const Icon = metric.icon;
-          const isClickable = metric.hasOutOfStock || metric.hasSearch || metric.hasNavigation || metric.hasFormulasList || metric.hasProductionStats;
+          const isClickable = metric.hasOutOfStock || metric.hasSearch || metric.hasNavigation || metric.hasFormulasList || metric.hasProductionList || metric.hasProductionStats;
           
           return (
             <Card 
@@ -554,6 +809,8 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                   setIsSearchOpen(true);
                 } else if (metric.hasNavigation && onNavigateToProduction) {
                   onNavigateToProduction();
+                } else if (metric.hasProductionList) {
+                  setIsProductionListOpen(true);
                 } else if (metric.hasFormulasList) {
                   setIsFormulasListOpen(true);
                 } else if (metric.hasProductionStats) {
@@ -940,7 +1197,25 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                             Cliente: {formula.clientName || 'Sin cliente'}
                           </p>
                         </div>
-                        <div className="text-right">
+                        <div className="flex flex-col items-end gap-2">
+                          <div className="flex gap-2">
+                            {canEdit && (
+                              <>
+                                <Button
+                                  variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary transition-colors"
+                                  onClick={(e) => { e.stopPropagation(); handleEditClick(formula); }}
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive transition-colors"
+                                  onClick={(e) => { e.stopPropagation(); setProductToDelete(formula.id); setIsDeleteConfirmOpen(true); }}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
                           <div className="text-sm font-bold px-3 py-1 rounded-full bg-primary text-primary-foreground">
                             Terminada
                           </div>
@@ -990,6 +1265,148 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
         </DialogContent>
       </Dialog>
 
+      {/* Modal de Listado de Producción - Viaje Actual */}
+      <Dialog open={isProductionListOpen} onOpenChange={setIsProductionListOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden bg-background border-border text-foreground">
+          <DialogHeader className="flex flex-row items-center justify-between border-b border-border pb-4">
+            <DialogTitle className="flex items-center gap-2">
+              <Scale className="h-5 w-5 text-blue-500" />
+              Producción — Viaje Actual
+            </DialogTitle>
+            <div className="flex items-center gap-2 pr-4">
+              <Button
+                onClick={handlePreviewViajePDF}
+                disabled={isPreviewingViaje}
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs gap-1.5 no-print"
+              >
+                <Eye className="h-3.5 w-3.5" />
+                {isPreviewingViaje ? "..." : "Vista Previa"}
+              </Button>
+              <Button
+                onClick={handleExportViajePDF}
+                disabled={isExportingViaje}
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs gap-1.5 no-print"
+              >
+                <Download className="h-3.5 w-3.5" />
+                {isExportingViaje ? "..." : "Exportar"}
+              </Button>
+            </div>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Resumen */}
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+              <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                <Scale className="h-5 w-5" />
+                <span className="font-semibold">
+                  {kilosViajeActual.toLocaleString()} kg fabricados para este viaje
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                {productosViajeActual.length} productos disponibles para envío
+              </p>
+            </div>
+
+            {/* Lista de productos */}
+            <div className="max-h-96 overflow-y-auto">
+              {productosViajeSorted.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No hay productos fabricados para el viaje actual
+                </div>
+              ) : (
+                <div className="grid gap-3">
+                  {productosViajeSorted.map((producto) => (
+                    <div
+                      key={producto.id}
+                      className="p-4 border border-border rounded-lg bg-muted/20 hover:bg-muted/40 transition-colors space-y-3"
+                    >
+                      {/* Información principal */}
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-lg text-foreground truncate">
+                            {producto.name}
+                          </h4>
+                          <p className="text-sm text-muted-foreground">
+                            {producto.clientName ? `Cliente: ${producto.clientName}` : producto.destination || 'Sin destino'}
+                          </p>
+                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                          <div className="flex gap-2">
+                            {canEdit && (
+                              <>
+                                <Button
+                                  variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary transition-colors"
+                                  onClick={(e) => { e.stopPropagation(); handleEditClick(producto); }}
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive transition-colors"
+                                  onClick={(e) => { e.stopPropagation(); setProductToDelete(producto.id); setIsDeleteConfirmOpen(true); }}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                          <div className={`text-sm font-bold px-3 py-1 rounded-full ${
+                            producto.status === 'available' 
+                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' 
+                              : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                          }`}>
+                            {producto.status === 'available' ? 'Disponible' : 'Incompleto'}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Información de producción */}
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <FlaskConical className="h-4 w-4 text-blue-500" />
+                            <span className="font-medium text-foreground">Lote:</span>
+                            <span className="text-blue-600 dark:text-blue-400 font-semibold">
+                              {producto.lote_code || producto.id}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Scale className="h-4 w-4 text-blue-500" />
+                            <span className="font-medium text-foreground">Fabricado:</span>
+                            <span className="text-blue-600 dark:text-blue-400 font-semibold">
+                              {producto.batchSize || 0} kg
+                            </span>
+                          </div>
+
+                        </div>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <span className="font-medium text-foreground">Tipo:</span>
+                          <span className="truncate">{producto.type === 'client' ? 'Cliente' : 'Stock'}</span>
+                        </div>
+                      </div>
+
+                      {/* Información adicional */}
+                      <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border pt-2">
+                        <span>Fecha: {producto.date ? new Date(producto.date).toLocaleDateString('es-AR') : 'Sin fecha'}</span>
+                        <span>Destino: {producto.destination || 'Sin destino'}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Resumen final */}
+            <div className="text-sm text-muted-foreground text-center border-t border-border pt-4">
+              Viaje actual: {productosViajeActual.length} productos | {kilosViajeActual.toLocaleString()} kg fabricados
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Modal de Estadísticas de Producción */}
       <ProductionStatsModal
         isOpen={isProductionStatsOpen}
@@ -997,6 +1414,138 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
         productos={formulasData}
       />
 
+      {/* Modal para editar producto */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="max-w-2xl bg-background border-border text-foreground">
+          <DialogHeader className="border-b border-border pb-4">
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5 text-primary" />
+              Editar Producto
+            </DialogTitle>
+          </DialogHeader>
+          
+          {editingProducto && (
+            <div className="space-y-6 pt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-name">Nombre del Producto</Label>
+                  <Input
+                    id="edit-name"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-lote">Número de Lote</Label>
+                  <Input
+                    id="edit-lote"
+                    value={editForm.lote}
+                    onChange={(e) => setEditForm({ ...editForm, lote: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-batchSize">Cantidad Fabricada (kg)</Label>
+                  <Input
+                    id="edit-batchSize"
+                    type="number"
+                    value={editForm.batchSize}
+                    onChange={(e) => setEditForm({ ...editForm, batchSize: parseFloat(e.target.value) })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-date">Fecha de Producción</Label>
+                  <Input
+                    id="edit-date"
+                    type="date"
+                    value={editForm.date}
+                    onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-destination">Destino</Label>
+                  <Select 
+                    value={editForm.destination} 
+                    onValueChange={(value) => setEditForm({ ...editForm, destination: value })}
+                  >
+                    <SelectTrigger id="edit-destination">
+                      <SelectValue placeholder="Seleccionar destino" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Villa Martelli">Villa Martelli</SelectItem>
+                      <SelectItem value="Florencio Varela">Florencio Varela</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-type">Tipo</Label>
+                  <Select 
+                    value={editForm.type} 
+                    onValueChange={(value: "stock" | "client") => setEditForm({ ...editForm, type: value })}
+                  >
+                    <SelectTrigger id="edit-type">
+                      <SelectValue placeholder="Seleccionar tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="stock">Stock</SelectItem>
+                      <SelectItem value="client">Cliente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {editForm.type === "client" && (
+                <div className="space-y-2">
+                  <Label htmlFor="edit-clientName">Nombre del Cliente</Label>
+                  <Input
+                    id="edit-clientName"
+                    value={editForm.clientName}
+                    onChange={(e) => setEditForm({ ...editForm, clientName: e.target.value })}
+                    placeholder="Ingrese nombre del cliente"
+                  />
+                </div>
+              )}
+
+              <DialogFooter className="gap-2 sm:gap-0 pt-4 border-t border-border mt-4">
+                <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleUpdate}>
+                  Guardar Cambios
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de confirmación de eliminación */}
+      <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <DialogContent className="max-w-md bg-background border-border text-foreground">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-6 w-6" />
+              Confirmar Eliminación
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p>¿Estás seguro de que deseas eliminar este producto? Esta acción no se puede deshacer y el registro se perderá permanentemente del sistema.</p>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setIsDeleteConfirmOpen(false)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              Eliminar Permanentemente
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

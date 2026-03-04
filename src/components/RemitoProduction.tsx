@@ -39,8 +39,7 @@ export const RemitoProduction = ({ productionItems }: RemitoProductionProps) => 
       
       const isTerminated = ['terminado', 'finalizado', 'completo', 'available'].includes(normalizedStatus);
       const isVillaMartelli = normalizedDestination === 'villamartelli';
-      const hasStock = item.stock_actual !== undefined ? item.stock_actual > 0 : true; // If undefined (legacy), assume it has stock if it's in the list
-      
+      const hasStock = (item.stock_actual ?? item.batchSize) > 0;
       return isTerminated && isVillaMartelli && hasStock;
     });
   }, [productionItems]);

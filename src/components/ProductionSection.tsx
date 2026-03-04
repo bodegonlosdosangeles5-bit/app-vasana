@@ -37,7 +37,7 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
     deleteProducto: deleteProductoRealtime 
   } = useRealtimeProductos();
 
-  const [activeTab, setActiveTab] = useState("current");
+  const [activeTab, setActiveTab] = useState("remito");
   const [selectedEnvio, setSelectedEnvio] = useState<EnvioConRemitos | null>(null);
   const [isEnvioDetailOpen, setIsEnvioDetailOpen] = useState(false);
   const [selectedRemito, setSelectedRemito] = useState<RemitoWithItems | null>(null);
@@ -104,15 +104,16 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
     }
   };
 
-  // Mostrar productos terminados con destino a Villa Martelli
+  // Productos del viaje actual: disponibles en Villa Martelli con stock > 0
+  // Cuando se genera un remito el stock baja a 0 y desaparecen automáticamente
   const currentProduction = useMemo(() => {
     return productos.filter(producto => {
       const normalizedStatus = normalizeText(producto.status);
       const normalizedDestination = normalizeText(producto.destination);
       
-      const isTerminated = normalizedStatus === 'available';
+      const isTerminated = ['terminado', 'finalizado', 'completo', 'available'].includes(normalizedStatus);
       const isVillaMartelli = normalizedDestination === 'villamartelli';
-      const hasStock = (producto.stock_actual !== undefined ? producto.stock_actual : producto.batchSize) > 0;
+      const hasStock = (producto.stock_actual ?? producto.batchSize) > 0;
       
       return isTerminated && isVillaMartelli && hasStock;
     });
@@ -310,112 +311,13 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3 bg-white border-2 border-slate-200 p-1.5 rounded-xl shadow-sm">
-          <TabsTrigger value="current" className="text-sm font-semibold rounded-lg data-[state=active]:bg-pink-400 data-[state=active]:text-white">Producción Actual</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 bg-white border-2 border-slate-200 p-1.5 rounded-xl shadow-sm">
           <TabsTrigger value="remito" className="text-sm font-semibold rounded-lg data-[state=active]:bg-pink-400 data-[state=active]:text-white">Remito Villa Martelli</TabsTrigger>
           <TabsTrigger value="shipments" className="text-sm font-semibold rounded-lg data-[state=active]:bg-pink-400 data-[state=active]:text-white">Envíos</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="current" className="space-y-4">
-          {currentProduction.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-2xl shadow-sm">
-              <p className="text-slate-600 text-lg font-medium">No hay fórmulas terminadas para Villa Martelli</p>
-              <p className="text-slate-500 text-sm mt-2">
-                Las fórmulas terminadas con destino "Villa Martelli" aparecerán aquí automáticamente
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {currentProduction.map((formula) => (
-                <Card key={formula.id} className="relative overflow-hidden bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[2rem] shadow-sm hover:shadow-2xl transition-all duration-500 ease-out group min-h-[16rem] h-auto py-4 hover:-translate-y-1">
-                  <CardHeader className="h-full relative z-10">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0 flex-1 space-y-3">
-                        <CardTitle className="text-xl font-bold text-slate-800 dark:text-white break-words leading-tight">
-                          {formula.name}
-                        </CardTitle>
-                        
-                        <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-                          <span className="font-semibold text-pink-500 bg-pink-50 dark:bg-pink-500/10 px-2 py-0.5 rounded-md text-xs uppercase tracking-wider">Lote</span>
-                          <span className="truncate font-mono font-medium">{formula.lote_code || formula.id}</span>
-                        </div>
-
-                        <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 space-y-2 border border-slate-100 dark:border-slate-800">
-                          <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-300">
-                             <span className="font-medium">Producción</span>
-                             <span className="font-bold text-slate-900 dark:text-white">{formula.batchSize} kg</span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-300">
-                             <span className="font-medium">Stock Actual</span>
-                             <span className="font-bold text-pink-500">{formula.stock_actual} kg</span>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-400">
-                          <span className="text-xs uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider">Destino</span>
-                          <span className="break-words whitespace-normal leading-snug font-medium">{formula.destination}</span>
-                        </div>
-
-                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-500">
-                          <Calendar className="h-3.5 w-3.5" />
-                          <span>{formula.date ? new Date(formula.date).toLocaleDateString('es-AR', {
-                            day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC'
-                          }) : 'No especificada'}</span>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-2 pt-2">
-                          <Badge variant="outline" className="text-[10px] uppercase font-bold border-pink-200 dark:border-pink-800 text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-900/20">
-                            {formula.type === "client" ? "Cliente" : "Stock"}
-                          </Badge>
-                          {formula.type === "client" && formula.clientName && (
-                            <span className="break-words italic font-medium text-xs text-slate-500">({formula.clientName})</span>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col items-end gap-3 shrink-0">
-                        <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                          {canEdit && (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-slate-400 hover:text-pink-500 hover:bg-pink-50 dark:hover:bg-pink-900/20 transition-all rounded-lg"
-                                onClick={() => handleEditClick(formula)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all rounded-lg"
-                                onClick={() => {
-                                  setProductToDelete(formula.id);
-                                  setIsDeleteConfirmOpen(true);
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                        <Badge 
-                          variant="default"
-                          className="bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider"
-                        >
-                          Terminada
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
         <TabsContent value="remito" className="space-y-4">
-          <RemitoProduction productionItems={productos} />
+          <RemitoProduction productionItems={currentProduction} />
         </TabsContent>
 
         <TabsContent value="shipments" className="space-y-4">

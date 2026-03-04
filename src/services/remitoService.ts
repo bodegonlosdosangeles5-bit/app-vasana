@@ -90,7 +90,7 @@ export class RemitoService {
         
         const isTerminated = ['terminado', 'finalizado', 'completo', 'available'].includes(normalizedStatus);
         const isVillaMartelli = normalizedDestination === 'villamartelli';
-        const hasStock = (item.stock_actual !== undefined ? item.stock_actual : item.batchSize) > 0;
+        const hasStock = (item.stock_actual ?? item.batchSize) > 0;
         
         return isTerminated && isVillaMartelli && hasStock;
       });
@@ -111,7 +111,7 @@ export class RemitoService {
         // Vamos a enviar batchSize, pero el RPC hace GREATEST(0, stock - qty).
         // Mejor enviar el stock actual si es menor al batchSize original (caso parcial).
         // Pero productionItems podrían tener stock_actual indefinido si son legacy.
-        cantidad: item.stock_actual !== undefined ? item.stock_actual : item.batchSize,
+        cantidad: item.stock_actual ?? item.batchSize,
         lote: item.lote_code || item.id,
         tipo: item.type,
         cliente: item.type === 'client' ? item.clientName : 'Stock'

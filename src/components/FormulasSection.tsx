@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CheckCircle, XCircle, Clock, Beaker, Filter, Edit, Save, X, Plus, Upload, Package } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Beaker, Filter, Edit, Save, X, Plus, Upload, Package, Trash2, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -90,6 +90,8 @@ export const FormulasSection = ({
     unit: "kg"
   });
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<string | null>(null);
 
   // Usar los productos del hook en tiempo real
   const currentFormulas = formulasData;
@@ -320,14 +322,46 @@ export const FormulasSection = ({
     setIsEditModalOpen(true);
   };
 
-  const handleUpdateFormula = (e: React.FormEvent) => {
+  const handleUpdateFormula = async (e: React.FormEvent) => {
     e.preventDefault();
     if (editingFormula) {
-      setFormulas(currentFormulas.map(formula => 
-        formula.id === editingFormula.id ? editingFormula : formula
-      ));
-      setIsEditModalOpen(false);
-      setEditingFormula(null);
+      try {
+        const success = await updateProducto(editingFormula.id, {
+          name: editingFormula.name,
+          lote_code: editingFormula.lote_code,
+          batchSize: editingFormula.batchSize,
+          destination: editingFormula.destination,
+          date: editingFormula.date,
+          type: editingFormula.type,
+          clientName: editingFormula.clientName,
+          status: editingFormula.status
+        });
+        
+        if (success) {
+          setShowSuccessMessage(`¡Producto "${editingFormula.name}" actualizado! ✅`);
+          setIsEditModalOpen(false);
+          setEditingFormula(null);
+          setTimeout(() => setShowSuccessMessage(null), 3000);
+        }
+      } catch (error) {
+        console.error('Error updating product:', error);
+      }
+    }
+  };
+
+  const handleDeleteFormula = async () => {
+    if (!productToDelete) return;
+    
+    try {
+      const success = await deleteProducto(productToDelete);
+      if (success) {
+        setShowSuccessMessage("Producto eliminado correctamente 🗑️");
+        setIsDeleteConfirmOpen(false);
+        setProductToDelete(null);
+        setTimeout(() => setShowSuccessMessage(null), 3000);
+      }
+    } catch (error) {
+      console.error('Error deleting product:', error);
     }
   };
 
@@ -708,21 +742,27 @@ export const FormulasSection = ({
                   </div>
                 )}
 
-                <div className="flex justify-end pt-2">
+                <div className="flex justify-end pt-2 gap-2">
                   <Button 
                     variant="outline" 
-                    size="sm"
+                    size="icon"
                     onClick={() => handleEditFormula(formula)}
-                    disabled={actualStatus === "available"}
-                    className={`flex items-center gap-2 ${
-                      actualStatus === "available" 
-                        ? "opacity-50 cursor-not-allowed" 
-                        : "hover:bg-gray-100"
-                    }`}
-                    title={actualStatus === "available" ? "No se puede editar una fórmula terminada" : "Editar fórmula"}
+                    className="h-9 w-9 text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-900/50"
+                    title="Editar producto"
                   >
                     <Edit className="h-4 w-4" />
-                    {actualStatus === "available" ? "No Editable" : "Editar"}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    onClick={() => {
+                      setProductToDelete(formula.id);
+                      setIsDeleteConfirmOpen(true);
+                    }}
+                    className="h-9 w-9 text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-900/50"
+                    title="Eliminar producto"
+                  >
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </CardContent>
@@ -747,8 +787,8 @@ export const FormulasSection = ({
                   <Label htmlFor="edit-lot">Lote del Producto</Label>
                   <Input
                     id="edit-lot"
-                    value={editingFormula.id}
-                    onChange={(e) => setEditingFormula(prev => ({ ...prev, id: e.target.value }))}
+                    value={editingFormula.lote_code || editingFormula.id}
+                    onChange={(e) => setEditingFormula(prev => ({ ...prev, lote_code: e.target.value }))}
                     placeholder="Ej: L-2024-089"
                     required
                   />
@@ -1258,6 +1298,35 @@ export const FormulasSection = ({
               </form>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de confirmación de eliminación */}
+      <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2 text-red-600">
+              <AlertCircle className="h-6 w-6" />
+              Confirmar Eliminación
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-foreground">¿Estás seguro de que deseas eliminar este producto? Esta acción no se puede deshacer y el stock se perderá permanentemente.</p>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteConfirmOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteFormula}
+            >
+              Eliminar Permanentemente
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
