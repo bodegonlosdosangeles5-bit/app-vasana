@@ -232,7 +232,7 @@ export const EnvioDetailModal = ({
                   <p className="text-sm font-medium text-muted-foreground">Fecha de Creación</p>
                   <p className="text-sm flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
-                    {new Date(envio.fecha_creacion).toLocaleDateString()}
+                    {envio.fecha_creacion ? new Date(envio.fecha_creacion).toLocaleDateString('es-AR') : '-'}
                   </p>
                 </div>
                 {envio.fecha_envio && (
@@ -240,7 +240,7 @@ export const EnvioDetailModal = ({
                     <p className="text-sm font-medium text-muted-foreground">Fecha de Envío</p>
                     <p className="text-sm flex items-center gap-1">
                       <Calendar className="h-4 w-4" />
-                      {new Date(envio.fecha_envio).toLocaleDateString()}
+                      {envio.fecha_envio ? new Date(envio.fecha_envio + 'T00:00:00').toLocaleDateString('es-AR') : '-'}
                     </p>
                   </div>
                 )}
@@ -301,7 +301,7 @@ export const EnvioDetailModal = ({
                         </div>
                         <div className="text-sm text-muted-foreground">
                           <p>Destino: {remito.destino}</p>
-                          <p>Fecha: {new Date(remito.fecha).toLocaleDateString()}</p>
+                          <p>Fecha: {new Date(remito.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</p>
                           {remito.observaciones && (
                             <p>Observaciones: {remito.observaciones}</p>
                           )}

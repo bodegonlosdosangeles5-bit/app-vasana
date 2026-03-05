@@ -109,10 +109,10 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
     const monthAgo = subDays(now, 30);
     const recentLots = villaMartelliProducts
       .filter(p => {
-        const pDate = p.date ? parseISO(p.date) : null;
+        const pDate = p.date ? parseISO(p.date + 'T00:00:00') : null;
         return pDate && pDate >= monthAgo && pDate <= now;
       })
-      .sort((a, b) => new Date(b.date || "").getTime() - new Date(a.date || "").getTime());
+      .sort((a, b) => new Date((b.date || "") + 'T00:00:00').getTime() - new Date((a.date || "") + 'T00:00:00').getTime());
 
     // --- DATOS DINÁMICOS DEL GRÁFICO (Desde la Vista) ---
     let chartDynamicData = [];
@@ -121,9 +121,9 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
       // Filtrar últimos 14 días de la vista
       const last14Days = subDays(now, 14);
       chartDynamicData = viewData
-        .filter(d => d?.fecha_produccion != null && parseISO(d.fecha_produccion) >= last14Days)
+        .filter(d => d?.fecha_produccion != null && parseISO(d.fecha_produccion + 'T00:00:00') >= last14Days)
         .map(d => ({
-          name: format(parseISO(d.fecha_produccion), "dd/MM"),
+          name: format(parseISO(d.fecha_produccion + 'T00:00:00'), "dd/MM"),
           total: Number(d.total_kg)
         }));
     } else if (viewType === "monthly") {
@@ -133,7 +133,7 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
       viewData.forEach(d => {
         if (!d?.fecha_produccion) return; // ← Guarda defensiva
         try {
-          const date = parseISO(d.fecha_produccion);
+          const date = parseISO(d.fecha_produccion + 'T00:00:00');
           const key = format(date, "yyyy-MM");
           
           if (!monthlyGroups.has(key)) {
@@ -161,7 +161,7 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
       viewData.forEach(d => {
         if (!d?.fecha_produccion) return; // ← Guarda defensiva
         try {
-          const date = parseISO(d.fecha_produccion);
+          const date = parseISO(d.fecha_produccion + 'T00:00:00');
           const label = `Sem ${format(date, "I")}`;
           weeklyGroups[label] = (weeklyGroups[label] || 0) + Number(d.total_kg);
         } catch (e) {
@@ -252,7 +252,7 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
       pdf.text("2. Listado de Lotes Procesados", 15, 85);
       const tableData = stats.recentLots.map((lot, index) => [
         (index + 1).toString(),
-        lot.date ? format(parseISO(lot.date), "dd/MM/yyyy") : "-",
+        lot.date ? format(parseISO(lot.date + 'T00:00:00'), "dd/MM/yyyy") : "-",
         lot.name,
         lot.lote_code || lot.id,
         `${lot.batchSize} kg`,

@@ -179,7 +179,7 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
       destination: formula.destination,
       type: formula.type,
       clientName: formula.clientName || "",
-      date: formula.date ? new Date(formula.date).toLocaleDateString('en-CA') : "" // 'en-CA' gives YYYY-MM-DD reliably without shift
+      date: formula.date ? formula.date : "" // El campo type="date" ya espera YYYY-MM-DD
     });
     setIsEditModalOpen(true);
   };
@@ -435,7 +435,7 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Fecha</Label>
-                  <p className="text-sm">{new Date(selectedRemito.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' })}</p>
+                  <p className="text-sm">{new Date(selectedRemito.fecha + 'T00:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Total Kilos</Label>

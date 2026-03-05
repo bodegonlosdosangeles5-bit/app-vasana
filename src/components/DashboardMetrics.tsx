@@ -143,7 +143,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
     const todayTotal = viewData.reduce((sum, d) => {
       if (!d?.fecha_produccion) return sum;
       try {
-        const dDate = parseISO(d.fecha_produccion);
+        const dDate = parseISO(d.fecha_produccion + 'T00:00:00');
         if (isSameDay(dDate, now)) {
           return sum + Number(d.total_kg || 0);
         }
@@ -174,7 +174,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
     const weekly = viewData.reduce((sum, d) => {
       if (!d?.fecha_produccion) return sum;
       try {
-        const dDate = parseISO(d.fecha_produccion);
+        const dDate = parseISO(d.fecha_produccion + 'T00:00:00');
         if (isSameWeek(dDate, now, { weekStartsOn: 1 })) {
           return sum + Number(d.total_kg || 0);
         }
@@ -189,7 +189,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
     const monthly = viewData.reduce((sum, d) => {
       if (!d?.fecha_produccion) return sum;
       try {
-        const dDate = parseISO(d.fecha_produccion);
+        const dDate = parseISO(d.fecha_produccion + 'T00:00:00');
         if (isSameMonth(dDate, now)) {
           return sum + Number(d.total_kg || 0);
         }
@@ -212,40 +212,27 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
 
   // Calcular productos terminados para Villa Martelli
   const formulasTerminadas = useMemo(() => {
-    console.log('🔍 DashboardMetrics - Filtrado de productos:');
-    console.log('📊 Total de productos recibidos:', formulasData.length);
-    console.log('📊 Productos recibidos:', formulasData.map(f => ({
-      id: f.id,
-      name: f.name,
-      status: f.status,
-      destination: f.destination
-    })));
-    
-    const filtered = formulasData.filter(formula => {
+    const todayDate = new Date();
+    return formulasData.filter(formula => {
       const normalizedStatus = normalizeText(formula?.status || "");
       const normalizedDestination = normalizeText(formula?.destination || "");
       
       const isTerminated = ['terminado', 'finalizado', 'completo', 'available'].includes(normalizedStatus);
       const isVillaMartelli = normalizedDestination === 'villamartelli';
       
-      // Para "Stock Finalizado" y listado del día, chequeamos si fue producido hoy
-      // o si tiene stock. 
       let isToday = false;
       try {
         if (formula?.date) {
-            isToday = isSameDay(parseISO(formula.date), new Date());
+          isToday = isSameDay(parseISO(formula.date + 'T00:00:00'), todayDate);
         }
       } catch (e) {
          // Silently ignore invalid dates
       }
       const hasStock = (formula?.stock_actual ?? (formula?.batchSize || 0)) > 0;
       
-      // Mostrar solo si tiene stock. El usuario pidió que se reinicie el contador al generar remito.
+      // Mostrar solo si tiene stock para Villa Martelli
       return isTerminated && isVillaMartelli && hasStock;
     });
-    
-    console.log(`✅ Productos filtrados para Villa Martelli: ${filtered.length}`);
-    return filtered;
   }, [formulasData]);
 
   // Filtrar inventario según término de búsqueda (igual que InventorySection)
@@ -295,8 +282,8 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
   // Lista de productos del viaje actual ordenados por fecha
   const productosViajeSorted = useMemo(() => {
     return [...productosViajeActual].sort((a, b) => {
-      const dateA = a.date ? new Date(a.date).getTime() : 0;
-      const dateB = b.date ? new Date(b.date).getTime() : 0;
+      const dateA = a.date ? new Date(a.date + 'T00:00:00').getTime() : 0;
+      const dateB = b.date ? new Date(b.date + 'T00:00:00').getTime() : 0;
       return dateB - dateA;
     });
   }, [productosViajeActual]);
@@ -468,7 +455,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
       destination: formula.destination,
       type: formula.type,
       clientName: formula.clientName || "",
-      date: formula.date ? new Date(formula.date).toISOString().split('T')[0] : ""
+      date: formula.date ? formula.date : "" // El campo type="date" ya espera YYYY-MM-DD
     });
     setIsEditModalOpen(true);
   };
@@ -541,7 +528,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
       f.lote_code || f.id || '—',
       `${f.batchSize || 0} kg`,
       f.clientName || 'Sin cliente',
-      f.date ? new Date(f.date).toLocaleDateString('es-AR') : '—',
+      f.date ? format(parseISO(f.date + 'T00:00:00'), 'dd/MM/yyyy') : '—',
     ]);
 
   const handleExportProductosPDF = async () => {
@@ -599,7 +586,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
         pdf.text('Sistema de Gestión — Planta Varela', 15, 290);
       }
 
-      pdf.save(`Productos_Terminados_${new Date().toISOString().split('T')[0]}.pdf`);
+      pdf.save(`Productos_Terminados_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
     } catch (err) {
       console.error('Error al exportar PDF:', err);
     } finally {
@@ -666,7 +653,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
       f.lote_code || f.id || '—',
       `${f.batchSize || 0} kg`,
       f.type === 'client' ? (f.clientName || 'Cliente') : 'Stock',
-      f.date ? new Date(f.date).toLocaleDateString('es-AR') : '—',
+      f.date ? format(parseISO(f.date + 'T00:00:00'), 'dd/MM/yyyy') : '—',
     ]);
 
   const handleExportViajePDF = async () => {
@@ -724,7 +711,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
         pdf.text('Sistema de Gestión — Planta Varela', 15, 290);
       }
 
-      pdf.save(`Viaje_Actual_${new Date().toISOString().split('T')[0]}.pdf`);
+      pdf.save(`Viaje_Actual_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
     } catch (err) {
       console.error('Error al exportar PDF:', err);
     } finally {
@@ -1248,7 +1235,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
 
                       {/* Información adicional */}
                       <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border pt-2">
-                        <span>Fecha: {formula.date ? new Date(formula.date).toLocaleDateString() : 'Sin fecha'}</span>
+                        <span>Fecha: {formula.date ? format(parseISO(formula.date + 'T00:00:00'), 'dd/MM/yyyy') : 'Sin fecha'}</span>
                         <span>Destino: {formula.destination || 'Sin destino'}</span>
                       </div>
                     </div>
@@ -1390,7 +1377,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
 
                       {/* Información adicional */}
                       <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border pt-2">
-                        <span>Fecha: {producto.date ? new Date(producto.date).toLocaleDateString('es-AR') : 'Sin fecha'}</span>
+                        <span>Fecha: {producto.date ? format(parseISO(producto.date + 'T00:00:00'), 'dd/MM/yyyy') : 'Sin fecha'}</span>
                         <span>Destino: {producto.destination || 'Sin destino'}</span>
                       </div>
                     </div>

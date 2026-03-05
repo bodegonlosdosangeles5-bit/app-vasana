@@ -118,27 +118,14 @@ export const RemitoProduction = ({ productionItems, onSuccess }: RemitoProductio
     // 1. Usar toast.promise para mayor visibilidad
     toast.promise(
       (async () => {
-        // Generar remito
+        // Generar remito (RemitoService ahora crea el envío automáticamente)
         const result = await RemitoService.generateRemitoForVillaMartelli(selectedProducts);
         
         if (!result || !result.id) {
-          throw new Error("No se pudo generar el remito base.");
+          throw new Error("No se pudo generar el remito.");
         }
 
-        // Crear envío asociado
-        const nuevoEnvio = await EnvioService.crearEnvioConRemitoEspecifico(
-          result.id, 
-          "Villa Martelli",
-          new Date().toISOString(),
-          "Envío automático generado para Villa Martelli",
-          "entregado"
-        );
-
-        if (!nuevoEnvio) {
-          throw new Error("Remito generado, pero hubo un error al crear el envío automático.");
-        }
-
-        return { remito: result, envio: nuevoEnvio };
+        return { remito: result };
       })(),
       {
         loading: 'Generando remito y registrando envío...',
@@ -345,6 +332,7 @@ export const RemitoProduction = ({ productionItems, onSuccess }: RemitoProductio
                         </div>
                         <div className="text-xs text-muted-foreground space-y-1">
                           <div>Lote: {item.lote_code || item.id}</div>
+                          <div>Fecha: {item.date ? new Date(item.date + 'T00:00:00').toLocaleDateString('es-AR') : '-'}</div>
                           <div>Cantidad: {item.batchSize} kg</div>
                           <div>
                             {item.type === 'client' ? `Cliente: ${item.clientName || 'N/A'}` : 'Stock'}

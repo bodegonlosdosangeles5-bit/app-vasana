@@ -136,7 +136,17 @@ export class RemitoService {
       // Obtener el remito creado
       const rpcResult = data as { success: boolean, remito_id: string };
       if (rpcResult && rpcResult.remito_id) {
-        return await this.getRemitoById(rpcResult.remito_id);
+        // Obtener el remito completo con sus items
+        const remitoCompleto = await this.getRemitoById(rpcResult.remito_id);
+        
+        if (remitoCompleto) {
+          // Crear automáticamente un envío con el remito generado
+          console.log('🚚 Creando envío automático para el remito...');
+          await this.createAutoEnvioForRemito(remitoCompleto.id);
+          console.log('✅ Envío automático creado');
+        }
+        
+        return remitoCompleto;
       }
       
       return null;

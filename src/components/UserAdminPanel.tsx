@@ -320,14 +320,14 @@ export const UserAdminPanel: React.FC = () => {
         {/* Lista de usuarios */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {filteredUsers.map((user) => (
-            <Card key={user.id} className="bg-white/10 backdrop-blur-md rounded-2xl shadow-md 
+            <Card key={user.id} className="bg-card dark:bg-white/10 backdrop-blur-md rounded-2xl shadow-md 
                                             transition-all duration-300 ease-in-out
-                                            hover:shadow-xl hover:scale-105 hover:border hover:border-yellow-400/60 hover:bg-white/20">
+                                            hover:shadow-xl hover:scale-105 hover:border hover:border-yellow-400/60 hover:bg-muted/50 dark:hover:bg-white/20">
               <CardHeader className="pb-3 px-4 sm:px-6">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0 flex items-center gap-2">
                     <div className="flex-1 min-w-0">
-                      <CardTitle className="text-base sm:text-lg font-semibold truncate text-yellow-400 flex items-center gap-2">
+                      <CardTitle className="text-base sm:text-lg font-bold truncate text-blue-700 dark:text-yellow-400 flex items-center gap-2">
                         {user.user_name}
                         {isUserActive(user) && (
                           <span className="relative" title="Usuario activo">
@@ -335,7 +335,7 @@ export const UserAdminPanel: React.FC = () => {
                           </span>
                         )}
                       </CardTitle>
-                      <p className="text-xs sm:text-sm text-gray-300 truncate">Usuario</p>
+                      <p className="text-xs sm:text-sm text-slate-600 dark:text-gray-300 truncate">Usuario</p>
                     </div>
                   </div>
                   <div className="flex-shrink-0 flex items-center gap-2">
@@ -355,15 +355,15 @@ export const UserAdminPanel: React.FC = () => {
               <CardContent className="space-y-3 px-4 sm:px-6">
                 <div className="space-y-2 text-xs sm:text-sm">
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-gray-300 flex-shrink-0" />
-                    <span className="text-gray-300">Creado:</span>
-                    <span className="truncate text-gray-400">{formatDate(user.created_at)}</span>
+                    <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-slate-500 dark:text-gray-300 flex-shrink-0" />
+                    <span className="text-slate-700 dark:text-gray-300 font-medium">Creado:</span>
+                    <span className="truncate text-slate-600 dark:text-gray-400">{formatDate(user.created_at)}</span>
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-gray-300 flex-shrink-0" />
-                    <span className="text-gray-300">Actualizado:</span>
-                    <span className="truncate text-gray-400">{formatDate(user.updated_at)}</span>
+                    <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-slate-500 dark:text-gray-300 flex-shrink-0" />
+                    <span className="text-slate-700 dark:text-gray-300 font-medium">Actualizado:</span>
+                    <span className="truncate text-slate-600 dark:text-gray-400">{formatDate(user.updated_at)}</span>
                   </div>
                 </div>
                 

@@ -1,4 +1,11 @@
 import { useState } from "react";
+import { 
+  parseISO,
+  startOfMonth,
+  parse,
+  isSameDay,
+  format
+} from "date-fns";
 import { CheckCircle, XCircle, Clock, Beaker, Filter, Edit, Save, X, Plus, Upload, Package, Trash2, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -78,7 +85,7 @@ export const FormulasSection = ({
     lot: "",
     name: "",
     batchSize: "",
-    date: "",
+    date: new Date().toLocaleDateString('en-CA'), // Inicializar con la fecha de hoy en formato local YYYY-MM-DD
     status: "available",
     type: "stock",
     clientName: ""
@@ -303,7 +310,7 @@ export const FormulasSection = ({
         lot: "",
         name: "",
         batchSize: "",
-        date: "",
+        date: new Date().toLocaleDateString('en-CA'),
         status: "available",
         type: "stock",
         clientName: ""
@@ -636,11 +643,7 @@ export const FormulasSection = ({
                       </p>
                     )}
                     <p className="text-sm text-muted-foreground dark:text-white/80 mt-1">
-                      Fecha: {formula.date ? new Date(formula.date).toLocaleDateString('es-ES', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric'
-                      }) : 'No especificada'}
+                      Fecha: {formula.date ? format(parseISO(formula.date + 'T00:00:00'), 'dd/MM/yyyy') : 'No especificada'}
                     </p>
                     <p className="text-sm text-muted-foreground dark:text-white/80 mt-1">
                       Para: {formula.type === "client" ? "Cliente" : "Stock"}
