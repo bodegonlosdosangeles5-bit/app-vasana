@@ -301,9 +301,9 @@ export const RemitoProduction = ({ productionItems, onSuccess }: RemitoProductio
                   <div 
                     key={item.id} 
                     className={`p-4 rounded-lg border-2 transition-all ${
-                      selectedItems.has(item.id) 
-                        ? 'border-[#023F86] bg-[#023F86]/5' 
-                        : 'border-slate-200 bg-white shadow-sm'
+                      selectedItems.has(item.id)
+                        ? 'border-[#023F86] bg-[#023F86]/5'
+                        : 'border-black dark:border-white bg-card shadow-sm'
                     }`}
                   >
                     <div className="flex items-start gap-3">
@@ -321,7 +321,7 @@ export const RemitoProduction = ({ productionItems, onSuccess }: RemitoProductio
                             });
                           }
                         }}
-                        className="mt-1"
+                        className="mt-1 !border-black dark:!border-white"
                       />
                       <div className="flex-1 space-y-2">
                         <div className="flex items-center justify-between">
@@ -330,7 +330,7 @@ export const RemitoProduction = ({ productionItems, onSuccess }: RemitoProductio
                             {item.batchSize} kg
                           </Badge>
                         </div>
-                        <div className="text-xs text-muted-foreground space-y-1">
+                        <div className="text-xs text-foreground space-y-1">
                           <div>Lote: {item.lote_code || item.id}</div>
                           <div>Fecha: {item.date ? new Date(item.date + 'T00:00:00').toLocaleDateString('es-AR') : '-'}</div>
                           <div>Cantidad: {item.batchSize} kg</div>
