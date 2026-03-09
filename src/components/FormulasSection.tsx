@@ -1,4 +1,6 @@
 import { useState } from "react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { 
   parseISO,
   startOfMonth,
@@ -6,7 +8,7 @@ import {
   isSameDay,
   format
 } from "date-fns";
-import { CheckCircle, XCircle, Clock, Beaker, Filter, Edit, Save, X, Plus, Upload, Package, Trash2, AlertCircle } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Beaker, Filter, Edit, Save, X, Plus, Upload, Package, Trash2, AlertCircle, Eye, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -103,9 +105,223 @@ export const FormulasSection = ({
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [isPreviewingPDF, setIsPreviewingPDF] = useState(false);
 
-  // Usar los productos del hook en tiempo real
+  // =============================================
+  // Datos de fórmulas (definido antes del bloque PDF)
+  // =============================================
   const currentFormulas = formulasData;
+
+  // =============================================
+  // PDF: Lotes Incompletos
+  // =============================================
+
+  const buildPDFContent = (pdf: jsPDF, lotes: any[], _isPreview = false) => {
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const now = new Date();
+    const fechaImpresion = format(now, "dd/MM/yyyy HH:mm");
+
+    // ─── HEADER ───────────────────────────────────────────────
+    pdf.setFillColor(2, 63, 134); // #023F86
+    pdf.rect(0, 0, pageWidth, 28, "F");
+
+    pdf.setTextColor(247, 166, 0); // #F7A600 dorado
+    pdf.setFontSize(16);
+    pdf.setFont("helvetica", "bold");
+    pdf.text("CONTROL DE PRODUCCIÓN", 14, 11);
+
+    pdf.setTextColor(200, 220, 255);
+    pdf.setFontSize(9);
+    pdf.setFont("helvetica", "normal");
+    pdf.text("Control de Producción — Planta Florencio Varela", 14, 18);
+
+    pdf.setTextColor(180, 200, 235);
+    pdf.setFontSize(8);
+    pdf.text(`Impreso: ${fechaImpresion}`, pageWidth - 14, 18, { align: "right" });
+
+    // ─── TÍTULO DEL REPORTE ──────────────────────────────────
+    pdf.setTextColor(30, 30, 30);
+    pdf.setFontSize(13);
+    pdf.setFont("helvetica", "bold");
+    pdf.text("Listado de Lotes con Materias Primas Faltantes", 14, 40);
+
+    pdf.setFontSize(9);
+    pdf.setFont("helvetica", "normal");
+    pdf.setTextColor(100, 100, 100);
+    pdf.text(`Total de lotes incompletos: ${lotes.length}`, 14, 47);
+
+    // ─── TABLA RESUMEN ───────────────────────────────────────
+    const tableRows = lotes.map((formula, index) => {
+      const faltantes = formula.missingIngredients && formula.missingIngredients.length > 0
+        ? formula.missingIngredients.map((ing: any) => `${ing.name} (${ing.required} ${ing.unit})`).join(" | ")
+        : "Sin detalle registrado";
+
+      return [
+        (index + 1).toString(),
+        formula.lote_code || formula.id,
+        formula.name,
+        `${formula.batchSize} kg`,
+        formula.date ? format(parseISO(formula.date + "T00:00:00"), "dd/MM/yyyy") : "-",
+        formula.destination,
+        faltantes
+      ];
+    });
+
+    autoTable(pdf, {
+      startY: 52,
+      head: [["N°", "Lote", "Producto", "Kilos", "Fecha", "Destino", "Materias Primas Faltantes"]],
+      body: tableRows,
+      theme: "striped",
+      headStyles: {
+        fillColor: [2, 63, 134],
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+        fontSize: 8,
+        cellPadding: 4
+      },
+      bodyStyles: {
+        fontSize: 7.5,
+        textColor: [40, 40, 40],
+        cellPadding: 3
+      },
+      alternateRowStyles: {
+        fillColor: [240, 246, 255]
+      },
+      columnStyles: {
+        0: { cellWidth: 8, halign: "center" },
+        1: { cellWidth: 22 },
+        2: { cellWidth: 38 },
+        3: { cellWidth: 18, halign: "center" },
+        4: { cellWidth: 22, halign: "center" },
+        5: { cellWidth: 26 },
+        6: { cellWidth: "auto", minCellWidth: 40 }
+      },
+      margin: { left: 14, right: 14 },
+      didDrawPage: (data) => {
+        // Footer en cada página
+        pdf.setFontSize(7);
+        pdf.setTextColor(160, 160, 160);
+        pdf.text(
+          `Página ${data.pageNumber} — Sistema de Gestión Planta Varela`,
+          pageWidth / 2,
+          pageHeight - 8,
+          { align: "center" }
+        );
+      }
+    });
+
+    // ─── DETALLE POR LOTE (si hay espacio / nueva página) ────
+    const finalY = (pdf as any).lastAutoTable?.finalY || 52;
+    let cursorY = finalY + 12;
+
+    if (cursorY + 14 > pageHeight - 20) {
+      pdf.addPage();
+      cursorY = 20;
+    }
+
+    pdf.setFontSize(11);
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(2, 63, 134);
+    pdf.text("Detalle de Materias Primas Faltantes por Lote", 14, cursorY);
+    cursorY += 8;
+
+    pdf.setDrawColor(2, 63, 134);
+    pdf.setLineWidth(0.5);
+    pdf.line(14, cursorY, pageWidth - 14, cursorY);
+    cursorY += 6;
+
+    lotes.forEach((formula) => {
+      if (!formula.missingIngredients || formula.missingIngredients.length === 0) return;
+
+      // ¿Cabe el bloque en la página actual?
+      const blockHeight = 10 + formula.missingIngredients.length * 6 + 8;
+      if (cursorY + blockHeight > pageHeight - 20) {
+        pdf.addPage();
+        cursorY = 20;
+      }
+
+      // Nombre del lote/producto
+      pdf.setFontSize(9);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(30, 30, 30);
+      const loteLabel = formula.lote_code || formula.id;
+      pdf.text(`${formula.name}  ·  Lote: ${loteLabel}  ·  ${formula.batchSize} kg`, 14, cursorY);
+      cursorY += 5;
+
+      // Faltantes de ese lote
+      pdf.setFontSize(8);
+      pdf.setFont("helvetica", "normal");
+      pdf.setTextColor(180, 30, 30);
+      formula.missingIngredients.forEach((ing: any) => {
+        if (cursorY + 6 > pageHeight - 20) {
+          pdf.addPage();
+          cursorY = 20;
+        }
+        pdf.text(`  - ${ing.name}: ${ing.required} ${ing.unit} faltantes`, 14, cursorY);
+        cursorY += 5.5;
+      });
+
+      cursorY += 5;
+    });
+
+    // ─── FIRMA / CIERRE ──────────────────────────────────────
+    if (cursorY + 30 > pageHeight - 20) {
+      pdf.addPage();
+      cursorY = 20;
+    }
+    cursorY += 8;
+    pdf.setDrawColor(200, 200, 200);
+    pdf.setLineWidth(0.3);
+    pdf.line(14, cursorY, pageWidth - 14, cursorY);
+    cursorY += 6;
+
+    pdf.setFontSize(8);
+    pdf.setFont("helvetica", "italic");
+    pdf.setTextColor(140, 140, 140);
+    pdf.text("Este documento fue generado automáticamente por el Sistema de Control de Producción.", 14, cursorY);
+  };
+
+  // Calcular lotes incompletos actuales
+  const getIncompleteFormulas = () =>
+    currentFormulas.filter((f) => getFormulaStatus(f) === "incomplete");
+
+  const handlePreviewPDF = () => {
+    const lotes = getIncompleteFormulas();
+    if (lotes.length === 0) {
+      alert("No hay lotes incompletos para previsualizar.");
+      return;
+    }
+    setIsPreviewingPDF(true);
+    try {
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      buildPDFContent(pdf, lotes, true);
+      const blobUrl = pdf.output("bloburl");
+      window.open(blobUrl as unknown as string, "_blank");
+    } finally {
+      setIsPreviewingPDF(false);
+    }
+  };
+
+  const handleExportPDF = () => {
+    const lotes2 = getIncompleteFormulas();
+    if (lotes2.length === 0) {
+      alert("No hay lotes incompletos para exportar.");
+      return;
+    }
+    setIsExportingPDF(true);
+    try {
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      buildPDFContent(pdf, lotes2, false);
+      const fecha = format(new Date(), "yyyy-MM-dd_HH-mm");
+      pdf.save(`Lotes_Incompletos_${fecha}.pdf`);
+    } finally {
+      setIsExportingPDF(false);
+    }
+  };
+
+  // (currentFormulas ya está definido arriba)
   
   // Logging para debug
   console.log('📋 FormulasSection - Props recibidas:', { 
@@ -266,15 +482,15 @@ export const FormulasSection = ({
     }
 
     try {
-      // Lógica automática: Todas las fórmulas van a Villa Martelli
-      const autoDestination = 'Villa Martelli';
+      // Uso Interno queda en planta (Florencio Varela), el resto va a Villa Martelli
+      const autoDestination = newFormula.type === 'uso_interno' ? 'Florencio Varela' : 'Villa Martelli';
       
       const formulaData = {
         name: newFormula.name,
         batchSize: parseInt(newFormula.batchSize),
         destination: autoDestination,
         date: newFormula.date,
-        type: newFormula.type === 'cliente' ? 'client' : 'stock',
+        type: newFormula.type === 'cliente' ? 'client' : newFormula.type === 'uso_interno' ? 'stock' : 'stock',
         clientName: newFormula.type === 'cliente' ? newFormula.clientName : '',
         status: newFormula.status,
         missingIngredients: newFormula.status === 'incomplete' ? missingIngredients.map(ing => ({
@@ -575,8 +791,8 @@ export const FormulasSection = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos los destinos</SelectItem>
-                  <SelectItem value="Florencio Varela">Florencio Varela</SelectItem>
                   <SelectItem value="Villa Martelli">Villa Martelli</SelectItem>
+                  <SelectItem value="Florencio Varela">Florencio Varela / Uso Interno</SelectItem>
                 </SelectContent>
               </Select>
             )}
@@ -592,6 +808,33 @@ export const FormulasSection = ({
           </Button>
         )}
       </div>
+
+      {/* Barra de acciones PDF — solo visible cuando hay lotes incompletos */}
+      {showOnlyIncomplete && (
+        <div className="flex items-center gap-2 p-3 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-xl">
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mr-1">Imprimir lista:</span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePreviewPDF}
+            disabled={isPreviewingPDF}
+            className="flex items-center gap-2 h-8 px-3 rounded-lg border-slate-300 text-slate-600 hover:bg-white hover:text-[#023F86] hover:border-[#023F86] transition-all font-medium text-xs"
+          >
+            <Eye className="h-3.5 w-3.5" />
+            {isPreviewingPDF ? "Generando..." : "Vista Previa"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportPDF}
+            disabled={isExportingPDF}
+            className="flex items-center gap-2 h-8 px-3 rounded-lg border-[#023F86]/30 text-[#023F86] hover:bg-[#023F86] hover:text-white transition-all font-medium text-xs"
+          >
+            <Download className="h-3.5 w-3.5" />
+            {isExportingPDF ? "Exportando..." : "Exportar PDF"}
+          </Button>
+        </div>
+      )}
 
       {filteredFormulas.length === 0 ? (
         <div className="text-center py-12">
@@ -646,8 +889,7 @@ export const FormulasSection = ({
                       Fecha: {formula.date ? format(parseISO(formula.date + 'T00:00:00'), 'dd/MM/yyyy') : 'No especificada'}
                     </p>
                     <p className="text-sm text-muted-foreground dark:text-white/80 mt-1">
-                      Para: {formula.type === "client" ? "Cliente" : "Stock"}
-                      {formula.type === "client" && formula.clientName && ` - ${formula.clientName}`}
+                      Para: {formula.type === "client" ? `Cliente${formula.clientName ? ` - ${formula.clientName}` : ''}` : formula.destination === 'Florencio Varela' ? '🏭 Uso Interno (Planta)' : 'Stock'}
                     </p>
                   </div>
                   <div className="flex flex-col items-end space-y-2">
@@ -1100,9 +1342,10 @@ export const FormulasSection = ({
                     <SelectValue placeholder="Seleccionar tipo" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="stock">Stock (Villa Martelli)</SelectItem>
-                    <SelectItem value="cliente">Cliente (Villa Martelli)</SelectItem>
-                    <SelectItem value="exportacion">Exportación (Villa Martelli)</SelectItem>
+                    <SelectItem value="stock">📦 Stock (Villa Martelli)</SelectItem>
+                    <SelectItem value="cliente">🤝 Cliente (Villa Martelli)</SelectItem>
+                    <SelectItem value="exportacion">🌍 Exportación (Villa Martelli)</SelectItem>
+                    <SelectItem value="uso_interno">🏭 Uso Interno (Queda en Planta)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1208,11 +1451,21 @@ export const FormulasSection = ({
               </div>
             )}
 
-            <div className="p-4 bg-muted rounded-lg">
-              <h4 className="font-semibold text-sm mb-2">Destino Automático:</h4>
-              <p className="text-sm text-muted-foreground">
-                Todos los productos → Villa Martelli (automático)
-              </p>
+            <div className={`p-4 rounded-lg border ${newFormula.type === 'uso_interno' ? 'bg-orange-50 border-orange-200 dark:bg-orange-950/20 dark:border-orange-800' : 'bg-muted border-transparent'}`}>
+              <h4 className="font-semibold text-sm mb-1">Destino:</h4>
+              {newFormula.type === 'uso_interno' ? (
+                <div className="flex items-start gap-2">
+                  <span className="text-lg">🏭</span>
+                  <div>
+                    <p className="text-sm font-semibold text-orange-700 dark:text-orange-400">Uso Interno — Queda en Planta Varela</p>
+                    <p className="text-xs text-orange-600 dark:text-orange-300 mt-0.5">Este producto <strong>no se suma al viaje</strong> a Villa Martelli. Se registra en estadísticas de producción.</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  📦 Villa Martelli (automático)
+                </p>
+              )}
             </div>
 
             <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">

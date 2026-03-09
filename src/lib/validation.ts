@@ -64,9 +64,9 @@ export const validateFormula = (formula: unknown): ValidationResult => {
   }
 
   // Validar tipo
-  const validTypes = ['stock', 'client', 'cliente', 'exportacion'];
+  const validTypes = ['stock', 'client', 'cliente', 'exportacion', 'uso_interno'];
   if (!f.type || !validTypes.includes(f.type)) {
-    errors.push('Tipo debe ser uno de: stock, client, cliente, exportacion');
+    errors.push('Tipo debe ser uno de: stock, client, cliente, exportacion, uso_interno');
   }
 
   // Validar fecha

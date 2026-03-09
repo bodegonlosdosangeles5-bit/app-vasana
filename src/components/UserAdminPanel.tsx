@@ -21,10 +21,14 @@ import {
   Search,
   Filter,
   RefreshCw,
-  Circle
+  Circle,
+  Eye,
+  EyeOff,
+  QrCode
 } from 'lucide-react';
 import { UserProfile, CreateUserData, UpdateUserData, UserService } from '@/services/userService';
 import { useRealtimeUsers } from '@/hooks/useRealtimeUsers';
+import { ShareQRModal } from '@/components/ShareQRModal';
 
 export const UserAdminPanel: React.FC = () => {
   // Usar el hook de Realtime para usuarios
@@ -61,6 +65,18 @@ export const UserAdminPanel: React.FC = () => {
   const [newPassword, setNewPassword] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [accessDenied, setAccessDenied] = useState(false);
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
+
+  // Auto-ocultar mensaje de éxito después de 4 segundos
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
 
   // Verificar si el usuario actual es administrador
   useEffect(() => {
@@ -81,17 +97,20 @@ export const UserAdminPanel: React.FC = () => {
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
+    setCreateError(null);
     try {
       await createUser({
         user_name: newUser.user_name.trim(),
         password: newUser.password,
         role: newUser.role || 'user'
       });
-      setSuccess('Usuario creado exitosamente');
+      setSuccessMessage('✅ Usuario creado exitosamente');
       setIsCreateModalOpen(false);
+      setShowCreatePassword(false);
       setNewUser({ user_name: '', password: '', role: 'user' });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error creando usuario:', err);
+      setCreateError(err?.message || 'Error al crear el usuario. Intentá de nuevo.');
     }
   };
 
@@ -101,7 +120,7 @@ export const UserAdminPanel: React.FC = () => {
     
     try {
       await updateUser(selectedUser.id, editUser);
-      setSuccess('Usuario actualizado exitosamente');
+      setSuccessMessage('✅ Usuario actualizado exitosamente');
       setIsEditModalOpen(false);
       setEditUser({});
       setSelectedUser(null);
@@ -115,7 +134,7 @@ export const UserAdminPanel: React.FC = () => {
     
     try {
       await deleteUser(selectedUser.id);
-      setSuccess('Usuario eliminado exitosamente');
+      setSuccessMessage('✅ Usuario eliminado exitosamente');
       setIsDeleteModalOpen(false);
       setSelectedUser(null);
     } catch (err) {
@@ -221,16 +240,33 @@ export const UserAdminPanel: React.FC = () => {
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground truncate">Administración de Usuarios</h1>
             <p className="text-sm sm:text-base text-muted-foreground mt-1">Gestiona los usuarios del sistema</p>
           </div>
-          <Button 
-            onClick={() => setIsCreateModalOpen(true)} 
-            className="flex items-center gap-2 w-full sm:w-auto"
-            size="sm"
-          >
-            <Plus className="h-4 w-4" />
-            <span className="hidden xs:inline">Nuevo Usuario</span>
-            <span className="xs:hidden">Nuevo</span>
-          </Button>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={() => setIsQRModalOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <QrCode className="h-4 w-4" />
+              <span className="hidden sm:inline">Compartir QR</span>
+            </Button>
+            <Button onClick={() => { setIsCreateModalOpen(true); setCreateError(null); }} 
+              className="flex items-center gap-2 w-full sm:w-auto"
+              size="sm"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden xs:inline">Nuevo Usuario</span>
+              <span className="xs:hidden">Nuevo</span>
+            </Button>
+          </div>
         </div>
+
+        {/* Banner de éxito */}
+        {successMessage && (
+          <div className="p-4 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm font-medium flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
+            {successMessage}
+          </div>
+        )}
 
         {/* Estadísticas */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -344,9 +380,13 @@ export const UserAdminPanel: React.FC = () => {
                     )}
                     <Badge 
                       variant={user.role === 'admin' ? "default" : "outline"}
-                      className="text-xs"
+                      className={`text-xs ${
+                        user.role === 'admin' ? 'bg-blue-600 text-white' :
+                        user.role === 'consulta' ? 'border-teal-400 text-teal-600 dark:text-teal-400' :
+                        ''
+                      }`}
                     >
-                      {user.role === 'admin' ? 'Admin' : 'User'}
+                      {user.role === 'admin' ? 'Admin' : user.role === 'consulta' ? 'Consulta' : 'User'}
                     </Badge>
                   </div>
                 </div>
@@ -448,14 +488,27 @@ export const UserAdminPanel: React.FC = () => {
               
               <div className="space-y-2">
                 <Label htmlFor="create-password">Clave</Label>
-                <Input
-                  id="create-password"
-                  type="password"
-                  placeholder="Contraseña del usuario"
-                  value={newUser.password}
-                  onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    id="create-password"
+                    type={showCreatePassword ? 'text' : 'password'}
+                    placeholder="Contraseña del usuario"
+                    value={newUser.password}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
+                    required
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCreatePassword(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showCreatePassword
+                      ? <EyeOff className="h-4 w-4" />
+                      : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
               
               <div className="space-y-2">
@@ -466,12 +519,18 @@ export const UserAdminPanel: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="user">Usuario</SelectItem>
+                    <SelectItem value="consulta">Consulta (Solo lectura)</SelectItem>
                     <SelectItem value="admin">Administrador</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               
-              
+              {createError && (
+                <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+                  ⚠️ {createError}
+                </div>
+              )}
+
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsCreateModalOpen(false)}>
                   Cancelar
@@ -521,6 +580,7 @@ export const UserAdminPanel: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="user">Usuario</SelectItem>
+                    <SelectItem value="consulta">Consulta (Solo lectura)</SelectItem>
                     <SelectItem value="admin">Administrador</SelectItem>
                   </SelectContent>
                 </Select>
@@ -597,6 +657,8 @@ export const UserAdminPanel: React.FC = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        {/* QR Modal */}
+        <ShareQRModal open={isQRModalOpen} onOpenChange={setIsQRModalOpen} />
       </div>
     </div>
   );

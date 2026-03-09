@@ -32,7 +32,7 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
     }
   }, [isMobileMenuOpen]);
 
-  // Efecto para verificar si el usuario es admin
+  // Verificar si el usuario actual es admin
   useEffect(() => {
     const checkAdminStatus = async () => {
       try {
@@ -50,17 +50,31 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
       setIsAdmin(false);
     }
   }, [user]);
+
+  // Rol consulta: solo lectura, sin producción ni usuarios
+  const isConsulta = user?.role === 'consulta';
+
+  // Helper: etiqueta del rol para mostrar en el perfil
+  const roleLabel = user?.role === 'admin' || user?.role === 'superadmin'
+    ? 'Administrador'
+    : user?.role === 'consulta'
+    ? 'Consulta'
+    : 'Usuario';
   
   const allNavItems = [
-    { id: "dashboard", label: "Dashboard", icon: BarChart3 },
-    { id: "inventory", label: "Inventario", icon: Package },
-    { id: "formulas", label: "Productos", icon: FlaskConical },
-    { id: "production", label: "Producción", icon: Truck },
-    { id: "users", label: "Usuarios", icon: Users, adminOnly: true },
+    { id: "dashboard",  label: "Dashboard",  icon: BarChart3 },
+    { id: "inventory",  label: "Inventario",  icon: Package },
+    { id: "formulas",   label: "Productos",   icon: FlaskConical },
+    { id: "production", label: "Producción",  icon: Truck,  consultaHidden: true },
+    { id: "users",      label: "Usuarios",    icon: Users,  adminOnly: true },
   ];
 
-  // Filtrar elementos de navegación basándose en el rol del usuario
-  const navItems = allNavItems.filter(item => !item.adminOnly || isAdmin);
+  // Filtrar según rol: consulta no ve Producción ni Usuarios; user no ve Usuarios
+  const navItems = allNavItems.filter(item => {
+    if (item.adminOnly && !isAdmin) return false;
+    if (item.consultaHidden && isConsulta) return false;
+    return true;
+  });
 
   const handleNavClick = (section: string) => {
     onSectionChange(section);
@@ -134,7 +148,7 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
                 <div className="px-2 py-1.5">
                   <p className="text-sm font-medium">{user?.user_name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {user?.role === 'admin' ? 'Administrador' : 'Usuario'}
+                    {user?.role === 'admin' || user?.role === 'superadmin' ? 'Administrador' : user?.role === 'consulta' ? 'Consulta' : 'Usuario'}
                   </p>
                 </div>
                 <DropdownMenuSeparator />
@@ -268,7 +282,7 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
                       {user?.user_name}
                     </p>
                     <p className="text-xs text-muted-foreground truncate">
-                      {user?.role === 'admin' ? 'Administrador' : 'Usuario'}
+                      {user?.role === 'admin' || user?.role === 'superadmin' ? 'Administrador' : user?.role === 'consulta' ? 'Consulta' : 'Usuario'}
                     </p>
                   </div>
                 </div>

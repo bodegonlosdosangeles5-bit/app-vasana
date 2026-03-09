@@ -1,23 +1,23 @@
 <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="32" height="32" fill="#000000"/>
+  <rect width="32" height="32" rx="8" fill="#0B1220"/>
   <defs>
-    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#FFA500;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#B8860B;stop-opacity:1" />
+    <linearGradient id="pinkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f472b6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e8417a;stop-opacity:1" />
     </linearGradient>
   </defs>
   
-  <!-- Letra V dorada simplificada -->
-  <g transform="translate(16, 12)">
-    <!-- Serifa izquierda -->
-    <path d="M -6 -2 L -4 -2 L -4 -1 L -5 -1 L -5 6 L -4 6 L -4 7 L -6 7 L -6 6 L -5 6 L -5 -1 L -6 -1 Z" fill="url(#goldGradient)" fill-opacity="0.95"/>
-    
-    <!-- Serifa derecha -->
-    <path d="M 4 -2 L 6 -2 L 6 -1 L 5 -1 L 5 6 L 6 6 L 6 7 L 4 7 L 4 6 L 5 6 L 5 -1 L 4 -1 Z" fill="url(#goldGradient)" fill-opacity="0.95"/>
-    
-    <!-- Cuerpo principal de la V -->
-    <path d="M -4 -2 L 0 4 L 4 -2" stroke="url(#goldGradient)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  </g>
+  <!-- Letra V estilo Cormorant Garamond -->
+  <text 
+    x="16" 
+    y="24" 
+    text-anchor="middle" 
+    font-family="'Cormorant Garamond', Georgia, serif" 
+    font-weight="700" 
+    font-size="28" 
+    fill="url(#pinkGrad)"
+  >V</text>
   
+  <!-- Línea decorativa -->
+  <line x1="10" y1="27" x2="22" y2="27" stroke="url(#pinkGrad)" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
 </svg>

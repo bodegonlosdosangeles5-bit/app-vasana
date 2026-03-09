@@ -649,11 +649,11 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
   const buildViajeTableData = () =>
     productosViajeSorted.map((f, i) => [
       (i + 1).toString(),
-      f.name || '—',
       f.lote_code || f.id || '—',
-      `${f.batchSize || 0} kg`,
+      f.name || '—',
       f.type === 'client' ? (f.clientName || 'Cliente') : 'Stock',
       f.date ? format(parseISO(f.date + 'T00:00:00'), 'dd/MM/yyyy') : '—',
+      `${f.batchSize || 0} kg`,
     ]);
 
   const handleExportViajePDF = async () => {
@@ -684,7 +684,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
       // Tabla
       autoTable(pdf, {
         startY: 45,
-        head: [['N°', 'Producto', 'Lote', 'Ctd. Frbc.', 'Destinatario', 'Fecha']],
+        head: [['N°', 'Lote', 'Producto', 'Destinatario', 'Fecha', 'Ctd. Fbrc.']],
         body: buildViajeTableData(),
         theme: 'striped',
         headStyles: { fillColor: [59, 130, 246], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
@@ -692,11 +692,11 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
         alternateRowStyles: { fillColor: [248, 250, 252] },
         columnStyles: {
           0: { cellWidth: 10, halign: 'center' },
-          1: { cellWidth: 55 },
-          2: { cellWidth: 30 },
-          3: { cellWidth: 22, halign: 'right' },
-          4: { cellWidth: 40 },
-          5: { cellWidth: 28, halign: 'center' },
+          1: { cellWidth: 28 },
+          2: { cellWidth: 52 },
+          3: { cellWidth: 42 },
+          4: { cellWidth: 28, halign: 'center' },
+          5: { cellWidth: 22, halign: 'right' },
         },
         margin: { left: 15, right: 15 },
       });
@@ -744,7 +744,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
 
       autoTable(pdf, {
         startY: 45,
-        head: [['N°', 'Producto', 'Lote', 'Ctd. Fbrc.', 'Destinatario', 'Fecha']],
+        head: [['N°', 'Lote', 'Producto', 'Destinatario', 'Fecha', 'Ctd. Fbrc.']],
         body: buildViajeTableData(),
         theme: 'striped',
         headStyles: { fillColor: [59, 130, 246], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
@@ -752,11 +752,11 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
         alternateRowStyles: { fillColor: [248, 250, 252] },
         columnStyles: {
           0: { cellWidth: 10, halign: 'center' },
-          1: { cellWidth: 55 },
-          2: { cellWidth: 30 },
-          3: { cellWidth: 22, halign: 'right' },
-          4: { cellWidth: 40 },
-          5: { cellWidth: 28, halign: 'center' },
+          1: { cellWidth: 28 },
+          2: { cellWidth: 52 },
+          3: { cellWidth: 42 },
+          4: { cellWidth: 28, halign: 'center' },
+          5: { cellWidth: 22, halign: 'right' },
         },
         margin: { left: 15, right: 15 },
       });
