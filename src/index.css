@@ -1,5 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
 
 @import "tailwindcss/base";
 @import "tailwindcss/components";
@@ -365,6 +365,355 @@ div .logo-varela-text {
 .dark nav .logo-varela-text {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
+}
+
+/* ── Calendar Modal — Light Mode ────────────────────────── */
+@keyframes calFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.calendar-modal-container {
+  background: #f8fafc;
+  box-shadow: 0 0 0 1px rgba(30, 41, 59, 0.06), 0 8px 24px rgba(30, 41, 59, 0.08), 0 32px 64px rgba(30, 41, 59, 0.12);
+}
+
+.calendar-modal-header {
+  background: linear-gradient(135deg, #1e293b 0%, #243447 100%);
+}
+
+.calendar-modal-nav {
+  border-bottom: 1px solid rgba(30, 41, 59, 0.08);
+}
+
+.calendar-nav-btn {
+  border: 1.5px solid rgba(30, 41, 59, 0.08);
+  color: #334155;
+}
+
+.calendar-nav-btn:hover {
+  border-color: #e8417a !important;
+  color: #e8417a !important;
+  background: rgba(232, 65, 122, 0.12) !important;
+}
+
+.calendar-month-label {
+  color: #1e293b;
+}
+
+.calendar-year-label {
+  color: #94a3b8;
+}
+
+.calendar-weekday-label {
+  color: #94a3b8;
+}
+
+.calendar-day-normal {
+  color: #334155;
+}
+
+.calendar-day-normal:hover {
+  background: rgba(232, 65, 122, 0.12) !important;
+  color: #e8417a !important;
+}
+
+.calendar-day-outside {
+  color: #cbd5e1;
+}
+
+.calendar-day-weekend {
+  color: #64748b;
+}
+
+.calendar-day-holiday {
+  color: #f59e0b !important;
+  font-weight: 500 !important;
+}
+
+.calendar-separator {
+  background: linear-gradient(90deg, transparent, rgba(30, 41, 59, 0.08), transparent) !important;
+}
+
+.calendar-legend-text {
+  color: #94a3b8;
+}
+
+.calendar-modal-close-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.calendar-modal-close-btn:hover {
+  opacity: 0.7;
+}
+
+/* ── Calendar Modal — Dark Mode ─────────────────────────── */
+.dark .calendar-modal-container {
+  background: #0f172a;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 32px 64px rgba(0, 0, 0, 0.4);
+}
+
+.dark .calendar-modal-header {
+  background: linear-gradient(135deg, #0a0f1e, #1e293b);
+}
+
+.dark .calendar-modal-nav {
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+.dark .calendar-nav-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.dark .calendar-nav-btn:hover {
+  border-color: #e8417a !important;
+  color: #e8417a !important;
+  background: rgba(232, 65, 122, 0.15) !important;
+}
+
+.dark .calendar-month-label {
+  color: #e2e8f0;
+}
+
+.dark .calendar-year-label {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.dark .calendar-weekday-label {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.dark .calendar-day-normal {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.dark .calendar-day-normal:hover {
+  background: rgba(232, 65, 122, 0.15) !important;
+  color: #f472b6 !important;
+}
+
+.dark .calendar-day-outside {
+  color: rgba(255, 255, 255, 0.1);
+}
+
+.dark .calendar-day-weekend {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.dark .calendar-day-holiday {
+  color: #fbbf24 !important;
+}
+
+.dark .calendar-separator {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent) !important;
+}
+
+.dark .calendar-legend-text {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.dark .calendar-modal-close-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ── Reporte de Planta — Light Mode ─────────────────────── */
+.rp-modal {
+  background: #ffffff !important;
+  border-radius: 28px !important;
+  border: 1px solid rgba(30, 41, 59, 0.07) !important;
+  box-shadow: 0 0 0 1px rgba(232, 65, 122, 0.06), 0 8px 32px rgba(30, 41, 59, 0.10), 0 32px 80px rgba(30, 41, 59, 0.08) !important;
+}
+
+.rp-body {
+  background: #ffffff;
+}
+
+.rp-card {
+  background: #f8fafc;
+  border: 1px solid rgba(30, 41, 59, 0.08);
+}
+
+.rp-label {
+  color: #94a3b8;
+}
+
+.rp-number {
+  color: #1e293b;
+}
+
+.rp-unit {
+  color: #94a3b8;
+}
+
+.rp-chart-section {
+  background: #f8fafc;
+  border: 1px solid rgba(30, 41, 59, 0.08);
+}
+
+.rp-chart-title {
+  color: #1e293b;
+}
+
+.rp-grid-line {
+  stroke: rgba(30, 41, 59, 0.06);
+}
+
+.rp-axis-x {
+  color: #94a3b8;
+}
+
+.rp-axis-y {
+  color: #94a3b8;
+}
+
+.rp-tooltip {
+  background: #ffffff;
+  border: 1px solid rgba(30, 41, 59, 0.08);
+  color: #1e293b;
+}
+
+.rp-divider {
+  background: linear-gradient(90deg, transparent, rgba(30, 41, 59, 0.08), transparent);
+}
+
+.rp-footer-text {
+  color: #94a3b8;
+}
+
+.rp-footer-strong {
+  color: #475569;
+}
+
+.rp-footer-sep {
+  background: rgba(30, 41, 59, 0.08);
+}
+
+.rp-tabs-list {
+  background: #f8fafc;
+  border: 1px solid rgba(30, 41, 59, 0.08);
+}
+
+.rp-tab {
+  color: #94a3b8;
+}
+
+.rp-tab[data-state="active"] {
+  background: linear-gradient(135deg, #e8417a, #c2185b) !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(232, 65, 122, 0.3) !important;
+}
+
+@keyframes rpLivePulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.rp-live-dot {
+  animation: rpLivePulse 2s infinite ease-in-out;
+}
+
+/* ── Reporte de Planta — Dark Mode ──────────────────────── */
+.dark .rp-modal {
+  background: #0d1526 !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 0 0 1px rgba(232, 65, 122, 0.08), 0 24px 80px rgba(0, 0, 0, 0.6), 0 0 120px rgba(232, 65, 122, 0.04) !important;
+}
+
+.dark .rp-body {
+  background: #0d1526;
+}
+
+.dark .rp-card {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.07);
+}
+
+.dark .rp-label {
+  color: rgba(255, 255, 255, 0.30);
+}
+
+.dark .rp-number {
+  color: #f1f5f9;
+}
+
+.dark .rp-unit {
+  color: rgba(255, 255, 255, 0.40);
+}
+
+.dark .rp-chart-section {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.07);
+}
+
+.dark .rp-chart-title {
+  color: #f1f5f9;
+}
+
+.dark .rp-grid-line {
+  stroke: rgba(255, 255, 255, 0.05);
+}
+
+.dark .rp-axis-x {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.dark .rp-axis-y {
+  color: rgba(255, 255, 255, 0.30);
+}
+
+.dark .rp-tooltip {
+  background: #0d1526;
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #f1f5f9;
+}
+
+.dark .rp-divider {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+}
+
+.dark .rp-footer-text {
+  color: rgba(255, 255, 255, 0.30);
+}
+
+.dark .rp-footer-strong {
+  color: #94a3b8;
+}
+
+.dark .rp-footer-sep {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.dark .rp-tabs-list {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.07);
+}
+
+.dark .rp-tab {
+  color: rgba(255, 255, 255, 0.30);
+}
+
+.dark .rp-tab[data-state="active"] {
+  background: linear-gradient(135deg, #e8417a, #c2185b) !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(232, 65, 122, 0.3) !important;
 }
 
 @layer components {

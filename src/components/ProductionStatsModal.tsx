@@ -302,165 +302,243 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl bg-background border-border text-foreground shadow-2xl max-h-[95vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
+      <DialogContent className="max-w-3xl max-h-[95vh] flex flex-col p-0 overflow-hidden rp-modal">
         
-        {/* Header Ultra Premium */}
-        <div className="p-6 bg-muted/20 border-b border-border">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="h-12 w-12 bg-[#023F86]/10 rounded-2xl flex items-center justify-center shrink-0 shadow-inner border border-[#023F86]/20">
-                <BarChart3 className="h-6 w-6 text-[#023F86]" strokeWidth={2.5} />
+        {/* Glow decorativo */}
+        <div style={{
+          position: 'absolute', top: -60, right: -60,
+          width: 240, height: 240, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(232,65,122,0.06), transparent 70%)',
+          pointerEvents: 'none', zIndex: 0,
+        }} />
+
+        {/* ── HEADER ─────────────────────────────── */}
+        <div style={{
+          background: 'linear-gradient(135deg, #1e293b 0%, #243447 100%)',
+          padding: '24px 28px 22px',
+          borderBottom: '1px solid rgba(255,255,255,0.05)',
+          position: 'relative', overflow: 'hidden',
+        }}>
+          {/* Ornamento rosa */}
+          <div style={{
+            position: 'absolute', top: -40, right: -40,
+            width: 120, height: 120, borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(232,65,122,0.12), transparent 70%)',
+            pointerEvents: 'none',
+          }} />
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', zIndex: 2 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              {/* Ícono */}
+              <div style={{
+                width: 48, height: 48, borderRadius: 14,
+                background: 'linear-gradient(135deg, #e8417a 0%, #c2185b 100%)',
+                boxShadow: '0 6px 20px rgba(232,65,122,0.45), 0 0 40px rgba(232,65,122,0.15)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round">
+                  <rect x="3" y="3" width="18" height="18" rx="3"/>
+                  <polyline points="3,9 21,9"/>
+                  <polyline points="9,21 9,9"/>
+                  <line x1="13" y1="13" x2="18" y2="13"/>
+                  <line x1="13" y1="17" x2="16" y2="17"/>
+                </svg>
               </div>
               <div>
-                <DialogTitle className="text-xl font-black text-foreground uppercase tracking-tight leading-none">
-                   Reporte de Planta
+                <DialogTitle style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontWeight: 600, fontSize: 22, color: '#ffffff', lineHeight: 1.2,
+                  letterSpacing: 0, margin: 0,
+                }}>
+                  Reporte de Planta
                 </DialogTitle>
-                <DialogDescription className="text-muted-foreground text-xs font-bold uppercase tracking-widest mt-1.5 opacity-80">
-                  Análisis Operativo • Villa Martelli
+                <DialogDescription style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontWeight: 300, fontSize: 11, letterSpacing: 2,
+                  color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', marginTop: 4,
+                }}>
+                  Análisis Operativo · Villa Martelli
                 </DialogDescription>
               </div>
             </div>
-            
-            <div className="flex gap-2 self-end sm:self-center">
-                <Button
+
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <button
                 onClick={handlePreviewPDF}
                 disabled={isPreviewing}
-                variant="outline"
-                size="sm"
-                className="h-7 text-[10px] border-border text-muted-foreground hover:bg-muted hover:text-foreground gap-1.5 font-medium rounded-md px-2.5 no-print transition-all"
+                className="no-print"
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontWeight: 500, fontSize: 12,
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  color: 'rgba(255,255,255,0.65)',
+                  padding: '8px 16px', borderRadius: 10,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+                  transition: 'all 0.2s',
+                }}
               >
-                <Eye className="h-3 w-3" />
+                <Eye size={14} />
                 {isPreviewing ? "..." : "Vista Previa"}
-              </Button>
-              <Button
+              </button>
+              <button
                 onClick={handleExportPDF}
                 disabled={isExporting}
-                variant="outline"
-                size="sm"
-                className="h-7 text-[10px] border-border text-muted-foreground hover:bg-muted hover:text-foreground gap-1.5 font-medium rounded-md px-2.5 no-print transition-all"
+                className="no-print"
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontWeight: 500, fontSize: 12,
+                  background: 'linear-gradient(135deg, #e8417a, #c2185b)',
+                  border: 'none',
+                  color: 'white',
+                  padding: '8px 16px', borderRadius: 10,
+                  boxShadow: '0 4px 14px rgba(232,65,122,0.4)',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+                  transition: 'all 0.2s',
+                }}
               >
-                <Download className="h-3 w-3" />
+                <Download size={14} />
                 {isExporting ? "..." : "Exportar"}
-              </Button>
+              </button>
             </div>
           </div>
         </div>
 
-        <div className="p-6 flex-1 flex flex-col gap-6 min-h-0 print-container overflow-y-auto" ref={reportRef}>
-          
-          {/* Tarjetas Modernas */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 shrink-0">
-            {/* Tarjeta Semanal */}
-            <Card className="relative overflow-hidden bg-muted/20 border-0 rounded-3xl shadow-sm group">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-150 duration-700" />
-              <CardContent className="py-5 px-6 relative z-10">
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.2em]">Semanal</p>
-                  <div className="h-8 w-8 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                    <Calendar className="h-4 w-4 text-blue-500" strokeWidth={2.5} />
-                  </div>
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <p className="text-4xl font-black text-foreground tracking-tighter">{stats.weeklyTotal.toLocaleString()}</p>
-                  <p className="text-sm font-bold text-blue-500 uppercase tracking-widest">kg</p>
-                </div>
-              </CardContent>
-            </Card>
+        {/* ── BODY ───────────────────────────────── */}
+        <div className="rp-body flex-1 flex flex-col min-h-0 overflow-y-auto" ref={reportRef}>
 
-            {/* Tarjeta Mensual */}
-            <Card className="relative overflow-hidden bg-muted/20 border-0 rounded-3xl shadow-sm group">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-pink-500/10 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-150 duration-700" />
-              <CardContent className="py-5 px-6 relative z-10">
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.2em]">PRODUCCIÓN {stats.monthName}</p>
-                  <div className="h-8 w-8 rounded-xl bg-[#F7A600]/20 flex items-center justify-center">
-                    <TrendingUp className="h-4 w-4 text-[#F7A600]" strokeWidth={2.5} />
-                  </div>
+          {/* ── METRIC CARDS ─────────────────────── */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, padding: '24px 28px 0' }}>
+            {/* Semanal */}
+            <div className="rp-card" style={{ borderRadius: 18, padding: '20px 22px', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2.5, borderRadius: '18px 18px 0 0', background: 'linear-gradient(90deg, #e8417a, transparent)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#e8417a', boxShadow: '0 0 6px rgba(232,65,122,0.5)', display: 'inline-block' }} />
+                  <span className="rp-label" style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 10, letterSpacing: 2.5, textTransform: 'uppercase' }}>
+                    Semanal
+                  </span>
                 </div>
-                <div className="flex items-baseline gap-1">
-                  <p className="text-4xl font-black text-foreground tracking-tighter">{stats.monthlyTotal.toLocaleString()}</p>
-                  <p className="text-sm font-bold text-[#F7A600] uppercase tracking-widest">kg</p>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(232,65,122,0.08)', border: '1px solid rgba(232,65,122,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Calendar size={16} color="#e8417a" />
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                <span className="rp-number" style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: 52, lineHeight: 1, letterSpacing: -1 }}>
+                  {stats.weeklyTotal.toLocaleString()}
+                </span>
+                <span className="rp-unit" style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 14, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>
+                  kg
+                </span>
+              </div>
+            </div>
+
+            {/* Mensual */}
+            <div className="rp-card" style={{ borderRadius: 18, padding: '20px 22px', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2.5, borderRadius: '18px 18px 0 0', background: 'linear-gradient(90deg, #f59e0b, transparent)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b', boxShadow: '0 0 6px rgba(245,158,11,0.5)', display: 'inline-block' }} />
+                  <span className="rp-label" style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 10, letterSpacing: 2.5, textTransform: 'uppercase' }}>
+                    Producción {stats.monthName}
+                  </span>
+                </div>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <TrendingUp size={16} color="#f59e0b" />
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                <span className="rp-number" style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: 52, lineHeight: 1, letterSpacing: -1 }}>
+                  {stats.monthlyTotal.toLocaleString()}
+                </span>
+                <span className="rp-unit" style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 14, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>
+                  kg
+                </span>
+              </div>
+            </div>
           </div>
 
-          <div className="bg-muted/10 dark:bg-slate-800/20 border border-border rounded-[2rem] p-6 flex-1 flex flex-col min-h-0">
+          {/* ── CHART SECTION ────────────────────── */}
+          <div className="rp-chart-section" style={{ margin: '20px 28px 0', borderRadius: 20, padding: '22px 24px' }}>
             <Tabs value={viewType} onValueChange={(v) => setViewType(v as "daily" | "weekly" | "monthly")} className="w-full flex-1 flex flex-col">
               
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
-                <h4 className="font-bold flex items-center gap-2 text-foreground text-base">
-                  <Activity className="h-4 w-4 text-pink-500" />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                <h4 className="rp-chart-title" style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontWeight: 600, fontSize: 17, letterSpacing: 0.3,
+                  display: 'flex', alignItems: 'center', gap: 8, margin: 0,
+                }}>
+                  <Activity size={16} color="#e8417a" />
                   Rendimiento de Planta
                 </h4>
                 
-                <TabsList className="bg-muted/50 p-1 h-10 rounded-xl no-print flex gap-1 border border-border shadow-sm">
-                  <TabsTrigger 
-                    value="daily" 
-                    className="text-xs font-bold px-4 rounded-lg text-muted-foreground data-[state=active]:bg-[#023F86] data-[state=active]:text-white transition-all"
-                  >
+                <TabsList className="rp-tabs-list no-print" style={{
+                  borderRadius: 10, padding: 3, height: 'auto',
+                  display: 'flex', gap: 2,
+                }}>
+                  <TabsTrigger value="daily" className="rp-tab" style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 11, padding: '6px 14px', borderRadius: 8 }}>
                     Diario
                   </TabsTrigger>
-                  <TabsTrigger 
-                    value="weekly" 
-                    className="text-xs font-bold px-4 rounded-lg text-muted-foreground data-[state=active]:bg-[#023F86] data-[state=active]:text-white transition-all"
-                  >
+                  <TabsTrigger value="weekly" className="rp-tab" style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 11, padding: '6px 14px', borderRadius: 8 }}>
                     Semanal
                   </TabsTrigger>
-                  <TabsTrigger 
-                    value="monthly" 
-                    className="text-xs font-bold px-4 rounded-lg text-muted-foreground data-[state=active]:bg-[#023F86] data-[state=active]:text-white transition-all"
-                  >
+                  <TabsTrigger value="monthly" className="rp-tab" style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 11, padding: '6px 14px', borderRadius: 8 }}>
                     Mensual
                   </TabsTrigger>
                 </TabsList>
               </div>
 
-              {/* Chart Area */}
-              <div className="w-full h-[250px] mt-auto relative">
+              {/* Chart */}
+              <div style={{ width: '100%', height: 250, position: 'relative' }}>
                 {loadingView ? (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-teal-500"></div>
+                  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div className="animate-spin" style={{ width: 24, height: 24, border: '2px solid rgba(232,65,122,0.2)', borderTopColor: '#e8417a', borderRadius: '50%' }} />
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={stats.chartDynamicData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
                       <defs>
-                        <linearGradient id="barGradientPremium" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#f43f5e" stopOpacity={1} />
-                          <stop offset="100%" stopColor="#f43f5e" stopOpacity={0.4} />
+                        <linearGradient id="rpBarGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#e8417a" stopOpacity={1} />
+                          <stop offset="100%" stopColor="#e8417a" stopOpacity={0.35} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-border" opacity={0.5} />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} className="rp-grid-line" opacity={0.5} />
                       <XAxis 
                         dataKey="name" 
-                        stroke="currentColor" 
-                        className="text-muted-foreground"
-                        fontSize={9} 
+                        fontSize={10} 
                         tickLine={false} 
                         axisLine={false}
-                        fontWeight={600}
+                        fontWeight={400}
+                        fontFamily="'DM Sans', sans-serif"
                         dy={5}
-                        interval={viewType === 'daily' ? 1 : 0} 
+                        interval={viewType === 'daily' ? 1 : 0}
+                        className="rp-axis-x"
                       />
                       <YAxis 
-                        stroke="currentColor" 
-                        className="text-muted-foreground"
-                        fontSize={9} 
+                        fontSize={10} 
                         tickLine={false} 
                         axisLine={false} 
                         tickFormatter={(v) => `${v}`}
-                        fontWeight={500}
+                        fontWeight={400}
+                        fontFamily="'DM Sans', sans-serif"
                         dx={-5}
+                        className="rp-axis-y"
                       />
                       <Tooltip 
-                        cursor={{ fill: 'currentColor', opacity: 0.1, radius: 4 }}
+                        cursor={{ fill: 'rgba(232,65,122,0.06)', radius: 6 }}
                         content={({ active, payload, label }) => {
                           if (active && payload && payload.length) {
                             return (
-                              <div className="bg-popover text-popover-foreground text-[10px] rounded-lg py-1 px-2 shadow-xl border border-border">
-                                <p className="font-bold mb-0.5">{label}</p>
-                                <p className="text-teal-400 font-bold">{payload[0].value?.toLocaleString()} kg</p>
+                              <div className="rp-tooltip" style={{
+                                padding: '8px 14px', borderRadius: 12,
+                                fontFamily: "'DM Sans', sans-serif",
+                                boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                              }}>
+                                <p style={{ fontWeight: 600, fontSize: 12, marginBottom: 2 }}>{label}</p>
+                                <p style={{ fontSize: 12, color: '#e8417a', fontWeight: 700 }}>
+                                  {payload[0].value?.toLocaleString()} kg
+                                </p>
                               </div>
                             );
                           }
@@ -469,12 +547,12 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
                       />
                       <Bar 
                         dataKey="total" 
-                        radius={[3, 3, 3, 3]} 
-                        barSize={20}
+                        radius={[4, 4, 4, 4]} 
+                        barSize={22}
                         animationDuration={1000}
                       >
-                         {stats.chartDynamicData.map((_, i) => (
-                          <Cell key={`cell-${i}`} fill="url(#barGradientPremium)" />
+                        {stats.chartDynamicData.map((_, i) => (
+                          <Cell key={`cell-${i}`} fill="url(#rpBarGrad)" />
                         ))}
                       </Bar>
                     </BarChart>
@@ -483,8 +561,48 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
               </div>
             </Tabs>
           </div>
+
+          {/* ── SEPARATOR ────────────────────────── */}
+          <div className="rp-divider" style={{ height: 1, margin: '20px 28px 0' }} />
+
+          {/* ── FOOTER ───────────────────────────── */}
+          <div style={{ padding: '16px 28px 22px', display: 'flex', alignItems: 'center', gap: 20 }}>
+            <span className="rp-footer-text" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11 }}>
+              Período: <strong className="rp-footer-strong">{stats.monthName} {stats.year}</strong>
+            </span>
+            <span className="rp-footer-sep" style={{ width: 1, height: 14, display: 'inline-block' }} />
+            <span className="rp-footer-text" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11 }}>
+              Registros: <strong className="rp-footer-strong">{stats.chartDynamicData.length}</strong>
+            </span>
+            <span className="rp-footer-sep" style={{ width: 1, height: 14, display: 'inline-block' }} />
+            <span className="rp-footer-text" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11 }}>
+              Promedio: <strong className="rp-footer-strong">
+                {stats.chartDynamicData.length > 0
+                  ? Math.round(stats.chartDynamicData.reduce((s, d) => s + d.total, 0) / stats.chartDynamicData.length).toLocaleString()
+                  : 0} kg/día
+              </strong>
+            </span>
+            
+            {/* LIVE indicator */}
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span className="rp-live-dot" style={{
+                width: 6, height: 6, borderRadius: '50%',
+                background: '#22c55e',
+                boxShadow: '0 0 8px rgba(34,197,94,0.6)',
+                display: 'inline-block',
+              }} />
+              <span className="rp-footer-text" style={{
+                fontFamily: "'DM Sans', sans-serif",
+                fontWeight: 600, fontSize: 10, letterSpacing: 1.5,
+                textTransform: 'uppercase',
+              }}>
+                Live
+              </span>
+            </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
   );
 };
+

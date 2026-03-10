@@ -171,34 +171,39 @@ export const FormulasSection = ({
 
     autoTable(pdf, {
       startY: 52,
-      head: [["N°", "Lote", "Producto", "Kilos", "Fecha", "Destino", "Materias Primas Faltantes"]],
+      head: [["", "Lote", "Producto", "Kilos", "Fecha", "Destino", "Materias Primas Faltantes"]],
       body: tableRows,
       theme: "striped",
+      styles: {
+        fontSize: 7,
+        cellPadding: 3,
+        overflow: "linebreak"
+      },
       headStyles: {
         fillColor: [2, 63, 134],
         textColor: [255, 255, 255],
         fontStyle: "bold",
-        fontSize: 8,
-        cellPadding: 4
+        fontSize: 7.5,
+        halign: "center",
+        valign: "middle"
       },
       bodyStyles: {
-        fontSize: 7.5,
         textColor: [40, 40, 40],
-        cellPadding: 3
+        valign: "middle"
       },
       alternateRowStyles: {
         fillColor: [240, 246, 255]
       },
       columnStyles: {
-        0: { cellWidth: 8, halign: "center" },
-        1: { cellWidth: 22 },
-        2: { cellWidth: 38 },
-        3: { cellWidth: 18, halign: "center" },
+        0: { cellWidth: 8, halign: "center", valign: "middle" },
+        1: { cellWidth: 20 },
+        2: { cellWidth: 40 },
+        3: { cellWidth: 15, halign: "center" },
         4: { cellWidth: 22, halign: "center" },
-        5: { cellWidth: 26 },
-        6: { cellWidth: "auto", minCellWidth: 40 }
+        5: { cellWidth: 30 },
+        6: { cellWidth: "auto" }
       },
-      margin: { left: 14, right: 14 },
+      margin: { left: 20, right: 20 },
       didDrawPage: (data) => {
         // Footer en cada página
         pdf.setFontSize(7);
@@ -212,75 +217,23 @@ export const FormulasSection = ({
       }
     });
 
-    // ─── DETALLE POR LOTE (si hay espacio / nueva página) ────
+    // ─── FIRMA / CIERRE ──────────────────────────────────────
     const finalY = (pdf as any).lastAutoTable?.finalY || 52;
     let cursorY = finalY + 12;
 
-    if (cursorY + 14 > pageHeight - 20) {
+    if (cursorY + 20 > pageHeight - 20) {
       pdf.addPage();
       cursorY = 20;
     }
-
-    pdf.setFontSize(11);
-    pdf.setFont("helvetica", "bold");
-    pdf.setTextColor(2, 63, 134);
-    pdf.text("Detalle de Materias Primas Faltantes por Lote", 14, cursorY);
-    cursorY += 8;
-
-    pdf.setDrawColor(2, 63, 134);
-    pdf.setLineWidth(0.5);
-    pdf.line(14, cursorY, pageWidth - 14, cursorY);
-    cursorY += 6;
-
-    lotes.forEach((formula) => {
-      if (!formula.missingIngredients || formula.missingIngredients.length === 0) return;
-
-      // ¿Cabe el bloque en la página actual?
-      const blockHeight = 10 + formula.missingIngredients.length * 6 + 8;
-      if (cursorY + blockHeight > pageHeight - 20) {
-        pdf.addPage();
-        cursorY = 20;
-      }
-
-      // Nombre del lote/producto
-      pdf.setFontSize(9);
-      pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(30, 30, 30);
-      const loteLabel = formula.lote_code || formula.id;
-      pdf.text(`${formula.name}  ·  Lote: ${loteLabel}  ·  ${formula.batchSize} kg`, 14, cursorY);
-      cursorY += 5;
-
-      // Faltantes de ese lote
-      pdf.setFontSize(8);
-      pdf.setFont("helvetica", "normal");
-      pdf.setTextColor(180, 30, 30);
-      formula.missingIngredients.forEach((ing: any) => {
-        if (cursorY + 6 > pageHeight - 20) {
-          pdf.addPage();
-          cursorY = 20;
-        }
-        pdf.text(`  - ${ing.name}: ${ing.required} ${ing.unit} faltantes`, 14, cursorY);
-        cursorY += 5.5;
-      });
-
-      cursorY += 5;
-    });
-
-    // ─── FIRMA / CIERRE ──────────────────────────────────────
-    if (cursorY + 30 > pageHeight - 20) {
-      pdf.addPage();
-      cursorY = 20;
-    }
-    cursorY += 8;
     pdf.setDrawColor(200, 200, 200);
     pdf.setLineWidth(0.3);
-    pdf.line(14, cursorY, pageWidth - 14, cursorY);
+    pdf.line(20, cursorY, pageWidth - 20, cursorY);
     cursorY += 6;
 
     pdf.setFontSize(8);
     pdf.setFont("helvetica", "italic");
     pdf.setTextColor(140, 140, 140);
-    pdf.text("Este documento fue generado automáticamente por el Sistema de Control de Producción.", 14, cursorY);
+    pdf.text("Este documento fue generado automáticamente por el Sistema de Control de Producción.", 20, cursorY);
   };
 
   // Calcular lotes incompletos actuales

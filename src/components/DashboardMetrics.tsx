@@ -1123,28 +1123,6 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
               <FlaskConical className="h-5 w-5 text-primary" />
               <h2 className="text-lg font-semibold text-foreground">Productos Terminados — Villa Martelli</h2>
             </div>
-            <div className="flex gap-2 shrink-0">
-              <Button
-                onClick={handlePreviewProductosPDF}
-                disabled={isPreviewingProductos}
-                variant="outline"
-                size="sm"
-                className="h-8 text-[11px] border-border text-muted-foreground hover:bg-muted hover:text-foreground gap-1.5 font-medium rounded-lg px-3 transition-all"
-              >
-                <Eye className="h-3.5 w-3.5" />
-                {isPreviewingProductos ? 'Generando...' : 'Vista Previa'}
-              </Button>
-              <Button
-                onClick={handleExportProductosPDF}
-                disabled={isExportingProductos}
-                variant="outline"
-                size="sm"
-                className="h-8 text-[11px] border-primary/40 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground gap-1.5 font-bold rounded-lg px-3 transition-all"
-              >
-                <Download className="h-3.5 w-3.5" />
-                {isExportingProductos ? 'Exportando...' : 'Exportar PDF'}
-              </Button>
-            </div>
           </div>
           
           <div className="space-y-4">
