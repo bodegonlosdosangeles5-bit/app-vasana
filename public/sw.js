@@ -1,11 +1,12 @@
 // Service Worker para Control de Producción PWA
-const CACHE_NAME = 'control-produccion-v2';
+const CACHE_NAME = 'control-produccion-v3';
 const STATIC_CACHE_URLS = [
   '/',
   '/index.html',
   '/manifest.json',
   '/favicon.svg',
-  '/icono.png'
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png'
 ];
 
 // Instalar Service Worker

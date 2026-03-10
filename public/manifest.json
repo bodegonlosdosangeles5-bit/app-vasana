@@ -1,44 +1,79 @@
 {
-  "name": "Control de Producción",
-  "short_name": "Producción",
-  "description": "Gestión integral de inventario y formulación para producción",
-  "start_url": ".",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#3b82f6",
-  "orientation": "portrait-primary",
-  "scope": "/",
-  "lang": "es",
-  "categories": ["productivity", "business"],
+  "short_name": "Planta Varela",
+  "name": "Control de Producción - Planta Varela",
+  "description": "Sistema de gestión de producción e inventario",
   "icons": [
     {
-      "src": "/icono.png",
-      "sizes": "192x192 512x512",
+      "src": "/icons/icon-72x72.png",
+      "sizes": "72x72",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml"
+      "src": "/icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "src": "/icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/icon-192.png",
+      "src": "/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0B1220",
+  "background_color": "#0B1220",
+  "scope": "/",
+  "lang": "es",
+  "categories": [
+    "productivity",
+    "business"
   ],
   "shortcuts": [
     {
@@ -46,28 +81,36 @@
       "short_name": "Dashboard",
       "description": "Ver métricas principales",
       "url": "/?section=dashboard",
-      "icons": [{ "src": "/icono.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/icons/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
       "name": "Inventario",
       "short_name": "Inventario",
       "description": "Gestionar materias primas",
       "url": "/?section=inventory",
-      "icons": [{ "src": "/icono.png", "sizes": "96x96" }]
-    },
-    {
-      "name": "Fórmulas",
-      "short_name": "Fórmulas",
-      "description": "Administrar fórmulas",
-      "url": "/?section=formulas",
-      "icons": [{ "src": "/icono.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/icons/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
       "name": "Producción",
       "short_name": "Producción",
       "description": "Control de producción",
       "url": "/?section=production",
-      "icons": [{ "src": "/icono.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/icons/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
     }
   ]
 }
