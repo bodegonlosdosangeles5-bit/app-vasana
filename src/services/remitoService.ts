@@ -63,7 +63,7 @@ export class RemitoService {
         .from('remito_items')
         .select('*')
         .eq('remito_id', remitoId)
-        .order('created_at', { ascending: true });
+        .order('lote', { ascending: true });
 
       if (itemsError) throw itemsError;
 
@@ -297,7 +297,7 @@ export class RemitoService {
         .from('remito_items')
         .select('*')
         .eq('remito_id', remitoId)
-        .order('created_at', { ascending: true });
+        .order('lote', { ascending: true });
 
       if (itemsError) throw itemsError;
 
@@ -341,7 +341,7 @@ export class RemitoService {
         .from('remito_items')
         .select('*')
         .eq('remito_id', remito.id)
-        .order('created_at', { ascending: true });
+        .order('lote', { ascending: true });
 
       if (itemsError) throw itemsError;
 
@@ -505,7 +505,7 @@ export class RemitoService {
             .from('remito_items')
             .select('*')
             .eq('remito_id', remito.id)
-            .order('created_at', { ascending: true });
+            .order('lote', { ascending: true });
 
           return {
             ...remito,
@@ -532,6 +532,7 @@ export class RemitoService {
       const envio = await EnvioService.crearEnvioConRemitoEspecifico(
         remitoId,
         'Villa Martelli',
+        undefined,
         'Envío automático generado con el remito'
       );
 

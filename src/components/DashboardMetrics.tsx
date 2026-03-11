@@ -213,7 +213,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
   // Calcular productos terminados para Villa Martelli
   const formulasTerminadas = useMemo(() => {
     const todayDate = new Date();
-    return formulasData.filter(formula => {
+    const terminadas = formulasData.filter(formula => {
       const normalizedStatus = normalizeText(formula?.status || "");
       const normalizedDestination = normalizeText(formula?.destination || "");
       
@@ -233,6 +233,8 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
       // Mostrar solo si tiene stock para Villa Martelli
       return isTerminated && isVillaMartelli && hasStock;
     });
+
+    return terminadas.sort((a, b) => Number(a.lote_code || a.id) - Number(b.lote_code || b.id));
   }, [formulasData]);
 
   // Filtrar inventario según término de búsqueda (igual que InventorySection)
@@ -279,13 +281,9 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
     return productosViajeActual.reduce((sum, f) => sum + (f.batchSize || 0), 0);
   }, [productosViajeActual]);
 
-  // Lista de productos del viaje actual ordenados por fecha
+  // Lista de productos del viaje actual ordenados por lote_code ascendente
   const productosViajeSorted = useMemo(() => {
-    return [...productosViajeActual].sort((a, b) => {
-      const dateA = a.date ? new Date(a.date + 'T00:00:00').getTime() : 0;
-      const dateB = b.date ? new Date(b.date + 'T00:00:00').getTime() : 0;
-      return dateB - dateA;
-    });
+    return [...productosViajeActual].sort((a, b) => Number(a.lote_code || a.id) - Number(b.lote_code || b.id));
   }, [productosViajeActual]);
 
   // Progreso de materias primas sin stock basado en 200 items como máximo

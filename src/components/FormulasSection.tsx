@@ -111,7 +111,7 @@ export const FormulasSection = ({
   // =============================================
   // Datos de fórmulas (definido antes del bloque PDF)
   // =============================================
-  const currentFormulas = formulasData;
+  const currentFormulas = [...formulasData].sort((a, b) => Number(a.lote_code || a.id) - Number(b.lote_code || b.id));
 
   // =============================================
   // PDF: Lotes Incompletos

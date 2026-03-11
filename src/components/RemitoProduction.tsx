@@ -49,7 +49,7 @@ export const RemitoProduction = ({ productionItems, onSuccess }: RemitoProductio
       const isVillaMartelli = normalizedDestination === 'villamartelli';
       const hasStock = (item.stock_actual ?? item.batchSize) > 0;
       return isTerminated && isVillaMartelli && hasStock;
-    });
+    }).sort((a, b) => Number(a.lote_code || a.id) - Number(b.lote_code || b.id));
   }, [productionItems]);
 
   // Seleccionar automáticamente todos los productos de Villa Martelli

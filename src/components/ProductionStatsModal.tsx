@@ -112,7 +112,7 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
         const pDate = p.date ? parseISO(p.date + 'T00:00:00') : null;
         return pDate && pDate >= monthAgo && pDate <= now;
       })
-      .sort((a, b) => new Date((b.date || "") + 'T00:00:00').getTime() - new Date((a.date || "") + 'T00:00:00').getTime());
+      .sort((a, b) => Number(a.lote_code || a.id) - Number(b.lote_code || b.id));
 
     // --- DATOS DINÁMICOS DEL GRÁFICO (Desde la Vista) ---
     let chartDynamicData = [];

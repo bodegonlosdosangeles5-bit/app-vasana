@@ -127,7 +127,7 @@ export class ProductoService {
         return acc;
       }, {} as Record<string, Array<{name: string, required: number, available: number, unit: string}>>);
 
-      return productos.map(producto => ({
+      const mappedProductos = productos.map(producto => ({
         id: producto.id,
         lote_code: producto.lote_code || producto.id, // Correctly typed now
         name: producto.name,
@@ -141,6 +141,9 @@ export class ProductoService {
         missingIngredients: missingByProducto[producto.id] || [],
         ingredients: availableByProducto[producto.id] || []
       }));
+
+      // Sort numerically by lote_code ascending
+      return mappedProductos.sort((a, b) => Number(a.lote_code) - Number(b.lote_code));
     } catch (error) {
       console.error('Error fetching productos:', error);
       return [];

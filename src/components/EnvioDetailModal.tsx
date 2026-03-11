@@ -41,7 +41,7 @@ export const EnvioDetailModal = ({
 
   const handleEditRemito = (remito: EnvioConRemitos['remitos'][0]) => {
     setEditingRemito(remito as unknown as RemitoWithItems);
-    setEditedItems([...remito.items] as RemitoItem[]);
+    setEditedItems([...remito.items].sort((a, b) => Number(a.lote || '') - Number(b.lote || '')) as RemitoItem[]);
     setEditForm({
       observaciones: remito.observaciones || ''
     });
@@ -325,7 +325,7 @@ export const EnvioDetailModal = ({
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
-                                {remito.items.map((item) => (
+                                {[...remito.items].sort((a, b) => Number(a.lote || '') - Number(b.lote || '')).map((item) => (
                                   <TableRow key={item.id}>
                                     <TableCell className="text-xs font-medium">
                                       {item.nombre_producto}
