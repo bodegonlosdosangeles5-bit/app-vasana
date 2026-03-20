@@ -1,8 +1,9 @@
 import { 
   Package, FlaskConical, Search, X, MapPin, 
   BarChart3, TrendingDown, Calendar, Scale, AlertCircle,
-  PackageCheck, Droplets, TrendingUp, Download, Eye, Pencil, Trash2
+  PackageCheck, Droplets, TrendingUp, Download, Eye, Pencil, Trash2, Printer
 } from "lucide-react";
+import { VistaPreviaPlantaVarela } from './VistaPreviaPlantaVarela';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
@@ -1257,6 +1258,15 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                 <Download className="h-3.5 w-3.5" />
                 {isExportingViaje ? "..." : "Exportar"}
               </Button>
+              <Button
+                onClick={() => window.print()}
+                variant="default"
+                size="sm"
+                className="h-8 text-xs gap-1.5 no-print bg-[#023F86] hover:bg-[#023F86]/90 text-white"
+              >
+                <Printer className="h-3.5 w-3.5" />
+                Imprimir A4
+              </Button>
             </div>
           </DialogHeader>
           
@@ -1509,6 +1519,33 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Componente Oculto de Impresión en Pantalla, visible solo por @media print */}
+      <div className="hidden print:block">
+        <VistaPreviaPlantaVarela 
+          remito={{
+            id: 'Preview',
+            destino: 'Villa Martelli',
+            fecha: new Date().toISOString().split('T')[0],
+            total_kilos: kilosViajeActual,
+            estado: 'abierto',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            items: productosViajeSorted.map((prod, index) => ({
+              id: String(index),
+              remito_id: 'Preview',
+              producto_id: prod.id,
+              nombre_producto: prod.name,
+              kilos_sumados: prod.batchSize || 0,
+              cantidad_lotes: 1,
+              lote: prod.lote_code || String(prod.id),
+              cliente_o_stock: prod.type === 'client' && prod.clientName ? prod.clientName : 'STOCK',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }))
+          }} 
+        />
+      </div>
     </div>
   );
 };

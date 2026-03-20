@@ -121,12 +121,13 @@ Lógica en `src/hooks/`
 - Las tablas activas en Supabase (`productos`, `inventory`) contienen registros actuales valiosos manejados por sincronía de Channels Postgres. Alterarlas manualmente sin pasar por el ORM / Hooks o en un comando crudo de SQL borrará el rastro Realtime y puede ocasionar un crash por colisiones on-sync de UI.
 
 ## 13. HISTORIAL DE CAMBIOS RECIENTES
-Los últimos updates notorios implican pulidos de usabilidad y visuales:
-- **UI/UX Re-Theme:** Se rediseñó el componente superior visual (Reporte de Planta) alterando métricas UI y estilos, y se actualizó a la fuente **Cormorant Garamond** para títulos y logo corporativo (**V Rosa**).
+Los últimos updates notorios implican pulidos de usabilidad, organización de bases de datos y visuales de impresión:
+- **Vista Previa de Remito / Impresión (A4):** Creación del componente dedicado `VistaPreviaPlantaVarela.tsx` utilizando React Portals (`createPortal`). Permite imprimir remitos con formato exacto A4 (8cm margen superior, 6cm inferior, fecha alineada a 5cm) sin interferir con el DOM web global. Además, la tabla fue optimizada (sin bordes) para acomodar ~21 productos por hoja fluidamente.
+- **Impresión Directa Dashboard:** Añadido el botón "Imprimir A4" en el modal de Producción (Viaje Actual) dentro de `DashboardMetrics.tsx` para lanzar directamente el nuevo componente de Remito.
+- **Ordenamiento Global por Lote:** Implementación del sistema de ordenamiento estricto por `Lote` (de forma Ascendente - ASC) a lo largo de toda la aplicación, impactando hooks, UI, y en la matriz de los generadores PDF sin alterar la base de datos de Supabase.
+- **UI/UX Re-Theme:** Se rediseñó el modal superior visual (Reporte de Planta) alterando métricas UI y estilos, incorporando la fuente **Cormorant Garamond** para títulos y acoplándose al logo corporativo (**V Rosa**).
 - **Control de Viajes:** Refactor del pasaje seguro de la fase Remito a sección Envíos (`fix_missing_envio` implementado).
-- **UI Compartir QR:** Añadido un botón "Compartir QR" directo en el Admin Panel de perfiles.
 - **Roles:** Oficializado el ROL "consulta" y su handling de solo lectura.
-- **Bugs/Estabilidad:** Se eliminaron bloqueos y bugs sobre triggers de mismatch en `envios_remitos`.
 
 ---
-*Generado automáticamente: 09 de Marzo de 2026*
+*Última actualización: 19 de Marzo de 2026*
