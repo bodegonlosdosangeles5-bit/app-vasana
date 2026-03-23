@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { RemitoWithItems } from '@/services/remitoService';
 
@@ -13,28 +13,34 @@ export const VistaPreviaPlantaVarela: React.FC<VistaPreviaPlantaVarelaProps> = (
     setMounted(true);
   }, []);
 
-  // Filtrar y ordenar items cumpliendo estrictamente con el Orden ASC por Lote
-  const sortedItems = useMemo(() => {
+  const sortedItems = (() => {
     if (!remito) return [];
+
     return [...remito.items].sort((a, b) => {
       const loteA = a.lote || '';
       const loteB = b.lote || '';
       return loteA.localeCompare(loteB, undefined, { numeric: true, sensitivity: 'base' });
     });
-  }, [remito]);
+  })();
 
   if (!remito || !mounted) return null;
 
-  // Cálculo de totales (Solo lectura visual)
+  // Cálculo de totales
   const totalKilos = sortedItems.reduce((acc, item) => acc + (item.kilos_sumados || 0), 0);
-  const totalLotes = sortedItems.reduce((acc, item) => acc + (item.cantidad_lotes || 0), 0);
   
-  // Format Date (Fecha del Remito obtenida del objeto)
+  // Format Date
   const dateFormatted = new Date(remito.fecha + 'T00:00:00').toLocaleDateString('es-AR', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric'
   });
+
+  // Paginación Manual Segura (React JS Chunking)
+  const ITEMS_PER_PAGE = 25;
+  const pages = [];
+  for (let i = 0; i < sortedItems.length; i += ITEMS_PER_PAGE) {
+    pages.push(sortedItems.slice(i, i + ITEMS_PER_PAGE));
+  }
 
   return createPortal(
     <>
@@ -43,157 +49,193 @@ export const VistaPreviaPlantaVarela: React.FC<VistaPreviaPlantaVarelaProps> = (
           @media print {
             @page {
               size: A4;
-              margin: 0; /* Quitamos márgenes del navegador para garantizarlos internamente a medida */
-            }
-            body {
-              background: white;
               margin: 0;
             }
-            /* Ocultar TODO el resto de la interfaz al imprimir (incluido #root) */
+
+            body {
+              background: white !important;
+              margin: 0 !important;
+              padding: 0 !important;
+            }
+
             body > *:not(#print-root) {
               display: none !important;
             }
+
             #print-root {
-              position: static;
-              width: 100%;
               display: block !important;
+              width: 210mm;
             }
 
+            .print-page {
+              width: 210mm;
+              height: 297mm;
+              box-sizing: border-box;
+              page-break-after: always;
+              break-after: page;
+              overflow: hidden;
+              display: flex;
+              flex-direction: column;
+            }
 
-            /* Espaciadores para repetir en CADA hoja el layout de 8cm y 6cm */
+            .print-page:last-child {
+              page-break-after: auto;
+              break-after: auto;
+            }
+
+            /* Bloque superior: 8cm fijos */
             .page-header-space {
-              height: 8cm;
+              flex: 0 0 8cm;
+              width: 100%;
+              position: relative;
+              box-sizing: border-box;
             }
+
+            /* Bloque inferior: 6cm fijos */
             .page-footer-space {
-              height: 6cm;
+              flex: 0 0 6cm;
+              width: 100%;
+              box-sizing: border-box;
             }
 
-            /* Contenedor fijo en cada página impresa (permite que la fecha viva en esos 8cm) */
-            .print-header {
-              position: fixed;
-              top: 0;
-              left: 0;
-              width: 100%;
-              height: 8cm;
-            }
-            .print-footer {
-              position: fixed;
-              bottom: 0;
-              left: 0;
-              width: 100%;
-              height: 6cm;
+            .page-content {
+              flex: 1;
+              display: flex;
+              flex-direction: column;
+              width: 86%;
+              margin-left: 7%;
+              margin-right: 7%;
+              box-sizing: border-box;
+              overflow: hidden;
+              padding: 0;
             }
 
-            /* La fecha exactamente a 5cm del borde y alineada a la derecha */
+            /* Contenedor de la tabla empuja el resto hacia abajo */
+            .items-container {
+              width: 100%;
+              height: max-content;
+            }
+
+            /* Fecha a 6cm desde el borde superior de la hoja */
             .date-position {
               position: absolute;
-              top: 5cm;
+              top: 6cm;
               right: 2cm;
               font-family: Arial, sans-serif;
-              font-size: 13pt;
+              font-size: 10pt;
               font-weight: 600;
               color: #000;
             }
 
-            /* Tabla centralizada a partir de los 8cm */
-            .main-content {
+            /* Estilos generales de tabla */
+            .content-table, .total-table {
               width: 100%;
-            }
-            .content-table {
-              width: 70%; /* Ocupará espacio central en la hoja */
-              margin: 0 auto;
+              height: max-content !important;
               border-collapse: collapse;
               font-family: Arial, sans-serif;
-              font-size: 11pt;
+              font-size: 10pt;
+              margin: 0 !important;
+              padding: 0 !important;
             }
-            .content-table, .content-table tr, .content-table td, .content-table th {
-              border: none !important;
-              padding: 4px 8px; /* Apretamos el padding para ganar filas */
+
+            .content-table tr {
+              height: 14pt !important;
+              max-height: 14pt !important;
+              overflow: hidden !important;
+            }
+
+            .content-table td {
+              padding: 1pt 2pt !important;
+              font-size: 10pt !important;
+              line-height: 12pt !important;
+              height: 14pt !important;
+              max-height: 14pt !important;
               color: #000;
-              box-shadow: none !important;
-              outline: none !important;
+              white-space: nowrap !important;
+              overflow: hidden !important;
+              text-overflow: ellipsis !important;
+              border: none !important;
+              vertical-align: middle !important;
             }
-            .text-center { text-align: center !important; }
-            .text-right { text-align: right !important; }
+
+            /* Anchos estrictos para alineación idéntica */
+            .col-lote    { width: 15%; text-align: center; }
+            .col-prod    { width: 40%; text-align: left; }
+            .col-cliente { width: 30%; text-align: left; }
+            .col-kilos   { width: 15%; text-align: right; }
+
+            /* Contenedor de totales que se fondea al final del page-content */
+            .total-container {
+              width: 100%;
+              margin-top: auto;
+              padding-top: 5pt;
+            }
+
+            .total-table td {
+              font-weight: 900 !important;
+              color: #000 !important;
+              border: none !important;
+              padding-top: 4pt;
+              padding-bottom: 4pt;
+            }
           }
-          
-          /* Visualización en pantalla para la Vista Previa: Ocultar todo el remito en el navegador normal */
+
           @media screen {
-            #print-root {
-              display: none !important;
-            }
+            #print-root { display: none !important; }
           }
         `}
       </style>
 
-      {/* Contenedor principal de impresión */}
-      <div id="print-root" className="print-preview-wrapper">
-        <div className="print-container">
-          
-          <div className="print-header">
-            <div className="date-position">
-              {dateFormatted}
-            </div>
-          </div>
+      <div id="print-root">
+        {pages.map((pageItems, pageIndex) => {
+          const isLastPage = pageIndex === pages.length - 1;
+          return (
+            <div key={pageIndex} className="print-page">
+              
+              {/* BLOQUE DE 8cm: Header superior físico */}
+              <div className="page-header-space">
+                <div className="date-position">{dateFormatted}</div>
+              </div>
 
-          <table className="main-content">
-            <thead>
-              <tr>
-                <td>
-                  <div className="page-header-space"></div>
-                </td>
-              </tr>
-            </thead>
-
-            <tbody>
-              <tr>
-                <td>
+              {/* BLOQUE CENTRAL: Contenido flexible */}
+              <div className="page-content">
+                <div className="items-container">
                   <table className="content-table">
-                    <colgroup>
-                      <col style={{ width: '15%' }} />
-                      <col style={{ width: '40%' }} />
-                      <col style={{ width: '30%' }} />
-                      <col style={{ width: '15%' }} />
-                    </colgroup>
                     <tbody>
-                      {sortedItems.map((item, index) => (
+                      {pageItems.map((item: any, index: number) => (
                         <tr key={item.id || index}>
-                          <td className="text-center font-medium">{item.lote || '-'}</td>
-                          <td>{item.nombre_producto}</td>
-                          <td>{item.cliente_o_stock || 'STOCK'}</td>
-                          <td className="text-right">{item.kilos_sumados} kg</td>
+                          <td className="col-lote">{item.lote || '-'}</td>
+                          <td className="col-prod">{item.nombre_producto}</td>
+                          <td className="col-cliente">{item.cliente_o_stock || 'STOCK'}</td>
+                          <td className="col-kilos">{item.kilos_sumados} kg</td>
                         </tr>
                       ))}
                     </tbody>
-                    <tfoot>
-                      <tr>
-                        <td colSpan={2} className="text-right font-bold text-slate-700" style={{ borderRight: 'none', paddingTop: '10px' }}>
-                          TOTALES:
-                        </td>
-                        <td className="text-center font-bold" style={{ paddingTop: '10px' }}>
-                          {totalLotes} LOTES
-                        </td>
-                        <td className="text-right font-bold" style={{ paddingTop: '10px' }}>
-                          {totalKilos} kg
-                        </td>
-                      </tr>
-                    </tfoot>
                   </table>
-                </td>
-              </tr>
-            </tbody>
+                </div>
 
-            <tfoot>
-              <tr>
-                <td>
-                  <div className="page-footer-space"></div>
-                </td>
-              </tr>
-            </tfoot>
-          </table>
+                {/* Aparece SOLO en la última página, fondeado al fondo gracias a margin-top: auto */}
+                {isLastPage && (
+                  <div className="total-container">
+                    <table className="total-table">
+                      <tbody>
+                        <tr>
+                          <td className="col-lote" style={{ textAlign: 'center' }}>Total</td>
+                          <td className="col-prod">{sortedItems.length}</td>
+                          <td className="col-cliente"></td>
+                          <td className="col-kilos" style={{ textAlign: 'right' }}>Kilos {totalKilos}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
 
-          <div className="print-footer"></div>
-        </div>
+              {/* BLOQUE DE 6cm: Margen inferior físico vacío */}
+              <div className="page-footer-space"></div>
+            </div>
+          );
+        })}
       </div>
     </>,
     document.body
