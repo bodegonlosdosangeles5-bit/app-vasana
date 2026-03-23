@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../src/lib/supabaseAdmin';
+import { supabaseAdmin } from '../lib/supabaseAdmin.js';
 
 export default async function handler(req: any, res: any) {
   // CORS configuration (soporta Vercel deploy cruzado entre frontend dinámico y backend)
