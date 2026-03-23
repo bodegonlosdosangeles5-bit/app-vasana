@@ -57,66 +57,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signIn = async (username: string, password: string) => {
     try {
-      console.log('🔐 AuthProvider: Iniciando signIn para usuario:', username);
+      console.log('🔐 AuthProvider: Iniciando signIn para usuario mediante Backend Serverless:', username);
       
-      // Usar la función original de autenticación
-      const { data, error } = await supabase
-        .rpc('authenticate_user', { 
-          username_param: username, 
-          password_param: password 
-        });
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username, password })
+      });
 
-      console.log('🔐 AuthProvider: Respuesta de authenticate_user:', { data, error });
+      const result = await response.json();
 
-      if (error) {
-        console.error('❌ AuthProvider: Error en authenticate_user:', error);
-        return { error: error.message };
+      if (!response.ok || !result.success) {
+        console.error('❌ AuthProvider: Error desde la API de login:', result.error);
+        return { error: result.error || 'Usuario o contraseña incorrectos' };
       }
 
-      interface AuthResponse {
-        success: boolean;
-        user_id: string;
-        error?: string;
-      }
-
-      const result = data as unknown as AuthResponse;
-      if (!result.success) {
-        console.log('❌ AuthProvider: authenticate_user falló:', result.error);
-        return { error: result.error || 'Error de autenticación' };
-      }
-
-      console.log('✅ AuthProvider: authenticate_user exitoso, obteniendo datos del usuario...');
-
-      // Obtener información completa del usuario incluyendo el rol
-      const { data: userData, error: userError } = await supabase
-        .rpc('get_user_by_id', { user_id_param: result.user_id });
-
-      console.log('👤 AuthProvider: Respuesta de get_user_by_id:', { userData, userError });
-
-      interface UserDataResponse {
-        id: string;
-        user_name: string;
-        role: string;
-        created_at: string;
-        success: boolean;
-        error?: string;
-      }
-
-      const userInfo = (userData as unknown as UserDataResponse);
-
-      if (userError || !userInfo || !userInfo.success) {
-        console.error('❌ AuthProvider: Error en get_user_by_id:', userError);
-        return { error: 'Error obteniendo información del usuario' };
-      }
-
+      console.log('✅ AuthProvider: Login server-side exitoso, guardando info completa...');
+      
       const userDataComplete = {
-        id: userInfo.id,
-        user_name: userInfo.user_name,
-        role: userInfo.role,
-        created_at: userInfo.created_at
+        id: result.userData.id,
+        user_name: result.userData.user_name,
+        role: result.userData.role,
+        created_at: result.userData.created_at
       };
-      
-      console.log('✅ AuthProvider: Usuario completo creado:', userDataComplete);
       
       setUser(userDataComplete);
       localStorage.setItem('user', JSON.stringify(userDataComplete));
@@ -126,7 +91,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return { error: null };
     } catch (error) {
       console.error('❌ AuthProvider: Error inesperado en signIn:', error);
-      return { error: 'Error inesperado. Por favor intenta de nuevo.' };
+      return { error: 'Error inesperado al conectar con el servidor.' };
     }
   };
 
