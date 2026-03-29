@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Truck, Calendar, Weight, MapPin, Clock, TrendingUp, Plus, Eye, Package, Pencil, Trash2, AlertCircle, History, ShieldAlert } from "lucide-react";
+import { Truck, Calendar, Weight, MapPin, Clock, TrendingUp, Plus, Eye, Package, Pencil, Trash2, AlertCircle, History, ShieldAlert, Printer } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RemitoProduction } from "@/components/RemitoProduction";
+import { RemitoManualModal } from "@/components/RemitoManualModal";
 import { EnvioDetailModal } from "@/components/EnvioDetailModal";
 import { Producto } from "@/services/productoService";
 import { useRealtimeEnvios } from "@/hooks/useRealtimeEnvios";
@@ -28,6 +29,9 @@ interface ProductionSectionProps {
 }
 
 export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => {
+  const { user } = useAuth();
+  const canEdit = user?.role === 'admin' || user?.role === 'superadmin' || user?.user_name === 'jose';
+
   // Usar el hook de productos en tiempo real
   const { 
     productos, 
@@ -37,13 +41,15 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
     deleteProducto: deleteProductoRealtime 
   } = useRealtimeProductos();
 
+  // Fallback a formulas prop si productos está vacío
+  const formulasData = productos.length > 0 ? productos : formulas;
+
   const [activeTab, setActiveTab] = useState("remito");
   const [selectedEnvio, setSelectedEnvio] = useState<EnvioConRemitos | null>(null);
   const [isEnvioDetailOpen, setIsEnvioDetailOpen] = useState(false);
   const [selectedRemito, setSelectedRemito] = useState<RemitoWithItems | null>(null);
   const [isRemitoDetailOpen, setIsRemitoDetailOpen] = useState(false);
-  
-  const { user } = useAuth();
+  const [showRemitoManual, setShowRemitoManual] = useState(false);
   
   // Estados para edición
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -107,27 +113,26 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
   // Productos del viaje actual: disponibles en Villa Martelli con stock > 0
   // Cuando se genera un remito el stock baja a 0 y desaparecen automáticamente
   const currentProduction = useMemo(() => {
-    return productos.filter(producto => {
-      const normalizedStatus = normalizeText(producto.status);
-      const normalizedDestination = normalizeText(producto.destination);
+    return formulasData.filter(producto => {
+      const normalizedStatus = normalizeText(producto?.status || "");
+      const normalizedDestination = normalizeText(producto?.destination || "");
       
       const isTerminated = ['terminado', 'finalizado', 'completo', 'available'].includes(normalizedStatus);
       const isVillaMartelli = normalizedDestination === 'villamartelli';
-      const hasStock = (producto.stock_actual ?? producto.batchSize) > 0;
+      const hasStock = (producto?.stock_actual ?? producto?.batchSize ?? 0) > 0;
       
       return isTerminated && isVillaMartelli && hasStock;
     });
-  }, [productos]);
+  }, [formulasData]);
 
   // Calcular el Stock Total Disponible (Solo producción activa para enviar)
   // DEBE coincidir con los items mostrados en "Remito Villa Martelli" (status available y stock > 0)
   const totalStockAvailable = useMemo(() => {
     return currentProduction.reduce((total, producto) => {
       // Filtrar solo los que están disponibles realmente (no entregados, no históricos viejos)
-      // currentProduction ya filtra por 'available' y 'villamartelli', pero aseguramos que tenga stock
-      const stock = producto.stock_actual;
+      const stock = producto?.stock_actual ?? (producto?.batchSize || 0);
       
-      // Si el stock es 0, no suma (aunque esté available en la lista visual por alguna razón)
+      // Si el stock es 0, no suma
       if (stock <= 0) return total;
 
       return total + stock;
@@ -179,7 +184,7 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
       destination: formula.destination,
       type: formula.type,
       clientName: formula.clientName || "",
-      date: formula.date ? formula.date : "" // El campo type="date" ya espera YYYY-MM-DD
+      date: formula.date ? formula.date : "" 
     });
     setIsEditModalOpen(true);
   };
@@ -187,7 +192,6 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
   const handleUpdate = async () => {
     if (!editingProducto) return;
 
-    // Verificar seguridad antes de ejecutar
     if (!canEdit) {
       toast.error("No tienes permisos de administrador para realizar esta acción");
       return;
@@ -196,18 +200,8 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
     try {
       const success = await updateProductoRealtime(editingProducto.id, {
         name: editForm.name,
-        lote_code: editForm.lote, // Allow updating lote code
+        lote_code: editForm.lote,
         batchSize: editForm.batchSize,
-        stock_actual: editForm.batchSize, // Reset stock to full production if manually editing production amount? Usually users want to edit just metadata. But if they edit batchSize, stock likely should update if it was full. 
-        // Better strategy: We don't have stock field in edit form. 
-        // If we strictly follow "Production is History", then changing batchSize changes history.
-        // We should PROBABLY keep stock_actual as is, unless user explicitly edits it.
-        // But for now, let's just pass undefined for stock_actual to not overwrite it, OR fetch current?
-        // updateProductoRealtime calls updateProducto service which updates fields passed.
-        // If I don't pass stock_actual, it won't be updated. Perfect.
-        // Wait, types: updateProducto(id, partial).
-        // validation: "stock_actual" is not in editForm.
-        // So I will NOT include stock_actual here, preserving current stock.
         destination: editForm.destination,
         type: editForm.type,
         clientName: editForm.type === "client" ? editForm.clientName : undefined,
@@ -217,12 +211,11 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
       if (success) {
         toast.success("Producto actualizado correctamente");
         
-        // Registrar log de auditoría (en segundo plano)
         LogService.saveLog({
           action: 'Edición de Lote',
           detail: `Editado producto "${editForm.name}" (${editForm.batchSize}kg). Destino: ${editForm.destination}`,
           user_name: user?.user_name || 'Admin',
-          user_email: user?.user_name, // Usar username como email si no hay email real
+          user_email: user?.user_name, 
           product_id: editingProducto.id
         }).then(() => fetchLogs());
 
@@ -240,20 +233,18 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
   const handleDelete = async () => {
     if (!productToDelete) return;
 
-    // Verificar seguridad antes de ejecutar
     if (!canEdit) {
       toast.error("No tienes permisos de administrador para realizar esta acción");
       return;
     }
 
-    const targetProduct = productos.find(p => p.id === productToDelete);
+    const targetProduct = formulasData.find(p => p.id === productToDelete);
 
     try {
       const success = await deleteProductoRealtime(productToDelete);
       if (success) {
         toast.success("Producto eliminado correctamente");
         
-        // Registrar log de auditoría (en segundo plano)
         LogService.saveLog({
           action: 'Eliminación',
           detail: `Eliminado lote "${targetProduct?.name}" de ${targetProduct?.batchSize}kg`,
@@ -293,19 +284,29 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
     }
   };
 
-  const canEdit = user?.role === 'admin' || user?.role === 'superadmin' || user?.user_name === 'jose';
-
   return (
     <div className="space-y-6 p-6 bg-white dark:bg-slate-900/50 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm layout-entry">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h2 className="text-2xl sm:text-3xl font-bold text-[#023F86]">Control de Producción</h2>
-        <div className="flex items-center space-x-4">
-          <div className="text-right">
-            <p className="text-xs sm:text-sm text-slate-500 font-medium">Kilos en Viaje</p>
-            <p className="text-2xl sm:text-3xl font-black text-[#023F86]">{totalStockAvailable.toLocaleString()} kg</p>
-          </div>
-          <div className="p-3 bg-[#023F86]/10 rounded-2xl">
-            <TrendingUp className="h-6 w-6 text-[#023F86]" strokeWidth={2.5} />
+        
+        <div className="flex items-center gap-4">
+          <Button
+            onClick={() => setShowRemitoManual(true)}
+            size="lg"
+            className="bg-[#F7A600] hover:bg-[#F7A600]/90 text-[#023F86] font-bold shadow-md rounded-xl h-12 px-6"
+          >
+            <Printer className="w-5 h-5 mr-2" />
+            REMITO MANUAL
+          </Button>
+
+          <div className="flex items-center space-x-4">
+            <div className="text-right">
+              <p className="text-xs sm:text-sm text-slate-500 font-medium">Kilos en Viaje</p>
+              <p className="text-2xl sm:text-3xl font-black text-[#023F86]">{totalStockAvailable.toLocaleString()} kg</p>
+            </div>
+            <div className="p-3 bg-[#023F86]/10 rounded-2xl">
+              <TrendingUp className="h-6 w-6 text-[#023F86]" strokeWidth={2.5} />
+            </div>
           </div>
         </div>
       </div>
@@ -411,7 +412,6 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
           setSelectedEnvio(null);
         }}
         onRemitoUpdated={() => {
-          // Refrescar los datos del envío actual
           if (selectedEnvio) {
             loadEnvioData(selectedEnvio.id);
           }
@@ -574,7 +574,6 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
         </DialogContent>
       </Dialog>
 
-      {/* Modal de Confirmación de Eliminación */}
       <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
         <DialogContent className="max-w-md bg-zinc-950 border-zinc-800 text-zinc-100">
           <DialogHeader>
@@ -595,7 +594,6 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
         </DialogContent>
       </Dialog>
 
-      {/* Sección de Historial de Cambios (Logs) */}
       <div className="mt-12 pt-8 border-t border-zinc-800/50">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -632,7 +630,7 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
                 <div className={`mt-1 p-1.5 rounded-full ${
                   log.action === 'Eliminación' ? 'bg-red-500/10 text-red-500' : 'bg-blue-500/10 text-blue-500'
                 }`}>
-                  {log.action === 'Eliminación' ? <ShieldAlert className="h-3.5 w-3.5" /> : <ShieldAlert className="h-3.5 w-3.5" />}
+                  <ShieldAlert className="h-3.5 w-3.5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
@@ -657,6 +655,7 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
           )}
         </div>
       </div>
+      <RemitoManualModal isOpen={showRemitoManual} onClose={() => setShowRemitoManual(false)} />
     </div>
   );
 };

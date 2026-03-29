@@ -200,12 +200,32 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
       return sum;
     }, 0);
 
-    return { 
-      weeklyTotal: weekly, 
-      monthlyTotal: monthly, 
-      totalAvailableKilosVM: totalAvailable,
-      todayTotal
-    };
+     // 4. Fallbacks en caso de que viewData (API SQL) esté vacío
+     let finalWeekly = weekly;
+     let finalMonthly = monthly;
+     let finalToday = todayTotal;
+
+     if (viewData.length === 0) {
+       // Si no hay datos de la vista, calcular fallback desde formulasData
+       formulasData.forEach(p => {
+         if (!p.date) return;
+         try {
+           const pDate = parseISO(p.date + 'T00:00:00');
+           const amount = Number(p.batchSize || 0);
+           
+           if (isSameDay(pDate, now)) finalToday += amount;
+           if (isSameWeek(pDate, now, { weekStartsOn: 1 })) finalWeekly += amount;
+           if (isSameMonth(pDate, now)) finalMonthly += amount;
+         } catch (e) {}
+       });
+     }
+
+     return { 
+       weeklyTotal: finalWeekly, 
+       monthlyTotal: finalMonthly, 
+       totalAvailableKilosVM: totalAvailable,
+       todayTotal: finalToday
+     };
   }, [formulasData, viewData]);
 
   // Metas de progreso para animaciones
