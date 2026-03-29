@@ -1,29 +1,31 @@
 import { supabaseAdmin } from '../lib/supabaseAdmin.js';
 
 export default async function handler(req: any, res: any) {
-  // Configuración segura CORS
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
-
-  // Verificamos que sea un POST para recibir el payload
-  if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, error: 'Method Not Allowed' });
-  }
-
-  const { userId, action } = req.body;
-
-  // REGLA DE SEGURIDAD ABSOLUTA: Si no hay UID proveniente del payload de localStorage, pateamos la petición.
-  if (!userId) {
-    return res.status(401).json({ success: false, error: 'Acceso denegado: Usuario no autenticado' });
-  }
-
   try {
+    // Configuración segura CORS
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+    }
+
+    if (req.method !== 'POST') {
+      return res.status(405).json({ success: false, error: 'Method Not Allowed' });
+    }
+
+    if (!req.body) {
+      return res.status(400).json({ success: false, error: 'Missing request body' });
+    }
+
+    const { userId, action } = req.body;
+
+    // REGLA DE SEGURIDAD ABSOLUTA: Si no hay UID proveniente del payload de localStorage, pateamos la petición.
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Acceso denegado: Usuario no autenticado' });
+    }
+
     let data;
     
     // Switch de enrutamiento basado en la acción requerida por el Dashboard de frontend
@@ -65,8 +67,9 @@ export default async function handler(req: any, res: any) {
     // Éxito: Soltamos los datos hacia tu dashboard
     return res.status(200).json({ success: true, data });
 
-  } catch (error) {
-    console.error(`Error crítico en API /get-metrics [Acción: ${action}]:`, error);
-    return res.status(500).json({ success: false, error: 'Error interno del servidor al obtener métricas' });
+  } catch (error: any) {
+    console.error(`Error crítico en API /get-metrics:`, error);
+    // Siempe devolver JSON en caso de error 500
+    return res.status(500).json({ success: false, error: error.message || 'Error interno del servidor al obtener métricas' });
   }
 }

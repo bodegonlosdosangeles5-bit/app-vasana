@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/components/Auth/AuthProvider";
 import { LogService } from "@/services/logService";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { useMemo, useState, useEffect } from "react";
 import { Producto } from "@/services/productoService";
 import { useRealtimeInventory } from "@/hooks/useRealtimeInventory";
@@ -930,6 +930,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
       {/* Modal de búsqueda de inventario */}
       <Dialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden bg-background border-border rounded-2xl">
+          <DialogDescription className="sr-only">Métricas de producción</DialogDescription>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-[#023F86]">
               <Search className="h-5 w-5 text-[#F7A600]" />
@@ -1029,6 +1030,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
       {/* Modal de materias primas sin stock */}
       <Dialog open={isOutOfStockOpen} onOpenChange={setIsOutOfStockOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden bg-background border-border text-foreground">
+          <DialogDescription className="sr-only">Métricas de producción</DialogDescription>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Package className="h-5 w-5 text-destructive" />
@@ -1117,6 +1119,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
       {/* Modal de lista de fórmulas terminadas */}
       <Dialog open={isFormulasListOpen} onOpenChange={setIsFormulasListOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden bg-background border-border text-foreground">
+          <DialogDescription className="sr-only">Métricas de producción</DialogDescription>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-2 border-b border-border">
             <div className="flex items-center gap-2">
               <FlaskConical className="h-5 w-5 text-primary" />
@@ -1232,6 +1235,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
       {/* Modal de Listado de Producción - Viaje Actual */}
       <Dialog open={isProductionListOpen} onOpenChange={setIsProductionListOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden bg-background border-border text-foreground">
+          <DialogDescription className="sr-only">Métricas de producción</DialogDescription>
           <DialogHeader className="flex flex-row items-center justify-between border-b border-border pb-4">
             <DialogTitle className="flex items-center gap-2">
               <Scale className="h-5 w-5 text-blue-500" />
@@ -1265,7 +1269,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
                 className="h-8 text-xs gap-1.5 no-print bg-[#023F86] hover:bg-[#023F86]/90 text-white"
               >
                 <Printer className="h-3.5 w-3.5" />
-                Imprimir A4
+                REMITO
               </Button>
             </div>
           </DialogHeader>
@@ -1390,6 +1394,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
       {/* Modal para editar producto */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <DialogContent className="max-w-2xl bg-background border-border text-foreground">
+          <DialogDescription className="sr-only">Métricas de producción</DialogDescription>
           <DialogHeader className="border-b border-border pb-4">
             <DialogTitle className="flex items-center gap-2">
               <Pencil className="h-5 w-5 text-primary" />
@@ -1500,6 +1505,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
       {/* Modal de confirmación de eliminación */}
       <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
         <DialogContent className="max-w-md bg-background border-border text-foreground">
+          <DialogDescription className="sr-only">Métricas de producción</DialogDescription>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive">
               <AlertCircle className="h-6 w-6" />

@@ -28,8 +28,8 @@ export const VistaPreviaPlantaVarela: React.FC<VistaPreviaPlantaVarelaProps> = (
   // Cálculo de totales
   const totalKilos = sortedItems.reduce((acc, item) => acc + (item.kilos_sumados || 0), 0);
   
-  // Format Date
-  const dateFormatted = new Date(remito.fecha + 'T00:00:00').toLocaleDateString('es-AR', {
+  let dateFormatted = new Date().toLocaleDateString('es-AR', {
+    timeZone: 'America/Argentina/Buenos_Aires',
     day: '2-digit',
     month: '2-digit',
     year: 'numeric'
@@ -116,6 +116,19 @@ export const VistaPreviaPlantaVarela: React.FC<VistaPreviaPlantaVarelaProps> = (
               height: max-content;
             }
 
+            /* Info de la empresa alineada con la fecha (top: 6cm) y en horizontal con "nombre_producto" */
+            .company-info-block {
+              position: absolute;
+              top: calc(6cm - 12pt); /* Sube una línea (10pt * 1.2) para que TALCAHUANO quede a 6cm */
+              left: calc(19.9% + 2pt); /* Alineado a la columna Producto */
+              font-family: Arial, sans-serif;
+              font-size: 10pt;
+              font-weight: 600;
+              text-align: left;
+              color: #000;
+              line-height: 1.2;
+            }
+
             /* Fecha a 6cm desde el borde superior de la hoja */
             .date-position {
               position: absolute;
@@ -194,6 +207,11 @@ export const VistaPreviaPlantaVarela: React.FC<VistaPreviaPlantaVarelaProps> = (
               
               {/* BLOQUE DE 8cm: Header superior físico */}
               <div className="page-header-space">
+                <div className="company-info-block">
+                  <div>VASANA SA</div>
+                  <div>TALCAHUANO 279</div>
+                  <div>VILLA MARTELLI</div>
+                </div>
                 <div className="date-position">{dateFormatted}</div>
               </div>
 
