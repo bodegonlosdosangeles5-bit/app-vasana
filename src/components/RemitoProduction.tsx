@@ -219,7 +219,7 @@ export const RemitoProduction = ({ productionItems, onSuccess }: RemitoProductio
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h3 className="text-lg sm:text-xl font-bold text-foreground flex items-center gap-2">
           <FileText className="h-5 w-5" />
-          Remito de Producción - Villa Martelli
+          ENVIO DE PRODUCCION VILLA MARTELLI
         </h3>
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="text-sm text-muted-foreground flex items-center gap-2">
@@ -235,7 +235,7 @@ export const RemitoProduction = ({ productionItems, onSuccess }: RemitoProductio
             ) : (
               <FileText className="h-4 w-4" />
             )}
-            {isGenerating ? 'Generando...' : 'Generar Remito'}
+            {isGenerating ? 'Generando...' : 'GENERAR ENVIO'}
           </Button>
         </div>
       </div>
@@ -354,7 +354,7 @@ export const RemitoProduction = ({ productionItems, onSuccess }: RemitoProductio
           <DialogHeader className="border-b border-border pb-4">
             <DialogTitle className="flex items-center gap-3 text-amber-500 text-xl">
               <AlertCircle className="h-6 w-6" />
-              Confirmar Generación de Remito
+              Confirmar Generación de Envio
             </DialogTitle>
           </DialogHeader>
           
@@ -402,7 +402,7 @@ export const RemitoProduction = ({ productionItems, onSuccess }: RemitoProductio
               ) : (
                 <>
                   <FileText className="h-4 w-4 mr-2" />
-                  Generar Remito Ahora
+                  GENERAR ENVIO AHORA
                 </>
               )}
             </Button>

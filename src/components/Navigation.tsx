@@ -65,7 +65,7 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
     { id: "dashboard",  label: "Dashboard",  icon: BarChart3 },
     { id: "inventory",  label: "Inventario",  icon: Package },
     { id: "formulas",   label: "Productos",   icon: FlaskConical },
-    { id: "production", label: "Producción",  icon: Truck,  consultaHidden: true },
+    { id: "production", label: "ENVIOS",  icon: Truck,  consultaHidden: true },
     { id: "users",      label: "Usuarios",    icon: Users,  adminOnly: true },
   ];
 

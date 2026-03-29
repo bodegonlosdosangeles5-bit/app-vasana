@@ -312,7 +312,7 @@ export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => 
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2 bg-slate-100 border-2 border-slate-200 p-1.5 rounded-xl shadow-sm">
-          <TabsTrigger value="remito" className="text-sm font-bold rounded-lg data-[state=active]:bg-[#023F86] data-[state=active]:text-white transition-all">Remito Villa Martelli</TabsTrigger>
+          <TabsTrigger value="remito" className="text-sm font-bold rounded-lg data-[state=active]:bg-[#023F86] data-[state=active]:text-white transition-all">Envios a Villa Martelli</TabsTrigger>
           <TabsTrigger value="shipments" className="text-sm font-bold rounded-lg data-[state=active]:bg-[#023F86] data-[state=active]:text-white transition-all">Envíos</TabsTrigger>
         </TabsList>
 
