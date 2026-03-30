@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useRealtimeRemitos } from "@/hooks/useRealtimeRemitos";
-import { useRemitosPolling } from "@/hooks/useRemitosPolling";
 import { ProductionItem, RemitoService } from "@/services/remitoService";
 import { EnvioService } from "@/services/envioService";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,17 +26,12 @@ export const RemitoProduction = ({ productionItems, onSuccess }: RemitoProductio
   const { user } = useAuth();
   const canGenerateRemito = user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'developer' || user?.user_name === 'jose';
 
-  const realtimeHook = useRealtimeRemitos();
-  const pollingHook = useRemitosPolling()
-  ;
-  
-  // Usar polling si hay error de Realtime, sino usar Realtime
   const {
     currentRemito,
     loading,
     error,
     generateRemitoForVillaMartelli
-  } = realtimeHook.realtimeError ? pollingHook : realtimeHook;
+  } = useRealtimeRemitos();
 
   // Filtrar items de Villa Martelli
   const villaMartelliItems = useMemo(() => {

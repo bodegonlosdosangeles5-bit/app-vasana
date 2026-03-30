@@ -12,13 +12,11 @@ export const useRealtimeInventory = () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('🔄 Cargando materias primas desde Supabase...');
       const data = await InventoryService.getInventoryItems();
-      console.log('📊 Materias primas cargadas:', data);
       setInventoryItems(data);
     } catch (err) {
       setError('Error al cargar las materias primas');
-      console.error('❌ Error cargando materias primas:', err);
+      console.error('Error cargando materias primas:', err);
     } finally {
       setLoading(false);
     }
@@ -31,20 +29,17 @@ export const useRealtimeInventory = () => {
 
   // Configurar Realtime para materias primas
   useEffect(() => {
-    console.log('🔌 Configurando Realtime para materias primas...');
-    
     const channelId = `inventory_changes_${Math.random().toString(36).substring(7)}`;
     const inventoryChannel = supabase
       .channel(channelId)
       .on(
         'postgres_changes',
         {
-          event: '*', // INSERT, UPDATE, DELETE
+          event: '*',
           schema: 'public',
           table: 'inventory_items'
         },
-        (payload) => {
-          console.log('📡 Cambio detectado en materias primas:', payload);
+        (_payload) => {
           // Recargar todas las materias primas cuando hay cambios
           loadInventoryItems();
         }
@@ -71,15 +66,12 @@ export const useRealtimeInventory = () => {
   const createInventoryItem = async (item: Omit<InventoryItem, 'id' | 'lastUpdate' | 'status'>) => {
     try {
       setError(null);
-      console.log('🔄 Creando materia prima...');
       const newItem = await InventoryService.createInventoryItem(item);
-      console.log('📊 Materia prima creada:', newItem);
-      // Recargar datos después de crear
       await loadInventoryItems();
       return newItem;
     } catch (err) {
       setError('Error al crear la materia prima');
-      console.error('❌ Error creando materia prima:', err);
+      console.error('Error creando materia prima:', err);
       throw err;
     }
   };
@@ -87,15 +79,12 @@ export const useRealtimeInventory = () => {
   const updateInventoryItem = async (id: string, updates: Partial<InventoryItem>) => {
     try {
       setError(null);
-      console.log('🔄 Actualizando materia prima...');
       const updatedItem = await InventoryService.updateInventoryItem(id, updates);
-      console.log('📊 Materia prima actualizada:', updatedItem);
-      // Recargar datos después de actualizar
       await loadInventoryItems();
       return updatedItem;
     } catch (err) {
       setError('Error al actualizar la materia prima');
-      console.error('❌ Error actualizando materia prima:', err);
+      console.error('Error actualizando materia prima:', err);
       throw err;
     }
   };
@@ -103,15 +92,12 @@ export const useRealtimeInventory = () => {
   const deleteInventoryItem = async (id: string) => {
     try {
       setError(null);
-      console.log('🔄 Eliminando materia prima...');
       const success = await InventoryService.deleteInventoryItem(id);
-      console.log('📊 Materia prima eliminada:', success);
-      // Recargar datos después de eliminar
       await loadInventoryItems();
       return success;
     } catch (err) {
       setError('Error al eliminar la materia prima');
-      console.error('❌ Error eliminando materia prima:', err);
+      console.error('Error eliminando materia prima:', err);
       throw err;
     }
   };

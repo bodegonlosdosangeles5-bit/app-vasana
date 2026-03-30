@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { useMemo, useState, useEffect } from "react";
 import { Producto } from "@/services/productoService";
 import { useRealtimeInventory } from "@/hooks/useRealtimeInventory";
+import { InventoryItem } from "@/services/inventoryService";
 import { useRealtimeProductos } from "@/hooks/useRealtimeProductos";
 import { MetricasService, ComparativaHoyAyer, ProductionViewData } from "@/services/metricasService";
 import { format, subDays, parseISO, startOfWeek, isSameMonth, isSameWeek, startOfMonth, isSameDay } from "date-fns";
@@ -47,11 +48,12 @@ interface Metric {
 }
 
 interface DashboardMetricsProps {
-  formulas?: Producto[]; // Mantener para compatibilidad pero no usar
+  formulas?: Producto[];
   onNavigateToProduction?: () => void;
+  inventoryItems?: InventoryItem[];
 }
 
-export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: DashboardMetricsProps) => {
+export const DashboardMetrics = ({ formulas = [], onNavigateToProduction, inventoryItems: inventoryItemsProp }: DashboardMetricsProps) => {
   // Usar el hook de productos en tiempo real
   const { productos, loading: productosLoading, error: productosError, updateProducto, deleteProducto } = useRealtimeProductos();
   
@@ -122,8 +124,9 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction }: Dash
     return () => { isMounted = false; };
   }, [productos]);
   
-  // Hook para obtener datos de inventario
-  const { inventoryItems, loading: inventoryLoading } = useRealtimeInventory();
+  // Hook para obtener datos de inventario (solo si no se recibe via props)
+  const { inventoryItems: inventoryItemsHook, loading: inventoryLoading } = useRealtimeInventory();
+  const inventoryItems = inventoryItemsProp ?? inventoryItemsHook;
 
   // Función para normalizar texto (quitar tildes, espacios y convertir a minúsculas)
   const normalizeText = (text: string) => {

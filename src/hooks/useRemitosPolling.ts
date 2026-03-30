@@ -13,13 +13,11 @@ export const useRemitosPolling = () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('🔄 Cargando remitos desde Supabase...');
       const data = await RemitoService.getAllRemitos();
-      console.log('📊 Remitos cargados:', data);
       setRemitos(data);
     } catch (err) {
       setError('Error al cargar los remitos');
-      console.error('❌ Error cargando remitos:', err);
+      console.error('Error cargando remitos:', err);
     } finally {
       setLoading(false);
     }
@@ -28,12 +26,10 @@ export const useRemitosPolling = () => {
   // Cargar remito abierto del día
   const loadCurrentRemito = useCallback(async () => {
     try {
-      console.log('🔄 Cargando remito actual...');
       const data = await RemitoService.getOpenRemitoForToday();
-      console.log('📊 Remito actual cargado:', data);
       setCurrentRemito(data);
     } catch (err) {
-      console.error('❌ Error cargando remito actual:', err);
+      console.error('Error cargando remito actual:', err);
     }
   }, []);
 
@@ -45,15 +41,12 @@ export const useRemitosPolling = () => {
 
   // Configurar polling para actualizaciones
   useEffect(() => {
-    console.log('🔄 Iniciando polling para remitos...');
     const interval = setInterval(() => {
-      console.log('🔄 Polling: actualizando remitos...');
       loadRemitos();
       loadCurrentRemito();
     }, 3000); // Polling cada 3 segundos
 
     return () => {
-      console.log('🛑 Deteniendo polling...');
       clearInterval(interval);
     };
   }, [loadRemitos, loadCurrentRemito]);

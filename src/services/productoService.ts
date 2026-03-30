@@ -28,8 +28,6 @@ export class ProductoService {
   // Obtener todos los productos usando consulta directa con RLS
   static async getProductos(): Promise<Producto[]> {
     try {
-      console.log('🔍 ProductoService.getProductos - Iniciando consulta directa...');
-      
       // Consultar directamente la tabla productos con RLS aplicado
       const { data: productos, error } = await supabase
         .from('productos')
@@ -49,16 +47,12 @@ export class ProductoService {
         `)
         .order('created_at', { ascending: false });
 
-      console.log('🔍 ProductoService.getProductos - Respuesta de Supabase:', { productos, error });
-
       if (error) {
-        console.error('❌ Error en consulta de productos:', error);
+        console.error('Error en consulta de productos:', error);
         // Si es un error 403, intentar recargar la sesión
         if (error.message?.includes('403') || error.message?.includes('JWT')) {
-          console.log('🔄 Error de autenticación detectado, intentando recargar sesión...');
           const { data: { session } } = await supabase.auth.getSession();
           if (!session) {
-            console.log('⚠️ No hay sesión activa, redirigiendo al login...');
             window.location.href = '/login';
             return [];
           }
@@ -67,24 +61,25 @@ export class ProductoService {
       }
 
       if (!productos || productos.length === 0) {
-        console.log('ℹ️ No hay productos en la base de datos');
         return [];
       }
-      
-      console.log(`✅ ProductoService.getProductos - ${productos.length} productos encontrados`);
 
-      // Obtener ingredientes faltantes para todos los productos
+      // Obtener ingredientes faltantes y disponibles en paralelo
       const productoIds = productos.map(p => p.id);
       
-      const { data: missingIngredients } = await supabase
-        .from('missing_ingredients')
-        .select('producto_id, name, required, unit')
-        .in('producto_id', productoIds);
+      const [missingResult, availableResult] = await Promise.all([
+        supabase
+          .from('missing_ingredients')
+          .select('producto_id, name, required, unit')
+          .in('producto_id', productoIds),
+        supabase
+          .from('available_ingredients')
+          .select('producto_id, name, required, available, unit')
+          .in('producto_id', productoIds)
+      ]);
 
-      const { data: availableIngredients } = await supabase
-        .from('available_ingredients')
-        .select('producto_id, name, required, available, unit')
-        .in('producto_id', productoIds);
+      const missingIngredients = missingResult.data;
+      const availableIngredients = availableResult.data;
 
       // Agrupar ingredientes por producto, evitando duplicados
       const missingByProducto = (missingIngredients || []).reduce((acc, ingredient) => {
@@ -110,9 +105,6 @@ export class ProductoService {
         
         return acc;
       }, {} as Record<string, Array<{name: string, required: number, unit: string}>>);
-
-      // Log para debugging
-      console.log('🔍 Ingredientes faltantes agrupados:', missingByProducto);
 
       const availableByProducto = (availableIngredients || []).reduce((acc, ingredient) => {
         if (!acc[ingredient.producto_id]) {
@@ -153,12 +145,8 @@ export class ProductoService {
   // Crear un nuevo producto
   static async createProducto(producto: Omit<Producto, 'id'> & { id?: string }): Promise<Producto | null> {
     try {
-      console.log('🔧 Creando producto con datos:', producto);
-      
-      // Usar ID proporcionado o generar uno único
-      // Generate unique ID: Lote + Timestamp + Random to allow repetitions of Lote Number
       const uniqueId = `P-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-      const loteCode = producto.lote_code || producto.id || `L-${Date.now()}`; // Use provided ID as Lote if lote_code is missing
+      const loteCode = producto.lote_code || producto.id || `L-${Date.now()}`;
       
       const { data, error } = await supabase
         .from('productos')
@@ -177,10 +165,8 @@ export class ProductoService {
         .select()
         .single();
 
-      console.log('📊 Respuesta de Supabase:', { data, error });
-
       if (error) {
-        console.error('❌ Error de Supabase:', error);
+        console.error('Error de Supabase al crear producto:', error);
         throw error;
       }
 
@@ -220,10 +206,9 @@ export class ProductoService {
         stock_actual: producto.batchSize
       };
       
-      console.log('✅ Producto creado exitosamente:', result);
       return result;
     } catch (error) {
-      console.error('❌ Error creating producto:', error);
+      console.error('Error creating producto:', error);
       return null;
     }
   }
@@ -253,7 +238,6 @@ export class ProductoService {
       if (updates.batchSize !== undefined && updates.stock_actual === undefined && currentProduct) {
         const delta = updates.batchSize - currentBatchSize;
         newStock = Math.max(0, currentStock + delta);
-        console.log(`🔄 Ajustando stock proporcionalmente: Batch ${currentBatchSize} -> ${updates.batchSize} (Delta: ${delta}). Stock ${currentStock} -> ${newStock}`);
       }
 
       const { data, error } = await supabase
@@ -388,8 +372,6 @@ export class ProductoService {
   // Actualizar automáticamente el estado de productos incompletos sin faltantes
   static async updateIncompleteProductosStatus(): Promise<{ updated: number; productos: Producto[] }> {
     try {
-      console.log('🔄 Verificando productos incompletos sin faltantes...');
-      
       // Obtener todos los productos con estado incomplete
       const { data: incompleteProductos, error: productosError } = await supabase
         .from('productos')
@@ -399,7 +381,6 @@ export class ProductoService {
       if (productosError) throw productosError;
 
       if (!incompleteProductos || incompleteProductos.length === 0) {
-        console.log('✅ No hay productos incompletos para verificar');
         return { updated: 0, productos: [] };
       }
 
@@ -431,7 +412,6 @@ export class ProductoService {
         productosToUpdate.map(p => p.name));
 
       if (productosToUpdate.length === 0) {
-        console.log('✅ No hay productos que actualizar');
         return { updated: 0, productos: [] };
       }
 
@@ -448,8 +428,6 @@ export class ProductoService {
 
       if (updateError) throw updateError;
 
-      console.log(`✅ Actualizados ${productosToUpdate.length} productos a estado 'available'`);
-
       // Obtener los productos actualizados con todos sus datos
       const updatedProductos = await this.getProductos();
       const updatedProductosList = updatedProductos.filter(p => productoIdsToUpdate.includes(p.id));
@@ -459,7 +437,7 @@ export class ProductoService {
         productos: updatedProductosList 
       };
     } catch (error) {
-      console.error('❌ Error actualizando productos incompletos:', error);
+      console.error('Error actualizando productos incompletos:', error);
       return { updated: 0, productos: [] };
     }
   }

@@ -8,6 +8,7 @@ import { ProductionSection } from "@/components/ProductionSection";
 import { UserAdminPanel } from "@/components/UserAdminPanel";
 import { useRealtimeProductos } from "@/hooks/useRealtimeProductos";
 import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
+import { useRealtimeInventory } from "@/hooks/useRealtimeInventory";
 import { useUserActivity } from "@/hooks/useUserActivity";
 import { Producto } from "@/services/productoService";
 import { ProtectedRoute } from "@/components/Auth/ProtectedRoute";
@@ -31,34 +32,12 @@ const Index = () => {
 
   // Usar el hook de actualizaciones en tiempo real
   const { isConnected, lastUpdate } = useRealtimeUpdates();
+
+  // Instancia centralizada de inventario (evita doble query desde DashboardMetrics)
+  const { inventoryItems } = useRealtimeInventory();
   
   // Rastrear actividad del usuario (heartbeat)
   useUserActivity();
-  
-  // Logging para debug
-  console.log('🏠 Index.tsx - Estado actual:', { 
-    productosCount: productos.length, 
-    loading, 
-    error, 
-    activeSection,
-    isConnected,
-    lastUpdate,
-    productos: productos
-  });
-  
-  // Log adicional para debug
-  if (error) {
-    console.error('🚨 Error en Index.tsx:', error);
-  }
-  
-  if (loading) {
-    console.log('⏳ Index.tsx - Cargando productos...');
-  }
-
-  // Log de actualizaciones en tiempo real
-  if (lastUpdate) {
-    console.log('🔄 Actualización en tiempo real detectada:', lastUpdate);
-  }
 
   const renderSection = () => {
     switch (activeSection) {
@@ -81,13 +60,18 @@ const Index = () => {
           error={error}
         />;
       case "production":
-        return <ProductionSection formulas={productos as Producto[]} />;
+        return <ProductionSection 
+          formulas={productos as Producto[]}
+          updateProducto={updateProducto}
+          deleteProducto={deleteProducto}
+        />;
       case "users":
         return <UserAdminPanel />;
       default:
         return <DashboardMetrics 
           formulas={productos as Producto[]} 
           onNavigateToProduction={() => setActiveSection("production")}
+          inventoryItems={inventoryItems}
         />;
     }
   };

@@ -12,22 +12,14 @@ export const useRealtimeUpdates = () => {
   const [lastUpdate, setLastUpdate] = useState<RealtimeUpdate | null>(null);
 
   useEffect(() => {
-    console.log('🔌 Configurando actualizaciones en tiempo real...');
-    
-    // Configurar canales para todas las tablas principales
+    // Solo suscribir tablas sin hook Realtime propio.
+    // productos, missing_ingredients, available_ingredients e inventory_items
+    // ya tienen hooks dedicados (useRealtimeProductos, useRealtimeInventory).
     const channels = [
-      'inventory_items',
-      'productos', 
-      'missing_ingredients',
-      'available_ingredients',
       'users',
       'remitos',
       'remito_items',
       'envios'
-      // Nota: 'envios_remitos' removida porque causa errores de binding en Supabase
-      // La aplicación usa 'envios' y 'remitos' para sincronizar datos
-      // 'materias_primas' removida porque no está en uso y causaba errores de suscripción
-      // La aplicación usa 'inventory_items' para las materias primas
     ];
 
     const subscriptions = channels.map(tableName => {
@@ -43,8 +35,6 @@ export const useRealtimeUpdates = () => {
               table: tableName
             },
             (payload) => {
-              console.log(`📡 Actualización en tiempo real - ${tableName}:`, payload);
-              
               const update: RealtimeUpdate = {
                 table: tableName,
                 event: payload.eventType as 'INSERT' | 'UPDATE' | 'DELETE',
@@ -71,8 +61,7 @@ export const useRealtimeUpdates = () => {
 
         return channel;
       } catch (error) {
-        console.warn(`⚠️ Error al configurar suscripción para ${tableName}:`, error);
-        // Devolver null para que el cleanup lo maneje correctamente
+        // Error al configurar suscripción
         return null;
       }
     }).filter(channel => channel !== null);

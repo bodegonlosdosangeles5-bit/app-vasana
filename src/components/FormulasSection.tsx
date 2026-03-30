@@ -19,12 +19,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ProductoService } from "@/services/productoService";
-import { useRealtimeProductos } from "@/hooks/useRealtimeProductos";
+
 import { useAuth } from "@/components/Auth/AuthProvider";
 
 interface FormulasSectionProps {
-  formulas?: any[]; // Mantener para compatibilidad pero no usar
-  setFormulas?: (formulas: any[]) => void; // Mantener para compatibilidad pero no usar
+  formulas?: any[];
+  setFormulas?: (formulas: any[]) => void;
   createFormula?: (formula: any) => Promise<any>;
   updateFormula?: (id: string, updates: any) => Promise<any>;
   deleteFormula?: (id: string) => Promise<boolean>;
@@ -50,23 +50,17 @@ export const FormulasSection = ({
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin' || user?.user_name === 'jose';
 
-  // Usar el hook de productos en tiempo real
-  const { 
-    productos, 
-    loading: productosLoading, 
-    error: productosError,
-    createProducto,
-    updateProducto,
-    deleteProducto,
-    addMissingIngredient: addMissingIngredientReal,
-    removeMissingIngredient: removeMissingIngredientReal,
-    updateIncompleteProductosStatus
-  } = useRealtimeProductos();
+  // Usar directamente los datos de los props (instancia centralizada en Index.tsx)
+  const formulasData = formulas;
+  const loading = propLoading;
+  const error = propError;
 
-  // Usar los datos del hook en tiempo real o los props como fallback
-  const formulasData = productos.length > 0 ? productos : formulas;
-  const loading = productosLoading || propLoading;
-  const error = productosError || propError;
+  // Funciones CRUD venidas de props
+  const createProducto = createFormula;
+  const updateProducto = updateFormula;
+  const deleteProducto = deleteFormula;
+  const addMissingIngredientReal = addMissingIngredient;
+  const removeMissingIngredientReal = removeMissingIngredient;
   const [selectedFormula, setSelectedFormula] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingFormula, setEditingFormula] = useState<any>(null);
@@ -276,26 +270,7 @@ export const FormulasSection = ({
 
   // (currentFormulas ya está definido arriba)
   
-  // Logging para debug
-  console.log('📋 FormulasSection - Props recibidas:', { 
-    formulasCount: formulas.length, 
-    loading, 
-    error,
-    formulas: formulas.map(f => ({ 
-      id: f.id, 
-      name: f.name, 
-      status: f.status,
-      destination: f.destination,
-      missingIngredientsCount: f.missingIngredients?.length || 0,
-      missingIngredients: f.missingIngredients
-    }))
-  });
-  
-  console.log('📋 FormulasSection - Estado de filtros:', {
-    showOnlyIncomplete,
-    destinationFilter,
-    currentFormulasCount: currentFormulas.length
-  });
+
 
 
   const getFormulaStatus = (formula: any) => {
@@ -351,25 +326,7 @@ export const FormulasSection = ({
     const actualStatus = getFormulaStatus(formula);
     const statusMatch = showOnlyIncomplete ? actualStatus === "incomplete" : true;
     const destinationMatch = destinationFilter === "all" || formula.destination === destinationFilter;
-    
-    console.log(`🔍 Filtrado fórmula ${formula.name}:`, {
-      actualStatus,
-      showOnlyIncomplete,
-      statusMatch,
-      destination: formula.destination,
-      destinationFilter,
-      destinationMatch,
-      passes: statusMatch && destinationMatch
-    });
-    
     return statusMatch && destinationMatch;
-  });
-  
-  console.log('📊 FormulasSection - Resultado del filtrado:', {
-    totalFormulas: currentFormulas.length,
-    filteredFormulas: filteredFormulas.length,
-    showOnlyIncomplete,
-    destinationFilter
   });
 
   // Función para actualizar automáticamente fórmulas incompletas sin faltantes
@@ -456,12 +413,10 @@ export const FormulasSection = ({
         stock_actual: parseInt(newFormula.batchSize) // Stock inicial igual a la producción
       };
 
-      console.log('🔄 Creando producto con datos:', formulaData);
       await createFunction(formulaData);
       
       // Si es incompleta y tiene ingredientes faltantes, agregarlos a Supabase
       if (newFormula.status === 'incomplete' && missingIngredients.length > 0) {
-        console.log('📝 Agregando ingredientes faltantes a Supabase...');
         for (const ingredient of missingIngredients) {
           const addFunction = addMissingIngredientReal || addMissingIngredient;
           if (addFunction) {
@@ -644,8 +599,6 @@ export const FormulasSection = ({
       // El estado se actualizará automáticamente via Realtime
       // Si no quedan ingredientes faltantes, cambiar el estado a "available"
       if (remainingIngredients.length === 0) {
-        console.log('🎉 No quedan ingredientes faltantes, cambiando estado a "available"');
-        
         // Agregar animación de cambio de estado
         setStatusChangingFormulas(prev => new Set(prev).add(formulaId));
         
@@ -665,14 +618,10 @@ export const FormulasSection = ({
 
       // Ejecutar la eliminación en la base de datos
       if (removeMissingIngredient) {
-        // Usar función de Realtime
         const success = await removeMissingIngredient(formulaId, ingredientName);
         if (success) {
-          console.log('✅ Ingrediente eliminado exitosamente via Realtime');
-          
           // Si no quedan ingredientes faltantes, cambiar el estado a "available"
           if (remainingIngredients.length === 0 && updateFormula) {
-            console.log('🎉 No quedan ingredientes faltantes, cambiando estado a "available"');
             await updateFormula(formulaId, { status: 'available' });
           }
         }
@@ -680,9 +629,6 @@ export const FormulasSection = ({
         // Fallback al servicio directo si no hay función de Realtime
         const success = await ProductoService.removeMissingIngredient(formulaId, ingredientName);
         if (success) {
-          console.log('✅ Ingrediente eliminado exitosamente via servicio directo');
-          
-          // Si no quedan ingredientes faltantes, actualizar en la base de datos
           if (remainingIngredients.length === 0) {
             await ProductoService.updateProducto(formulaId, { status: 'available' });
           }
@@ -690,7 +636,6 @@ export const FormulasSection = ({
       }
     } catch (error) {
       console.error('❌ Error eliminando ingrediente:', error);
-      // El estado se actualizará automáticamente via Realtime
     }
   };
 

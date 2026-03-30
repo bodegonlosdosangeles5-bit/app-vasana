@@ -16,7 +16,7 @@ import { Producto } from "@/services/productoService";
 import { useRealtimeEnvios } from "@/hooks/useRealtimeEnvios";
 import { useRealtimeRemitos } from "@/hooks/useRealtimeRemitos";
 import { useRemitos } from "@/hooks/useRemitos";
-import { useRealtimeProductos } from "@/hooks/useRealtimeProductos";
+
 import { EnvioConRemitos } from "@/services/envioService";
 import { RemitoWithItems } from "@/services/remitoService";
 import { useAuth } from "@/components/Auth/AuthProvider";
@@ -25,24 +25,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { LogService, ActivityLog } from "@/services/logService";
 
 interface ProductionSectionProps {
-  formulas?: Producto[]; // Mantener para compatibilidad pero no usar
+  formulas?: Producto[];
+  updateProducto?: (id: string, updates: Partial<Producto>) => Promise<Producto | null>;
+  deleteProducto?: (id: string) => Promise<boolean>;
 }
 
-export const ProductionSection = ({ formulas = [] }: ProductionSectionProps) => {
+export const ProductionSection = ({ formulas = [], updateProducto: updateProductoProp, deleteProducto: deleteProductoProp }: ProductionSectionProps) => {
   const { user } = useAuth();
   const canEdit = user?.role === 'admin' || user?.role === 'superadmin' || user?.user_name === 'jose';
 
-  // Usar el hook de productos en tiempo real
-  const { 
-    productos, 
-    loading: productosLoading, 
-    error: productosError, 
-    updateProducto: updateProductoRealtime, 
-    deleteProducto: deleteProductoRealtime 
-  } = useRealtimeProductos();
+  // Usar los datos de los props (instancia centralizada en Index.tsx)
+  const formulasData = formulas;
 
-  // Fallback a formulas prop si productos está vacío
-  const formulasData = productos.length > 0 ? productos : formulas;
+  const updateProductoRealtime = updateProductoProp || (async () => null);
+  const deleteProductoRealtime = deleteProductoProp || (async () => false);
 
   const [activeTab, setActiveTab] = useState("remito");
   const [selectedEnvio, setSelectedEnvio] = useState<EnvioConRemitos | null>(null);
