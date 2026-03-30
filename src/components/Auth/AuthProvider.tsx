@@ -43,8 +43,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (savedUser) {
       try {
         const parsedUser = JSON.parse(savedUser);
-        console.log('✅ AuthProvider: Usuario parseado correctamente:', parsedUser);
-        setUser(parsedUser);
+        // Verificar si la sesión expiró
+        if (parsedUser.expiresAt && Date.now() > parsedUser.expiresAt) {
+          console.log('Sesión expirada, cerrando...');
+          localStorage.removeItem('user');
+        } else {
+          // Limpiar el campo expiresAt antes de setear el user
+          const { expiresAt, ...userData } = parsedUser;
+          setUser(userData);
+        }
       } catch (error) {
         console.error('❌ AuthProvider: Error parsing saved user:', error);
         localStorage.removeItem('user');
@@ -84,7 +91,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       };
       
       setUser(userDataComplete);
-      localStorage.setItem('user', JSON.stringify(userDataComplete));
+      const sessionData = {
+        ...userDataComplete,
+        expiresAt: Date.now() + 12 * 60 * 60 * 1000 // 12 horas
+      };
+      localStorage.setItem('user', JSON.stringify(sessionData));
       
       console.log('✅ AuthProvider: Usuario guardado en localStorage y estado');
       

@@ -5,11 +5,6 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  server: {
-    host: "::",
-    port: 8080,
-    https: false, // Cambiar a true para HTTPS en producción
-  },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {

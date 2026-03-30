@@ -1,9 +1,42 @@
 import { supabaseAdmin } from '../lib/supabaseAdmin.js';
+import bcrypt from 'bcryptjs';
+
+const loginAttempts = new Map<string, { count: number; resetTime: number }>();
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const windowMs = 15 * 60 * 1000; // 15 minutos
+  const maxAttempts = 10; // máximo 10 intentos por IP
+
+  const current = loginAttempts.get(ip);
+
+  if (!current || now > current.resetTime) {
+    loginAttempts.set(ip, { count: 1, resetTime: now + windowMs });
+    return true;
+  }
+
+  if (current.count >= maxAttempts) {
+    return false;
+  }
+
+  current.count++;
+  return true;
+}
 
 export default async function handler(req: any, res: any) {
   // CORS configuration (soporta Vercel deploy cruzado entre frontend dinámico y backend)
   res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const allowedOrigins = [
+    'https://new-app-gold-one.vercel.app',
+    'http://localhost:8080',
+    'http://localhost:5173'
+  ];
+  const origin = req.headers.origin || '';
+  const allowedOrigin = allowedOrigins.includes(origin)
+    ? origin
+    : allowedOrigins[0];
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
   
   if (req.method === 'OPTIONS') {
@@ -13,6 +46,18 @@ export default async function handler(req: any, res: any) {
 
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, error: 'Method Not Allowed' });
+  }
+
+  const clientIP = req.headers['x-forwarded-for'] ||
+                   req.socket?.remoteAddress ||
+                   'unknown';
+  const ip = Array.isArray(clientIP) ? clientIP[0] : clientIP;
+
+  if (!checkRateLimit(ip)) {
+    return res.status(429).json({
+      success: false,
+      error: 'Demasiados intentos. Esperá 15 minutos.'
+    });
   }
 
   const { username, password } = req.body;
@@ -37,20 +82,17 @@ export default async function handler(req: any, res: any) {
 
     // 2) Validar la contraseña.
     let isAuthenticated = false;
-    
-    // Si guardaste las contraseñas sinencriptar en tu base de texto plano, la comprobamos directo:
-    if (userRaw.password === password) {
-       isAuthenticated = true; 
+
+    // Comparar con bcrypt (soporta tanto hash como texto plano
+    // por si alguna contraseña no fue migrada)
+    const isHashed = userRaw.password?.startsWith('$2b$') ||
+                     userRaw.password?.startsWith('$2a$');
+
+    if (isHashed) {
+      isAuthenticated = await bcrypt.compare(password, userRaw.password);
     } else {
-       // Si guardas passwords encriptados, reusamos con permisos de ADMIN (service_role) 
-       // tu RPC original que sabe desencriptar, que también está libre de bloqueos de RLS públicos:
-       const { data: authData } = await supabaseAdmin.rpc('authenticate_user', {
-          username_param: username,
-          password_param: password
-       });
-       if (authData && authData.success) {
-          isAuthenticated = true;
-       }
+      // Fallback para contraseñas no migradas aún
+      isAuthenticated = userRaw.password === password;
     }
 
     if (!isAuthenticated) {

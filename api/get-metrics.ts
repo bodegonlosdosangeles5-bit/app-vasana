@@ -4,7 +4,17 @@ export default async function handler(req: any, res: any) {
   try {
     // Configuración segura CORS
     res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    const allowedOrigins = [
+      'https://new-app-gold-one.vercel.app',
+      'http://localhost:8080',
+      'http://localhost:5173'
+    ];
+    const origin = req.headers.origin || '';
+    const allowedOrigin = allowedOrigins.includes(origin)
+      ? origin
+      : allowedOrigins[0];
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+    res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
 
     if (req.method === 'OPTIONS') {
