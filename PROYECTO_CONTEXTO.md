@@ -17,7 +17,7 @@ Este documento sirve como referencia rápida de la arquitectura, configuración 
   vercel dev
   ```
   La app se ejecutará en http://localhost:3000 (o el puerto que asigne Vercel).
-  > ⚠️ **Importante:** usar `vercel dev` en lugar de `npm run dev` para que las rutas serverless `/api/login` y `/api/get-metrics` funcionen correctamente.
+  > ⚠️ **Importante:** usar `vercel dev` en lugar de `npm run dev` para que las rutas serverless `/api/login` y `/api/get-metrics` funcionen correctamente. Evitar el uso de `host: "::"` en `vite.config.ts` para no crashear el proxy local de Vercel en Windows (Node IPv6 ECONNRESET).
 
 ## 2. ESTRUCTURA DE CARPETAS
 Mapeo de la carpeta `src/` que agrupa el código fuente de la aplicación:
@@ -119,8 +119,11 @@ Lógica en `src/hooks/`:
   - Ambos usan `createPortal(content, document.body)` y CSS `@media print` para aislar el layout de impresión del DOM web.
   - Paginado: 25 ítems por hoja, con totales en la última página. Margen superior 8cm, inferior 6cm.
 
-## 9. AUTENTICACIÓN SERVERLESS
+## 9. AUTENTICACIÓN SERVERLESS Y SEGURIDAD
 - **Flujo:** `LoginForm.tsx` → POST a `/api/login` → función Vercel con `supabaseAdmin` (`service_role`) → consulta tabla `users` → responde con datos del usuario.
+- **Seguridad Backend:** El endpoint `/api/login` está protegido con un **Rate Limit** en memoria (10 intentos / 15 mins por IP). Los endpoints serverless `/api/*` poseen política restrictiva de **CORS** (`Vary: Origin`) permitiendo solo los dominios explícitos locales y el de Vercel de producción.
+- **Contraseñas Seguras (Bcrypt):** Las contraseñas en la tabla `users` están hasheadas usando `bcryptjs`. La función de login soporta fallback automático para texto plano de cara a transiciones suaves. *(Migrado via `scripts/hash-passwords.mjs`)*.
+- **Manejo de Sesión:** `AuthProvider.tsx` gestiona las sesiones en el frontend usando Context y persistencia en `localStorage`. Se agregó una expiración forzada de **12 horas**, validada tanto al inicio como en almacenamiento.
 - **Por qué Serverless:** La tabla `users` tiene RLS activo. El `anon key` público no puede leerla. La clave `service_role` nunca se expone al browser — solo vive en las variables de entorno del servidor Vercel.
 - **Variables de Entorno requeridas (`.env`):**
   - `VITE_SUPABASE_URL`
@@ -135,7 +138,8 @@ Lógica en `src/hooks/`:
 - [x] Generador de reportes PDF multi-páginas (Viaje y Fórmulas).
 - [x] PWA Instalable por service worker.
 - [x] Gestión robusta de Fórmulas y Recetarios (`FormulasSection`).
-- [x] Integración Realtime nativa con fallback a polling.
+- [x] Integración Realtime nativa y centralizada (orquestación en `Index.tsx`) mitigando duplicación de queries.
+- [x] Eliminación de polling de backups innecesarios y websocket reduction.
 - [x] Componente UI del Calendario con feriados Argentinos.
 - [x] Modal "Compartir Credenciales por QR" en `UserAdminPanel`.
 - [x] Roles funcionales: Admin, User, Consulta (con ocultamiento de sección ENVIOS para Consulta).
@@ -170,6 +174,9 @@ Lógica en `src/hooks/`:
 - Las tablas activas (`productos`, `inventory`) contienen registros actuales valiosos manejados por sincronía de Channels Postgres. Alterarlas manualmente sin pasar por el ORM/Hooks puede ocasionar colisiones on-sync en la UI.
 
 ## 14. HISTORIAL DE CAMBIOS RECIENTES
+- **Optimización de Rendimiento y Seguridad (Mar 2026):** Centralización de hooks de inventario y productos en `Index.tsx` resultando en una reducción masiva de renders y duplicidad de WS/Supabase Queries. Paralelización de obtención de ingredientes con `Promise.all()`. Eliminación de hooks de Polling de respaldo y purga de logs informativos.
+- **Refuerzos Backend/Auth (Mar 2026):** Migración completa a hashes `bcryptjs` en la base de datos para usuarios. Implementación de Rate Limiting por IP para protección contra ataques de fuerza bruta en `api/login.ts` y delimitación rigurosa de dominios de CORS. Cierre forzado de sesión a las 12h embebido en `AuthProvider`.
+- **Fix Red NodeJS / Vercel Dev (Mar 2026):** Se removió el forzado de puertos e IPv6 `::` en `vite.config.ts`, solucionando los cuelgues totales (`ECONNRESET`) del CLI de Vercel en Windows debido a Timeouts y desincronización del proxy HMR de Vite.
 - **Remito Manual Completo (Mar 2026):** Creación de `RemitoManualModal.tsx` y `VistaPreviaRemitoManual.tsx`. El modal permite cargar filas manualmente, editar el encabezado de impresión en 3 líneas (con valores por defecto `VASANA SA / TALCAHUANO 279 / VILLA MARTELLI`), guardar en Supabase con ID `REM-MAN-{timestamp}` e imprimir en formato A4.
 - **Encabezado de Remito Manual Editable (Mar 2026):** Se agregó el estado `headerLines` en `RemitoManualModal` y la prop correspondiente en `VistaPreviaRemitoManual`, reemplazando los textos fijos del bloque `company-info-block` por valores dinámicos.
 - **Botón REMITO MANUAL en ProductionSection (Mar 2026):** El botón dorado fue reposicionado a la derecha del título "Control de Producción", junto al indicador de "Kilos en Viaje". Stock en viaje calcula fallback desde `batchSize` si `stock_actual` no está disponible.
