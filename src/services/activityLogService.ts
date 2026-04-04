@@ -26,7 +26,7 @@ export class ActivityLogService {
 
   static async log(params: LogParams): Promise<void> {
     try {
-      await (supabase as any).from('activity_log').insert({
+      const { error } = await (supabase as any).from('activity_log').insert({
         user_name: params.user_name,
         user_role: params.user_role,
         accion: params.accion,
@@ -34,9 +34,13 @@ export class ActivityLogService {
         descripcion: params.descripcion,
         color_tag: params.color_tag,
       });
+      
+      if (error) {
+        console.error('Supabase error inserting activity log:', error);
+      }
     } catch (error) {
       // El log nunca debe interrumpir el flujo principal
-      console.error('Error registrando actividad:', error);
+      console.error('Error registrando actividad (catch):', error);
     }
   }
 
