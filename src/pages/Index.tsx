@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navigation } from "@/components/Navigation";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { DashboardMetrics } from "@/components/DashboardMetrics";
@@ -12,11 +12,15 @@ import { useRealtimeInventory } from "@/hooks/useRealtimeInventory";
 import { useUserActivity } from "@/hooks/useUserActivity";
 import { Producto } from "@/services/productoService";
 import { ProtectedRoute } from "@/components/Auth/ProtectedRoute";
-import { AuthProvider } from "@/components/Auth/AuthProvider";
+import { AuthProvider, useAuth } from "@/components/Auth/AuthProvider";
+import { RemitoService } from "@/services/remitoService";
+import { toast } from "sonner";
 
-const Index = () => {
+// Componente interno para poder usar useAuth() dentro del árbol AuthProvider
+const IndexContent = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
-  
+  const { user } = useAuth();
+
   // Usar el hook de productos con Supabase Realtime
   const { 
     productos, 
@@ -38,6 +42,22 @@ const Index = () => {
   
   // Rastrear actividad del usuario (heartbeat)
   useUserActivity();
+
+  // Reparar remitos huérfanos una sola vez al montar (solo admin)
+  useEffect(() => {
+    const repararHuerfanos = async () => {
+      if (user?.role !== 'admin') return;
+      try {
+        const resultado = await RemitoService.repararRemitosHuerfanos();
+        if (resultado.reparados > 0) {
+          toast.success(
+            `Se recuperaron ${resultado.reparados} envío(s) que no se habían guardado correctamente.`
+          );
+        }
+      } catch (_) {}
+    };
+    repararHuerfanos();
+  }, []); // Solo al montar
 
   const renderSection = () => {
     switch (activeSection) {
@@ -77,25 +97,31 @@ const Index = () => {
   };
 
   return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-500">
+      <div className="particles-container"></div>
+      <Navigation activeSection={activeSection} onSectionChange={setActiveSection} />
+      
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+        {/* Dashboard Header with Date/Time */}
+        <div className="mb-10 lg:mb-14">
+          <DashboardHeader enableDateDialog />
+        </div>
+        
+        <div className="max-w-7xl mx-auto">
+          <div className="transition-all duration-500 ease-in-out">
+            {renderSection()}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+const Index = () => {
+  return (
     <AuthProvider>
       <ProtectedRoute>
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-500">
-          <div className="particles-container"></div>
-          <Navigation activeSection={activeSection} onSectionChange={setActiveSection} />
-          
-          <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-            {/* Dashboard Header with Date/Time */}
-            <div className="mb-10 lg:mb-14">
-              <DashboardHeader enableDateDialog />
-            </div>
-            
-            <div className="max-w-7xl mx-auto">
-              <div className="transition-all duration-500 ease-in-out">
-                {renderSection()}
-              </div>
-            </div>
-          </main>
-        </div>
+        <IndexContent />
       </ProtectedRoute>
     </AuthProvider>
   );

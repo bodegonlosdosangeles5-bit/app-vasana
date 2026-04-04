@@ -14,6 +14,7 @@ import { useAuth } from "@/components/Auth/AuthProvider";
 export const InventorySection = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin' || user?.user_name === 'jose';
+  const canNuevoInsumo = isAdmin || user?.role === 'user' || user?.role === 'consulta';
   
   const [searchTerm, setSearchTerm] = useState("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -181,7 +182,7 @@ export const InventorySection = () => {
   };
 
   const handleSaveNewItem = async () => {
-    if (!isAdmin) {
+    if (!canNuevoInsumo) {
       alert('No tienes permisos para realizar esta acción');
       return;
     }
@@ -305,7 +306,7 @@ export const InventorySection = () => {
               className="pl-11 h-11 bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-pink-500/20"
             />
           </div>
-          {isAdmin && (
+          {canNuevoInsumo && (
             <Button onClick={handleAddItem} className="h-11 px-6 rounded-2xl bg-pink-500 hover:bg-pink-600 text-white font-bold shadow-lg shadow-pink-500/20 transition-all hover:-translate-y-0.5">
               <Plus className="h-5 w-5 mr-2" />
               Nuevo Insumo

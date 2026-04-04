@@ -556,6 +556,106 @@ export class RemitoService {
       }
     } catch (error) {
       console.error('❌ Error creando envío automático:', error);
+      // Guardar remito huérfano para recuperación posterior
+      try {
+        const huerfanos = JSON.parse(
+          localStorage.getItem('remitos_sin_envio') || '[]'
+        ) as string[];
+        if (!huerfanos.includes(remitoId)) {
+          huerfanos.push(remitoId);
+          localStorage.setItem(
+            'remitos_sin_envio',
+            JSON.stringify(huerfanos)
+          );
+        }
+      } catch (_) {}
+    }
+  }
+
+  // Detectar y reparar remitos cerrados que no tienen envío asociado
+  static async repararRemitosHuerfanos(): Promise<{ reparados: number; ids: string[] }> {
+    try {
+      // 1. Obtener todos los remitos cerrados
+      const { data: remitosHuerfanos, error: remitosError } = await supabase
+        .from('remitos')
+        .select('id, destino, fecha, total_kilos')
+        .eq('estado', 'cerrado');
+
+      if (remitosError) throw remitosError;
+
+      // 2. Obtener los remitos que ya tienen envío
+      const { data: remitosAsignados, error: asignadosError } = await supabase
+        .from('envios_remitos')
+        .select('remito_id');
+
+      if (asignadosError) throw asignadosError;
+
+      const asignadosIds = new Set(
+        (remitosAsignados || []).map(r => r.remito_id)
+      );
+
+      // 3. Filtrar los que NO tienen envío
+      const huerfanos = (remitosHuerfanos || []).filter(
+        r => !asignadosIds.has(r.id)
+      );
+
+      if (huerfanos.length === 0) {
+        console.log('✅ No hay remitos huérfanos que reparar');
+        return { reparados: 0, ids: [] };
+      }
+
+      console.log(`🔧 Reparando ${huerfanos.length} remito(s) huérfano(s)...`);
+
+      // 4. Importar EnvioService dinámicamente para evitar dependencias circulares
+      const { EnvioService } = await import('./envioService');
+
+      // 5. Para cada remito huérfano, crear el envío faltante
+      const reparados: string[] = [];
+      for (const remito of huerfanos) {
+        try {
+          const envio = await EnvioService.crearEnvioConRemitoEspecifico(
+            remito.id,
+            remito.destino ?? 'Villa Martelli',
+            undefined,
+            'Envío recuperado automáticamente (remito huérfano)'
+          );
+
+          if (envio) {
+            // Marcar el envío como entregado (igual que el flujo normal)
+            const { error: updateError } = await supabase
+              .from('envios')
+              .update({
+                estado: 'entregado',
+                fecha_envio: new Date().toISOString()
+              })
+              .eq('id', envio.id);
+
+            if (updateError) {
+              console.error(`❌ Error marcando envío como entregado para remito ${remito.id}:`, updateError);
+            } else {
+              reparados.push(remito.id);
+              console.log(`✅ Remito ${remito.id} reparado correctamente`);
+            }
+          }
+        } catch (innerError) {
+          console.error(`❌ Error reparando remito ${remito.id}:`, innerError);
+        }
+      }
+
+      // 6. Limpiar los remitos reparados del localStorage
+      try {
+        const pendientesLS = JSON.parse(
+          localStorage.getItem('remitos_sin_envio') || '[]'
+        ) as string[];
+        const restantes = pendientesLS.filter(id => !reparados.includes(id));
+        localStorage.setItem('remitos_sin_envio', JSON.stringify(restantes));
+      } catch (_) {}
+
+      console.log(`✅ Reparación completada: ${reparados.length}/${huerfanos.length} remitos reparados`);
+      return { reparados: reparados.length, ids: reparados };
+    } catch (error) {
+      console.error('❌ Error en repararRemitosHuerfanos:', error);
+      return { reparados: 0, ids: [] };
     }
   }
 }

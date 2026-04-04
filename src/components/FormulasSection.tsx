@@ -49,6 +49,7 @@ export const FormulasSection = ({
 }: FormulasSectionProps) => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin' || user?.user_name === 'jose';
+  const canCargarProducto = isAdmin || user?.role === 'user';
 
   // Usar directamente los datos de los props (instancia centralizada en Index.tsx)
   const formulasData = formulas;
@@ -696,7 +697,7 @@ export const FormulasSection = ({
             )}
           </div>
         </div>
-        {isAdmin && (
+        {canCargarProducto && (
           <Button 
             onClick={() => setIsLoadModalOpen(true)}
             className="bg-[#023F86] hover:bg-[#0555B1] text-white font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-500/20"
