@@ -300,6 +300,12 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
     return null;
   };
 
+  const periodoLabel = viewType === 'daily' 
+    ? 'kg/día' 
+    : viewType === 'weekly' 
+    ? 'kg/semana' 
+    : 'kg/mes';
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[95vh] flex flex-col p-0 overflow-hidden rp-modal">
@@ -579,7 +585,7 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
               Promedio: <strong className="rp-footer-strong">
                 {stats.chartDynamicData.length > 0
                   ? Math.round(stats.chartDynamicData.reduce((s, d) => s + d.total, 0) / stats.chartDynamicData.length).toLocaleString()
-                  : 0} kg/día
+                  : 0} {periodoLabel}
               </strong>
             </span>
             

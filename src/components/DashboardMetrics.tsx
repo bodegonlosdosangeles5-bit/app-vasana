@@ -1259,18 +1259,20 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction, invent
       <Dialog open={isProductionListOpen} onOpenChange={setIsProductionListOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden bg-background border-border text-foreground">
           <DialogDescription className="sr-only">Métricas de producción</DialogDescription>
-          <DialogHeader className="flex flex-row items-center justify-between border-b border-border pb-4">
-            <DialogTitle className="flex items-center gap-2">
-              <Scale className="h-5 w-5 text-blue-500" />
-              Producción — Viaje Actual
-            </DialogTitle>
-            <div className="flex items-center gap-2 pr-4">
+          <DialogHeader className="flex flex-col gap-3 border-b border-border pb-4">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2">
+                <Scale className="h-5 w-5 text-blue-500" />
+                Producción — Viaje Actual
+              </DialogTitle>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
               <Button
                 onClick={handlePreviewViajePDF}
                 disabled={isPreviewingViaje}
                 variant="outline"
                 size="sm"
-                className="h-8 text-xs gap-1.5 no-print"
+                className="h-8 text-xs gap-1.5 no-print flex-1 sm:flex-none"
               >
                 <Eye className="h-3.5 w-3.5" />
                 {isPreviewingViaje ? "..." : "Vista Previa"}
@@ -1280,7 +1282,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction, invent
                 disabled={isExportingViaje}
                 variant="outline"
                 size="sm"
-                className="h-8 text-xs gap-1.5 no-print"
+                className="h-8 text-xs gap-1.5 no-print flex-1 sm:flex-none"
               >
                 <Download className="h-3.5 w-3.5" />
                 {isExportingViaje ? "..." : "Exportar"}
@@ -1289,7 +1291,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction, invent
                 onClick={() => window.print()}
                 variant="default"
                 size="sm"
-                className="h-8 text-xs gap-1.5 no-print bg-[#023F86] hover:bg-[#023F86]/90 text-white"
+                className="h-8 text-xs gap-1.5 no-print flex-1 sm:flex-none bg-[#023F86] hover:bg-[#023F86]/90 text-white"
               >
                 <Printer className="h-3.5 w-3.5" />
                 REMITO
