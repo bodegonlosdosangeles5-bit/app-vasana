@@ -1,4 +1,4 @@
-import { X, Package, MapPin, Calendar, Clock, Pencil } from 'lucide-react';
+import { X, Package, MapPin, Calendar, Clock, Pencil, Printer } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,6 +33,7 @@ export const EnvioDetailModal = ({
   const [editedItems, setEditedItems] = useState<RemitoItem[]>([]);
   const [editForm, setEditForm] = useState({ observaciones: '' });
   const [isSaving, setIsSaving] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   if (!envio) return null;
 
@@ -174,6 +175,70 @@ export const EnvioDetailModal = ({
     }
   };
 
+  const handlePrint = () => {
+    const todosLosItems = envio.remitos.flatMap(r => 
+      [...r.items].sort((a, b) => Number(a.lote || 0) - Number(b.lote || 0))
+    );
+    const totalKilos = todosLosItems.reduce((acc, i) => acc + (i.kilos_sumados || 0), 0);
+    const fecha = envio.remitos[0]?.fecha 
+      ? new Date(envio.remitos[0].fecha + 'T00:00:00').toLocaleDateString('es-AR')
+      : new Date().toLocaleDateString('es-AR');
+
+    const contenido = `
+      <html>
+        <head>
+          <title>Envío ${envio.numero_envio}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 2cm; font-size: 10pt; }
+            h2 { font-size: 13pt; margin-bottom: 4px; }
+            .meta { font-size: 9pt; color: #555; margin-bottom: 16px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+            th { background: #1e3a5f; color: white; padding: 6px 8px; text-align: left; font-size: 9pt; }
+            td { padding: 5px 8px; font-size: 9pt; border-bottom: 1px solid #eee; }
+            .totales { margin-top: 20px; font-weight: bold; font-size: 10pt; }
+            @media print { body { margin: 1.5cm; } }
+          </style>
+        </head>
+        <body>
+          <h2>Envío ${envio.numero_envio}</h2>
+          <div class="meta">
+            Destino: ${envio.destino} &nbsp;|&nbsp; Fecha: ${fecha} &nbsp;|&nbsp; Total Productos: ${todosLosItems.length}
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Lote</th>
+                <th>Producto</th>
+                <th>Cliente/Stock</th>
+                <th>Kilos</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${todosLosItems.map(item => `
+                <tr>
+                  <td>${item.lote || '-'}</td>
+                  <td>${item.nombre_producto}</td>
+                  <td>${item.cliente_o_stock || 'Stock'}</td>
+                  <td>${item.kilos_sumados} kg</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <div class="totales">
+            Total: ${todosLosItems.length} productos &nbsp;&nbsp; Kilos: ${totalKilos} kg
+          </div>
+        </body>
+      </html>
+    `;
+
+    const ventana = window.open('', '_blank');
+    if (ventana) {
+      ventana.document.write(contenido);
+      ventana.document.close();
+      ventana.focus();
+      setTimeout(() => ventana.print(), 500);
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -184,12 +249,23 @@ export const EnvioDetailModal = ({
               <Package className="h-6 w-6" />
               Envío {envio.numero_envio}
             </DialogTitle>
-            <button 
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-md transition-colors"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrint}
+                className="flex items-center gap-2"
+              >
+                <Printer className="h-4 w-4" />
+                Vista Previa
+              </Button>
+              <button 
+                onClick={onClose}
+                className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </DialogHeader>
 
@@ -229,6 +305,14 @@ export const EnvioDetailModal = ({
                   <p className="text-lg font-semibold">{envio.total_remitos}</p>
                 </div>
                 <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Total Productos
+                  </p>
+                  <p className="text-lg font-semibold">
+                    {envio.remitos.reduce((acc, r) => acc + r.items.length, 0)}
+                  </p>
+                </div>
+                <div className="space-y-1">
                   <p className="text-sm font-medium text-muted-foreground">Fecha de Creación</p>
                   <p className="text-sm flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
@@ -245,12 +329,6 @@ export const EnvioDetailModal = ({
                   </div>
                 )}
               </div>
-              {envio.observaciones && (
-                <div className="mt-4">
-                  <p className="text-sm font-medium text-muted-foreground">Observaciones</p>
-                  <p className="text-sm mt-1 p-3 bg-muted rounded-lg">{envio.observaciones}</p>
-                </div>
-              )}
             </CardContent>
           </Card>
 
@@ -260,7 +338,7 @@ export const EnvioDetailModal = ({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Package className="h-5 w-5" />
-                Remitos Asociados ({envio.remitos.length})
+                Envíos Asociados ({envio.remitos.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -275,7 +353,7 @@ export const EnvioDetailModal = ({
                       <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                           <CardTitle className="text-base">
-                            Remito {remito.id}
+                            Envío {remito.id}
                           </CardTitle>
                           <div className="flex items-center gap-2">
                             {isAdmin && (
@@ -309,41 +387,33 @@ export const EnvioDetailModal = ({
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-2">
-                          <h4 className="font-medium text-sm">Productos en el Remito:</h4>
+                          <h4 className="font-medium text-sm">Productos en el Envío:</h4>
                           {remito.items.length === 0 ? (
                             <p className="text-muted-foreground text-sm">No hay productos en este remito</p>
                           ) : (
                             <Table>
                               <TableHeader>
                                 <TableRow>
-                                  <TableHead className="text-xs">Producto</TableHead>
                                   <TableHead className="text-xs">Lote</TableHead>
+                                  <TableHead className="text-xs">Producto</TableHead>
                                   <TableHead className="text-xs">Cliente/Stock</TableHead>
                                   <TableHead className="text-xs">Kilos</TableHead>
-                                  <TableHead className="text-xs">Cant. Lotes</TableHead>
-                                  <TableHead className="text-xs">Notas</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
                                 {[...remito.items].sort((a, b) => Number(a.lote || '') - Number(b.lote || '')).map((item) => (
                                   <TableRow key={item.id}>
-                                    <TableCell className="text-xs font-medium">
-                                      {item.nombre_producto}
-                                    </TableCell>
                                     <TableCell className="text-xs">
                                       {item.lote || '-'}
+                                    </TableCell>
+                                    <TableCell className="text-xs font-medium">
+                                      {item.nombre_producto}
                                     </TableCell>
                                     <TableCell className="text-xs">
                                       {item.cliente_o_stock || '-'}
                                     </TableCell>
                                     <TableCell className="text-xs">
                                       {item.kilos_sumados} kg
-                                    </TableCell>
-                                    <TableCell className="text-xs">
-                                      {item.cantidad_lotes}
-                                    </TableCell>
-                                    <TableCell className="text-xs text-muted-foreground">
-                                      {item.notas || '-'}
                                     </TableCell>
                                   </TableRow>
                                 ))}
