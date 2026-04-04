@@ -6,6 +6,8 @@ import { Trash2, Plus, Printer, Save } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { VistaPreviaRemitoManual, ManualRemitoItem } from "./VistaPreviaRemitoManual";
+import { useAuth } from "@/components/Auth/AuthProvider";
+import { ActivityLogService } from "@/services/activityLogService";
 
 interface RemitoManualModalProps {
   isOpen: boolean;
@@ -13,6 +15,7 @@ interface RemitoManualModalProps {
 }
 
 export const RemitoManualModal: React.FC<RemitoManualModalProps> = ({ isOpen, onClose }) => {
+  const { user } = useAuth();
   const [items, setItems] = useState<ManualRemitoItem[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [showPrintTemplate, setShowPrintTemplate] = useState(false);
@@ -119,6 +122,16 @@ export const RemitoManualModal: React.FC<RemitoManualModalProps> = ({ isOpen, on
       if (itemsError) throw itemsError;
 
       toast.success("Remito manual guardado correctamente.");
+      
+      await ActivityLogService.log({
+        user_name: user?.user_name || 'desconocido',
+        user_role: user?.role || 'admin',
+        accion: 'Generó remito manual',
+        entidad: 'Remitos Manuales',
+        descripcion: `Guardó remito manual ${remitoId} con ${items.length} productos y ${totalKilos}kg totales`,
+        color_tag: 'green'
+      });
+
       onClose();
     } catch (error: any) {
       console.error(error);

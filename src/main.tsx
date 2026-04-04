@@ -10,8 +10,8 @@ if (GA_ID) {
   ReactGA.initialize(GA_ID);
 }
 
-// Registrar Service Worker para PWA
-if ('serviceWorker' in navigator) {
+// Registrar Service Worker para PWA (Solo en Producción)
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then((registration) => {

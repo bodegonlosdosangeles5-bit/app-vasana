@@ -50,6 +50,19 @@ self.addEventListener('activate', (event) => {
 
 // Interceptar requests
 self.addEventListener('fetch', (event) => {
+  const url = event.request.url;
+  
+  // No interceptar archivos de desarrollo de Vite
+  if (
+    url.includes('/node_modules/') ||
+    url.includes('/.vite/') ||
+    url.includes('/@vite/') ||
+    url.includes('/@fs/') ||
+    (url.includes('?v=') && url.includes('.vite'))
+  ) {
+    return; // Dejar pasar sin interceptar
+  }
+
   // Solo interceptar requests GET
   if (event.request.method !== 'GET') {
     return;

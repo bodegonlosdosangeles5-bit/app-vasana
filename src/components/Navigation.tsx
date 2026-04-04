@@ -61,17 +61,25 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
     ? 'Consulta'
     : 'Usuario';
   
-  const allNavItems = [
+  const allNavItems: Array<{
+    id: string;
+    label: string;
+    icon: React.ElementType;
+    consultaHidden?: boolean;
+    adminOnly?: boolean;
+    superAdminOnly?: boolean;
+  }> = [
     { id: "dashboard",  label: "Dashboard",  icon: BarChart3 },
     { id: "inventory",  label: "Inventario",  icon: Package },
     { id: "formulas",   label: "Productos",   icon: FlaskConical },
     { id: "production", label: "ENVIOS",  icon: Truck,  consultaHidden: true },
-    { id: "users",      label: "Usuarios",    icon: Users,  adminOnly: true },
+    { id: "users",      label: "Usuarios",    icon: Users,  adminOnly: true, superAdminOnly: true },
   ];
 
   // Filtrar según rol: consulta no ve Producción ni Usuarios; user no ve Usuarios
   const navItems = allNavItems.filter(item => {
     if (item.adminOnly && !isAdmin) return false;
+    if (item.superAdminOnly && user?.role !== 'superadmin') return false;
     if (item.consultaHidden && isConsulta) return false;
     return true;
   });

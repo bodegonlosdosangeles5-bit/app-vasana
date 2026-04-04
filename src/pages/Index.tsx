@@ -86,6 +86,7 @@ const IndexContent = () => {
           deleteProducto={deleteProducto}
         />;
       case "users":
+        if (user?.role !== 'superadmin') return null;
         return <UserAdminPanel />;
       default:
         return <DashboardMetrics 

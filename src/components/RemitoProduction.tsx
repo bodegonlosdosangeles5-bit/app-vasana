@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner"; 
 import { useAuth } from "@/components/Auth/AuthProvider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { ActivityLogService } from "@/services/activityLogService";
 
 interface RemitoProductionProps {
   productionItems: ProductionItem[];
@@ -132,6 +133,15 @@ export const RemitoProduction = ({ productionItems, onSuccess }: RemitoProductio
           // Notificar éxito visual
           setShowSuccessMessage(`✅ Remito ${data.remito.id} generado y enviado correctamente.`);
           
+          ActivityLogService.log({
+            user_name: user?.user_name || 'desconocido',
+            user_role: user?.role || 'admin',
+            accion: 'Generó remito',
+            entidad: 'Remitos Producción',
+            descripcion: `Generó remito para Villa Martelli con ${selectedProducts.length} productos`,
+            color_tag: 'green'
+          });
+
           // Ejecutar callback para cambiar de pestaña si existe
           if (onSuccess) {
             setTimeout(onSuccess, 1000);

@@ -29,8 +29,12 @@ import {
 import { UserProfile, CreateUserData, UpdateUserData, UserService } from '@/services/userService';
 import { useRealtimeUsers } from '@/hooks/useRealtimeUsers';
 import { ShareQRModal } from '@/components/ShareQRModal';
+import { useAuth } from '@/components/Auth/AuthProvider';
+import { ActivityLogService } from '@/services/activityLogService';
+import { ActivityLogPanel } from '@/components/ActivityLogPanel';
 
 export const UserAdminPanel: React.FC = () => {
+  const { user } = useAuth();
   // Usar el hook de Realtime para usuarios
   const {
     users,
@@ -82,9 +86,11 @@ export const UserAdminPanel: React.FC = () => {
   useEffect(() => {
     const checkAdminStatus = async () => {
       try {
-        const adminStatus = await UserService.isCurrentUserAdmin();
-        setIsAdmin(adminStatus);
-        setAccessDenied(!adminStatus);
+        const userData = localStorage.getItem('user');
+        const parsedUser = userData ? JSON.parse(userData) : null;
+        const isSuperAdmin = parsedUser?.role === 'superadmin';
+        setIsAdmin(isSuperAdmin);
+        setAccessDenied(!isSuperAdmin);
       } catch (error) {
         console.error('Error verificando rol de administrador:', error);
         setIsAdmin(false);
@@ -105,6 +111,16 @@ export const UserAdminPanel: React.FC = () => {
         role: newUser.role || 'user'
       });
       setSuccessMessage('✅ Usuario creado exitosamente');
+      
+      await ActivityLogService.log({
+        user_name: user?.user_name || 'desconocido',
+        user_role: user?.role || 'admin',
+        accion: 'Creó usuario',
+        entidad: 'Usuarios',
+        descripcion: `Creó el usuario "${newUser.user_name.trim()}" con rol ${newUser.role || 'user'}`,
+        color_tag: 'green'
+      });
+
       setIsCreateModalOpen(false);
       setShowCreatePassword(false);
       setNewUser({ user_name: '', password: '', role: 'user' });
@@ -121,6 +137,16 @@ export const UserAdminPanel: React.FC = () => {
     try {
       await updateUser(selectedUser.id, editUser);
       setSuccessMessage('✅ Usuario actualizado exitosamente');
+      
+      await ActivityLogService.log({
+        user_name: user?.user_name || 'desconocido',
+        user_role: user?.role || 'admin',
+        accion: 'Editó usuario',
+        entidad: 'Usuarios',
+        descripcion: `Editó el usuario "${selectedUser.user_name}"`,
+        color_tag: 'yellow'
+      });
+
       setIsEditModalOpen(false);
       setEditUser({});
       setSelectedUser(null);
@@ -135,6 +161,16 @@ export const UserAdminPanel: React.FC = () => {
     try {
       await deleteUser(selectedUser.id);
       setSuccessMessage('✅ Usuario eliminado exitosamente');
+      
+      await ActivityLogService.log({
+        user_name: user?.user_name || 'desconocido',
+        user_role: user?.role || 'admin',
+        accion: 'Eliminó usuario',
+        entidad: 'Usuarios',
+        descripcion: `Eliminó al usuario "${selectedUser.user_name}"`,
+        color_tag: 'red'
+      });
+
       setIsDeleteModalOpen(false);
       setSelectedUser(null);
     } catch (err) {
@@ -379,14 +415,15 @@ export const UserAdminPanel: React.FC = () => {
                       <span className="text-xs text-green-400 font-medium hidden sm:inline">Activo</span>
                     )}
                     <Badge 
-                      variant={user.role === 'admin' ? "default" : "outline"}
+                      variant={user.role === 'admin' || user.role === 'superadmin' ? "default" : "outline"}
                       className={`text-xs ${
+                        user.role === 'superadmin' ? 'bg-purple-600 text-white' :
                         user.role === 'admin' ? 'bg-blue-600 text-white' :
                         user.role === 'consulta' ? 'border-teal-400 text-teal-600 dark:text-teal-400' :
                         ''
                       }`}
                     >
-                      {user.role === 'admin' ? 'Admin' : user.role === 'consulta' ? 'Consulta' : 'User'}
+                      {user.role === 'superadmin' ? 'Super Admin' : user.role === 'admin' ? 'Admin' : user.role === 'consulta' ? 'Consulta' : 'User'}
                     </Badge>
                   </div>
                 </div>
@@ -521,6 +558,7 @@ export const UserAdminPanel: React.FC = () => {
                     <SelectItem value="user">Usuario</SelectItem>
                     <SelectItem value="consulta">Consulta (Solo lectura)</SelectItem>
                     <SelectItem value="admin">Administrador</SelectItem>
+                    <SelectItem value="superadmin">Super Administrador</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -582,6 +620,7 @@ export const UserAdminPanel: React.FC = () => {
                     <SelectItem value="user">Usuario</SelectItem>
                     <SelectItem value="consulta">Consulta (Solo lectura)</SelectItem>
                     <SelectItem value="admin">Administrador</SelectItem>
+                    <SelectItem value="superadmin">Super Administrador</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -659,6 +698,10 @@ export const UserAdminPanel: React.FC = () => {
         </Dialog>
         {/* QR Modal */}
         <ShareQRModal open={isQRModalOpen} onOpenChange={setIsQRModalOpen} />
+
+        <div className="mt-8">
+          <ActivityLogPanel />
+        </div>
       </div>
     </div>
   );

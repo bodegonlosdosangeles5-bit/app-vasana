@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { useRealtimeInventory } from "@/hooks/useRealtimeInventory";
 import { InventoryItem } from "@/services/inventoryService";
 import { useAuth } from "@/components/Auth/AuthProvider";
-
+import { ActivityLogService } from "@/services/activityLogService";
 export const InventorySection = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin' || user?.user_name === 'jose';
@@ -145,6 +145,16 @@ export const InventorySection = () => {
         };
         await updateInventoryItem(editingItem.id, updates);
         setIsEditModalOpen(false);
+        
+        await ActivityLogService.log({
+          user_name: user?.user_name || 'desconocido',
+          user_role: user?.role || 'user',
+          accion: 'Editó materia prima',
+          entidad: 'Inventario',
+          descripcion: `Editó "${editingItem.name}" en inventario`,
+          color_tag: 'yellow'
+        });
+
         setEditingItem(null);
       } catch (error) {
         console.error('Error actualizando materia prima:', error);
@@ -244,6 +254,16 @@ export const InventorySection = () => {
       if (result) {
         console.log('✅ Materia prima creada exitosamente');
         setIsAddModalOpen(false);
+
+        await ActivityLogService.log({
+          user_name: user?.user_name || 'desconocido',
+          user_role: user?.role || 'user',
+          accion: 'Agregó materia prima',
+          entidad: 'Inventario',
+          descripcion: `Agregó "${itemToAdd.name}" al inventario`,
+          color_tag: 'green'
+        });
+
         setNewItem({
           name: "",
           certificate: "",

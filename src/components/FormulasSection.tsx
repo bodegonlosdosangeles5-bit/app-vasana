@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ProductoService } from "@/services/productoService";
+import { ActivityLogService } from "@/services/activityLogService";
 
 import { useAuth } from "@/components/Auth/AuthProvider";
 
@@ -449,6 +450,15 @@ export const FormulasSection = ({
       const statusMessage = formulaData.status === 'incomplete' ? 'incompleta' : 'terminada';
       setShowSuccessMessage(`¡Fórmula "${formulaData.name}" creada como ${statusMessage}! 🎉`);
       setTimeout(() => setShowSuccessMessage(null), 3000);
+
+      await ActivityLogService.log({
+        user_name: user?.user_name || 'desconocido',
+        user_role: user?.role || 'user',
+        accion: 'Creó producto',
+        entidad: 'Productos',
+        descripcion: `Creó el producto "${formulaData.name}" con lote ${formulaData.lote_code}`,
+        color_tag: 'green'
+      });
       
     } catch (error) {
       console.error('Error creating formula:', error);
@@ -479,6 +489,16 @@ export const FormulasSection = ({
         if (success) {
           setShowSuccessMessage(`¡Producto "${editingFormula.name}" actualizado! ✅`);
           setIsEditModalOpen(false);
+          
+          await ActivityLogService.log({
+            user_name: user?.user_name || 'desconocido',
+            user_role: user?.role || 'user',
+            accion: 'Editó producto',
+            entidad: 'Productos',
+            descripcion: `Editó el producto "${editingFormula.name}" (lote ${editingFormula.lote_code || editingFormula.id})`,
+            color_tag: 'yellow'
+          });
+
           setEditingFormula(null);
           setTimeout(() => setShowSuccessMessage(null), 3000);
         }
@@ -492,6 +512,8 @@ export const FormulasSection = ({
     if (!isAdmin) return;
     if (!productToDelete) return;
     
+    const productData = formulas.find((f: any) => f.id === productToDelete);
+    
     try {
       const success = await deleteProducto(productToDelete);
       if (success) {
@@ -499,6 +521,17 @@ export const FormulasSection = ({
         setIsDeleteConfirmOpen(false);
         setProductToDelete(null);
         setTimeout(() => setShowSuccessMessage(null), 3000);
+
+        if (productData) {
+          await ActivityLogService.log({
+            user_name: user?.user_name || 'desconocido',
+            user_role: user?.role || 'user',
+            accion: 'Eliminó producto',
+            entidad: 'Productos',
+            descripcion: `Eliminó el producto "${productData.name}" (lote ${productData.lote_code || productData.id})`,
+            color_tag: 'red'
+          });
+        }
       }
     } catch (error) {
       console.error('Error deleting product:', error);
