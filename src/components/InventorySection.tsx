@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Package, MapPin, AlertTriangle, Edit, Save, X, Plus } from "lucide-react";
+import { Search, Package, MapPin, AlertTriangle, Edit, Save, X, Plus, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -14,10 +14,13 @@ import { ActivityLogService } from "@/services/activityLogService";
 export const InventorySection = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin' || user?.user_name === 'jose';
+  const isSuperAdmin = user?.role === 'superadmin';
   const canNuevoInsumo = isAdmin || user?.role === 'user' || user?.role === 'consulta';
   
   const [searchTerm, setSearchTerm] = useState("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -308,6 +311,16 @@ export const InventorySection = () => {
     }));
   };
 
+  const handleDeleteItem = async () => {
+    if (!isSuperAdmin || !deletingItemId) return;
+    try {
+      await deleteInventoryItem(deletingItemId);
+      setIsDeleteConfirmOpen(false);
+      setDeletingItemId(null);
+    } catch (error) {
+      console.error('Error eliminando materia prima:', error);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -385,8 +398,21 @@ export const InventorySection = () => {
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                       {isAdmin && (
-                         <Button
+                      {isSuperAdmin && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setDeletingItemId(item.id);
+                            setIsDeleteConfirmOpen(true);
+                          }}
+                          className="h-9 w-9 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {isAdmin && (
+                        <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => handleEditItem(item)}
@@ -686,6 +712,40 @@ export const InventorySection = () => {
                   Agregar
                 </>
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="h-5 w-5" />
+              Eliminar Materia Prima
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              ¿Estás seguro que querés eliminar esta materia prima? 
+              Esta acción no se puede deshacer.
+            </p>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsDeleteConfirmOpen(false);
+                setDeletingItemId(null);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteItem}
+            >
+              Sí, eliminar
             </Button>
           </DialogFooter>
         </DialogContent>

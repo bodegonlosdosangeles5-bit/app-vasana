@@ -385,7 +385,7 @@ export const FormulasSection = ({
 
   const handleLoadFormula = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isAdmin) return;
+    if (!canCargarProducto) return;
     
     const createFunction = createProducto || createFormula;
     if (!createFunction) {
