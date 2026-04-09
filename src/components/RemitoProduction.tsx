@@ -25,7 +25,11 @@ export const RemitoProduction = ({ productionItems, onSuccess }: RemitoProductio
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   
   const { user } = useAuth();
-  const canGenerateRemito = user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'developer' || user?.user_name === 'jose';
+  const canGenerateRemito = user?.role === 'admin' || 
+    user?.role === 'superadmin' || 
+    user?.role === 'developer' || 
+    user?.user_name === 'jose' ||
+    user?.user_name === 'varela';
 
   const {
     currentRemito,
