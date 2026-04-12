@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Search, Package, MapPin, AlertTriangle, Edit, Save, X, Plus, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, Package, MapPin, AlertTriangle, Edit, Save, X, Plus, Trash2, Beaker } from "lucide-react";
+import MapaUbicacionRacks from './MapaUbicacionRacks';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,9 @@ export const InventorySection = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
   const [newItem, setNewItem] = useState({
     name: "",
     certificate: "",
@@ -322,6 +326,11 @@ export const InventorySection = () => {
     }
   };
 
+  const handleOpenDetail = (item: InventoryItem) => {
+    setSelectedItem(item);
+    setIsDetailModalOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white dark:bg-slate-800/50 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm">
@@ -383,7 +392,15 @@ export const InventorySection = () => {
             const isLow = item.status !== 'normal';
             
             return (
-              <Card key={item.id} className="relative overflow-hidden bg-white dark:bg-slate-800/80 border-0 rounded-[2rem] shadow-sm hover:shadow-2xl transition-all duration-500 ease-out group hover:-translate-y-2 dark:backdrop-blur-xl border border-slate-100 dark:border-slate-700">
+              <Card 
+                key={item.id} 
+                className="relative overflow-hidden bg-white dark:bg-slate-800/80 border-0 rounded-[2rem] shadow-sm hover:shadow-2xl transition-all duration-500 ease-out group hover:-translate-y-2 dark:backdrop-blur-xl border border-slate-100 dark:border-slate-700 cursor-pointer"
+                onClick={(e) => {
+                  const target = e.target as HTMLElement;
+                  if (target.closest('button')) return;
+                  handleOpenDetail(item);
+                }}
+              >
                 {/* Status Indicator Bar */}
                 <div className={`absolute top-0 left-0 w-full h-1.5 ${isLow ? 'bg-amber-500' : 'bg-emerald-500'}`} />
                 
@@ -746,6 +763,85 @@ export const InventorySection = () => {
               onClick={handleDeleteItem}
             >
               Sí, eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Detalle */}
+      <Dialog 
+        open={isDetailModalOpen} 
+        onOpenChange={setIsDetailModalOpen}
+      >
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Beaker className="h-5 w-5 text-pink-500" />
+              {selectedItem?.name}
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedItem && (
+            <div className="space-y-6">
+
+              {/* Datos principales */}
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: "Certificado", value: selectedItem.certificate },
+                  { label: "Stock actual", value: selectedItem.currentStock >= 1000
+                    ? `${(selectedItem.currentStock/1000).toLocaleString()} kg`
+                    : `${selectedItem.currentStock.toLocaleString()} g` },
+                  { label: "Stock mínimo", value: `${selectedItem.minStock/1000} kg` },
+                  { label: "Estado", value: 
+                    selectedItem.status === 'normal' ? 'Normal' :
+                    selectedItem.status === 'low' ? 'Stock bajo' : 'Crítico' },
+                  { label: "Rack", value: selectedItem.rack },
+                  { label: "Lugar", value: selectedItem.place },
+                  { label: "Nivel", value: selectedItem.level },
+                  { label: "Ubicación", value: selectedItem.location },
+                ].map(({ label, value }) => (
+                  <div key={label}
+                    className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-800">
+                    <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">
+                      {label}
+                    </p>
+                    <p className="text-sm font-semibold text-slate-700 dark:text-white">
+                      {value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+
+
+              {/* Mapa de ubicación */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-pink-500" />
+                  <span className="text-sm font-semibold text-slate-700 dark:text-white">
+                    Ubicación en Planta
+                  </span>
+                </div>
+                <MapaUbicacionRacks
+                  rack={parseInt(selectedItem.rack) || 0}
+                  lugarStr={selectedItem.place || ''}
+                  nivel={parseInt(selectedItem.level) || 0}
+                  nombreInsumo={selectedItem.name}
+                />
+                <p className="text-xs text-slate-400">
+                  Rack 1 pegado al muro (derecha), Rack 6 a la izquierda.
+                </p>
+              </div>
+
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsDetailModalOpen(false)}
+            >
+              Cerrar
             </Button>
           </DialogFooter>
         </DialogContent>
