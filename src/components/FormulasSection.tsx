@@ -84,6 +84,7 @@ export const FormulasSection = ({
     lot: "",
     name: "",
     batchSize: "",
+    batchUnit: "kg",
     date: new Date().toLocaleDateString('en-CA'), // Inicializar con la fecha de hoy en formato local YYYY-MM-DD
     status: "available",
     type: "stock",
@@ -398,9 +399,13 @@ export const FormulasSection = ({
       // Uso Interno queda en planta (Florencio Varela), el resto va a Villa Martelli
       const autoDestination = newFormula.type === 'uso_interno' ? 'Florencio Varela' : 'Villa Martelli';
       
+      const batchSizeInKg = newFormula.batchUnit === 'g'
+        ? parseFloat(newFormula.batchSize) / 1000
+        : parseFloat(newFormula.batchSize);
+
       const formulaData = {
         name: newFormula.name,
-        batchSize: parseInt(newFormula.batchSize),
+        batchSize: batchSizeInKg,
         destination: autoDestination,
         date: newFormula.date,
         type: newFormula.type === 'cliente' ? 'client' : newFormula.type === 'uso_interno' ? 'stock' : 'stock',
@@ -413,7 +418,7 @@ export const FormulasSection = ({
         })) : [],
         id: newFormula.lot, // Usar el lote como ID (se usará como lote_code en el servicio)
         lote_code: newFormula.lot, // Pasar explícitamente el lote_code
-        stock_actual: parseInt(newFormula.batchSize) // Stock inicial igual a la producción
+        stock_actual: batchSizeInKg // Stock inicial igual a la producción (ya convertido a kg)
       };
 
       await createFunction(formulaData);
@@ -437,6 +442,7 @@ export const FormulasSection = ({
         lot: "",
         name: "",
         batchSize: "",
+        batchUnit: "kg",
         date: new Date().toLocaleDateString('en-CA'),
         status: "available",
         type: "stock",
@@ -1231,15 +1237,40 @@ export const FormulasSection = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="batchSize">Cantidad en Kilogramos</Label>
-                <Input
-                  id="batchSize"
-                  type="number"
-                  value={newFormula.batchSize}
-                  onChange={(e) => handleInputChange("batchSize", e.target.value)}
-                  placeholder="50"
-                  required
-                />
+                <Label htmlFor="batchSize">Cantidad</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="batchSize"
+                    type="number"
+                    step="0.001"
+                    min="0"
+                    value={newFormula.batchSize}
+                    onChange={(e) => handleInputChange("batchSize", e.target.value)}
+                    placeholder={newFormula.batchUnit === 'g' ? "500" : "0.5"}
+                    className="flex-1"
+                    required
+                  />
+                  <Select
+                    value={newFormula.batchUnit}
+                    onValueChange={(value) => handleInputChange("batchUnit", value)}
+                  >
+                    <SelectTrigger className="w-24">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="kg">kg</SelectItem>
+                      <SelectItem value="g">g</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {newFormula.batchSize && (
+                  <p className="text-xs text-muted-foreground">
+                    equivale a {newFormula.batchUnit === 'g'
+                      ? `${(parseFloat(newFormula.batchSize) / 1000).toFixed(3)} kg`
+                      : `${(parseFloat(newFormula.batchSize) * 1000).toFixed(0)} g`
+                    }
+                  </p>
+                )}
               </div>
               
               <div className="space-y-2">
