@@ -153,6 +153,7 @@ Lógica en `src/hooks/`:
 - [x] Texto de navegación "Producción" renombrado a **"ENVIOS"**.
 - [x] Tab "Remito Villa Martelli" renombrado a **"Envios a Villa Martelli"**.
 - [x] Botón y modal de remito oficial renombrados: "Generar Remito" → **"GENERAR ENVIO"**, título → **"ENVIO DE PRODUCCION VILLA MARTELLI"**.
+- [x] Mapa interactivo de ubicaciones de materiales en planta (SVG dinámico) en el Detalle de Inventario.
 
 ## 11. FEATURES PENDIENTES O EN PROGRESO
 - [ ] Optimización de `DashboardMetrics.tsx` (>1500 líneas — candidato a refactor modular).
@@ -186,6 +187,7 @@ Lógica en `src/hooks/`:
 - **Autenticación Serverless (Mar 2026):** Migración del login a `/api/login` (función Vercel) con `service_role` para bypassear RLS. Requiere `vercel dev` en lugar de `npm run dev`.
 - **Vista Previa A4 con Portal (Mar 2026):** `VistaPreviaPlantaVarela.tsx` con márgenes A4 exactos (8cm top, 6cm bottom), fecha a 5cm, dirección de empresa en esquina superior derecha fija, sin bordes de tabla.
 - **Ordenamiento por Lote (Mar 2026):** ASC global en UI, PDF y hooks sin modificar la BD.
+- **Mapa Interactivo y Limpieza CAS (Abr 2026):** Creación del componente `MapaUbicacionRacks.tsx` renderizando un mapa vectorial SVG puro, dinámico y estético (fondos claros, tooltips interactivos con X/Y y puntos rojos expansivos) dentro del Modal de detalle de `InventorySection.tsx`. Se removió por completo el input y visor de estructura química de PUBCHEM (vía Número CAS) para enfocar la herramienta en logística de almacén. Implementación del script `dev.bat` para evitar errores `EADDRINUSE` con Vercel/Node en Windows.
 
 ---
-*Última actualización: 29 de Marzo de 2026*
+*Última actualización: 12 de Abril de 2026*

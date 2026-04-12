@@ -773,66 +773,19 @@ export const InventorySection = () => {
         open={isDetailModalOpen} 
         onOpenChange={setIsDetailModalOpen}
       >
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Beaker className="h-5 w-5 text-pink-500" />
-              {selectedItem?.name}
-            </DialogTitle>
+        <DialogContent className="max-w-6xl border-none bg-transparent shadow-none p-0 overflow-visible">
+          <DialogHeader className="sr-only">
+            <DialogTitle>{selectedItem?.name}</DialogTitle>
           </DialogHeader>
 
           {selectedItem && (
-            <div className="space-y-6">
-
-              {/* Datos principales */}
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { label: "Certificado", value: selectedItem.certificate },
-                  { label: "Stock actual", value: selectedItem.currentStock >= 1000
-                    ? `${(selectedItem.currentStock/1000).toLocaleString()} kg`
-                    : `${selectedItem.currentStock.toLocaleString()} g` },
-                  { label: "Stock mínimo", value: `${selectedItem.minStock/1000} kg` },
-                  { label: "Estado", value: 
-                    selectedItem.status === 'normal' ? 'Normal' :
-                    selectedItem.status === 'low' ? 'Stock bajo' : 'Crítico' },
-                  { label: "Rack", value: selectedItem.rack },
-                  { label: "Lugar", value: selectedItem.place },
-                  { label: "Nivel", value: selectedItem.level },
-                  { label: "Ubicación", value: selectedItem.location },
-                ].map(({ label, value }) => (
-                  <div key={label}
-                    className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-800">
-                    <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">
-                      {label}
-                    </p>
-                    <p className="text-sm font-semibold text-slate-700 dark:text-white">
-                      {value}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-
-
-              {/* Mapa de ubicación */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-pink-500" />
-                  <span className="text-sm font-semibold text-slate-700 dark:text-white">
-                    Ubicación en Planta
-                  </span>
-                </div>
-                <MapaUbicacionRacks
-                  rack={parseInt(selectedItem.rack) || 0}
-                  lugarStr={selectedItem.place || ''}
-                  nivel={parseInt(selectedItem.level) || 0}
-                  nombreInsumo={selectedItem.name}
-                />
-                <p className="text-xs text-slate-400">
-                  Rack 1 pegado al muro (derecha), Rack 6 a la izquierda.
-                </p>
-              </div>
-
+            <div className="w-full">
+              <MapaUbicacionRacks
+                rack={parseInt(selectedItem.rack) || 0}
+                lugarStr={selectedItem.place || ''}
+                nivel={parseInt(selectedItem.level) || 0}
+                nombreInsumo={selectedItem.name}
+              />
             </div>
           )}
 
