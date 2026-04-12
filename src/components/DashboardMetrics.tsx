@@ -69,7 +69,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction, invent
   const [isExportingViaje, setIsExportingViaje] = useState(false);
   const [isPreviewingViaje, setIsPreviewingViaje] = useState(false);
   const { user } = useAuth();
-  const canEdit = user?.role === 'admin' || user?.role === 'superadmin' || user?.user_name === 'jose';
+  const canEdit = user?.role === 'admin' || user?.role === 'superadmin';
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingProducto, setEditingProducto] = useState<Producto | null>(null);
   const [editForm, setEditForm] = useState({

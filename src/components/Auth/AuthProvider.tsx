@@ -36,9 +36,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     // Verificar si hay un usuario guardado en localStorage
-    console.log('🔍 AuthProvider: Verificando localStorage...');
+    // Verificar si hay un usuario guardado en localStorage
     const savedUser = localStorage.getItem('user');
-    console.log('🔍 AuthProvider: Usuario guardado:', savedUser);
+    
     
     if (savedUser) {
       try {
@@ -57,14 +57,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.removeItem('user');
       }
     } else {
-      console.log('ℹ️ AuthProvider: No hay usuario guardado en localStorage');
+    // No actions needed
     }
     setLoading(false);
   }, []);
 
   const signIn = async (username: string, password: string) => {
     try {
-      console.log('🔐 AuthProvider: Iniciando signIn para usuario mediante Backend Serverless:', username);
+      
       
       const response = await fetch('/api/login', {
         method: 'POST',
@@ -81,7 +81,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return { error: result.error || 'Usuario o contraseña incorrectos' };
       }
 
-      console.log('✅ AuthProvider: Login server-side exitoso, guardando info completa...');
+      
       
       const userDataComplete = {
         id: result.userData.id,
@@ -97,7 +97,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       };
       localStorage.setItem('user', JSON.stringify(sessionData));
       
-      console.log('✅ AuthProvider: Usuario guardado en localStorage y estado');
+      
       
       return { error: null };
     } catch (error) {

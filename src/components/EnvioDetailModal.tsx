@@ -38,7 +38,7 @@ export const EnvioDetailModal = ({
   if (!envio) return null;
 
   // Verificar si el usuario es administrador
-  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin' || user?.user_name === 'jose';
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
 
   const handleEditRemito = (remito: EnvioConRemitos['remitos'][0]) => {
     setEditingRemito(remito as unknown as RemitoWithItems);

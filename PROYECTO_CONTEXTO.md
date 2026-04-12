@@ -45,7 +45,6 @@ El sistema opera a través de 3 roles principales gestionados en Supabase:
 - **`admin` / `superadmin`:** Control total. Puede crear/editar usuarios, alterar datos maestros, visualizar dashboards completos y hacer operaciones críticas o destructivas. También pueden generar remitos y eliminar lotes.
 - **`user`:** Operador logueado. Puede registrar producciones, crear remitos, ver inventario y actualizar progreso diario. No puede gestionar usuarios.
 - **`consulta`:** Perfil de solo lectura. Permite ver el estado en tiempo real, dashboards y reportes, pero no puede ejecutar operaciones de escritura ni borrar datos. **No ve la sección ENVIOS.**
-- **Usuario especial:** El usuario con `user_name === 'jose'` tiene permisos de edición/eliminación equivalentes a admin, independientemente de su rol formal.
 - **Dónde se validan:**
   - **Frontend:** Evaluando `user.role` y `user.user_name` desde el hook `useAuth()`.
   - **Backend (Supabase):** Mediante políticas RLS y funciones RPC de base de datos.
@@ -122,7 +121,7 @@ Lógica en `src/hooks/`:
 ## 9. AUTENTICACIÓN SERVERLESS Y SEGURIDAD
 - **Flujo:** `LoginForm.tsx` → POST a `/api/login` → función Vercel con `supabaseAdmin` (`service_role`) → consulta tabla `users` → responde con datos del usuario.
 - **Seguridad Backend:** El endpoint `/api/login` está protegido con un **Rate Limit** en memoria (10 intentos / 15 mins por IP). Los endpoints serverless `/api/*` poseen política restrictiva de **CORS** (`Vary: Origin`) permitiendo solo los dominios explícitos locales y el de Vercel de producción.
-- **Contraseñas Seguras (Bcrypt):** Las contraseñas en la tabla `users` están hasheadas usando `bcryptjs`. La función de login soporta fallback automático para texto plano de cara a transiciones suaves. *(Migrado via `scripts/hash-passwords.mjs`)*.
+- **Contraseñas Seguras (Bcrypt):** Las contraseñas en la tabla `users` están hasheadas usando `bcryptjs`. Todo inicio de sesión requiere validaciones seguras de hashes `$2b$` o `$2a$` omitiendo definitivamente el login por texto plano. *(Migrado via `scripts/hash-passwords.mjs`)*.
 - **Manejo de Sesión:** `AuthProvider.tsx` gestiona las sesiones en el frontend usando Context y persistencia en `localStorage`. Se agregó una expiración forzada de **12 horas**, validada tanto al inicio como en almacenamiento.
 - **Por qué Serverless:** La tabla `users` tiene RLS activo. El `anon key` público no puede leerla. La clave `service_role` nunca se expone al browser — solo vive en las variables de entorno del servidor Vercel.
 - **Variables de Entorno requeridas (`.env`):**
@@ -175,6 +174,7 @@ Lógica en `src/hooks/`:
 - Las tablas activas (`productos`, `inventory`) contienen registros actuales valiosos manejados por sincronía de Channels Postgres. Alterarlas manualmente sin pasar por el ORM/Hooks puede ocasionar colisiones on-sync en la UI.
 
 ## 14. HISTORIAL DE CAMBIOS RECIENTES
+- **Refuerzo Estricto de Permisos y Auth (Abr 2026):** Eliminación completa del fallback para contraseñas en texto plano imponiendo la exclusividad de validación bcrypt en el endpoint login. Remoción de permisos administrativos quemados en código (hardcode como el usuario `jose`), delegando toda la estructura a la matriz formal de roles BD. Ocultamiento de información y payloads expuestos en la consola por React.
 - **Optimización de Rendimiento y Seguridad (Mar 2026):** Centralización de hooks de inventario y productos en `Index.tsx` resultando en una reducción masiva de renders y duplicidad de WS/Supabase Queries. Paralelización de obtención de ingredientes con `Promise.all()`. Eliminación de hooks de Polling de respaldo y purga de logs informativos.
 - **Refuerzos Backend/Auth (Mar 2026):** Migración completa a hashes `bcryptjs` en la base de datos para usuarios. Implementación de Rate Limiting por IP para protección contra ataques de fuerza bruta en `api/login.ts` y delimitación rigurosa de dominios de CORS. Cierre forzado de sesión a las 12h embebido en `AuthProvider`.
 - **Fix Red NodeJS / Vercel Dev (Mar 2026):** Se removió el forzado de puertos e IPv6 `::` en `vite.config.ts`, solucionando los cuelgues totales (`ECONNRESET`) del CLI de Vercel en Windows debido a Timeouts y desincronización del proxy HMR de Vite.

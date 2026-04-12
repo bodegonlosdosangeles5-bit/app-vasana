@@ -22,6 +22,7 @@ import { ProductoService } from "@/services/productoService";
 import { ActivityLogService } from "@/services/activityLogService";
 
 import { useAuth } from "@/components/Auth/AuthProvider";
+import { toast } from "sonner";
 
 interface FormulasSectionProps {
   formulas?: any[];
@@ -49,7 +50,7 @@ export const FormulasSection = ({
   error: propError = null
 }: FormulasSectionProps) => {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin' || user?.user_name === 'jose';
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
   const canCargarProducto = isAdmin || user?.role === 'user';
 
   // Usar directamente los datos de los props (instancia centralizada en Index.tsx)
@@ -239,7 +240,7 @@ export const FormulasSection = ({
   const handlePreviewPDF = () => {
     const lotes = getIncompleteFormulas();
     if (lotes.length === 0) {
-      alert("No hay lotes incompletos para previsualizar.");
+      toast.info("No hay lotes incompletos para previsualizar.");
       return;
     }
     setIsPreviewingPDF(true);
@@ -256,7 +257,7 @@ export const FormulasSection = ({
   const handleExportPDF = () => {
     const lotes2 = getIncompleteFormulas();
     if (lotes2.length === 0) {
-      alert("No hay lotes incompletos para exportar.");
+      toast.info("No hay lotes incompletos para exportar.");
       return;
     }
     setIsExportingPDF(true);

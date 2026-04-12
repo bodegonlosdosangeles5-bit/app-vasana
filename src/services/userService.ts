@@ -220,7 +220,7 @@ export class UserService {
       }
       
       const user = JSON.parse(userData);
-      return user.role === 'admin' || user.role === 'superadmin' || user.user_name === 'jose';
+      return user.role === 'admin' || user.role === 'superadmin';
     } catch (error) {
       console.error('Error en isCurrentUserAdmin:', error);
       return false;

@@ -12,9 +12,10 @@ import { useRealtimeInventory } from "@/hooks/useRealtimeInventory";
 import { InventoryItem } from "@/services/inventoryService";
 import { useAuth } from "@/components/Auth/AuthProvider";
 import { ActivityLogService } from "@/services/activityLogService";
+import { toast } from "sonner";
 export const InventorySection = () => {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin' || user?.user_name === 'jose';
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
   const isSuperAdmin = user?.role === 'superadmin';
   const canNuevoInsumo = isAdmin || user?.role === 'user' || user?.role === 'consulta';
   
@@ -135,7 +136,7 @@ export const InventorySection = () => {
 
   const handleSaveEdit = async () => {
     if (!isAdmin) {
-      alert('No tienes permisos para realizar esta acción');
+      toast.error('No tienes permisos para realizar esta acción');
       return;
     }
     if (editingItem) {
@@ -200,32 +201,32 @@ export const InventorySection = () => {
 
   const handleSaveNewItem = async () => {
     if (!canNuevoInsumo) {
-      alert('No tienes permisos para realizar esta acción');
+      toast.error('No tienes permisos para realizar esta acción');
       return;
     }
     // Validar campos requeridos
     if (!newItem.name.trim()) {
-      alert('Por favor ingresa el nombre de la materia prima');
+      toast.info('Por favor ingresa el nombre de la materia prima');
       return;
     }
     if (!newItem.certificate.trim()) {
-      alert('Por favor ingresa el número de certificado');
+      toast.info('Por favor ingresa el número de certificado');
       return;
     }
     if (!newItem.rack.trim()) {
-      alert('Por favor ingresa el rack');
+      toast.info('Por favor ingresa el rack');
       return;
     }
     if (!newItem.place.trim()) {
-      alert('Por favor ingresa el lugar');
+      toast.info('Por favor ingresa el lugar');
       return;
     }
     if (!newItem.level.trim()) {
-      alert('Por favor ingresa el nivel');
+      toast.info('Por favor ingresa el nivel');
       return;
     }
     if (!newItem.currentStock || parseFloat(newItem.currentStock) <= 0) {
-      alert('Por favor ingresa una cantidad válida');
+      toast.info('Por favor ingresa una cantidad válida');
       return;
     }
 
@@ -283,11 +284,11 @@ export const InventorySection = () => {
           status: "normal"
         });
       } else {
-        alert('Error al crear la materia prima. Por favor intenta nuevamente.');
+        toast.error('Error al crear la materia prima. Por favor intenta nuevamente.');
       }
     } catch (error) {
       console.error('❌ Error creando materia prima:', error);
-      alert(`Error al crear la materia prima: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      toast.error(`Error al crear la materia prima: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     } finally {
       setIsCreating(false);
     }

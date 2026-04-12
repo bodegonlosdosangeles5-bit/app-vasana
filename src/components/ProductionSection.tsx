@@ -32,7 +32,7 @@ interface ProductionSectionProps {
 
 export const ProductionSection = ({ formulas = [], updateProducto: updateProductoProp, deleteProducto: deleteProductoProp }: ProductionSectionProps) => {
   const { user } = useAuth();
-  const canEdit = user?.role === 'admin' || user?.role === 'superadmin' || user?.user_name === 'jose';
+  const canEdit = user?.role === 'admin' || user?.role === 'superadmin';
 
   // Usar los datos de los props (instancia centralizada en Index.tsx)
   const formulasData = formulas;

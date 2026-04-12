@@ -83,17 +83,12 @@ export default async function handler(req: any, res: any) {
     // 2) Validar la contraseña.
     let isAuthenticated = false;
 
-    // Comparar con bcrypt (soporta tanto hash como texto plano
-    // por si alguna contraseña no fue migrada)
-    const isHashed = userRaw.password?.startsWith('$2b$') ||
-                     userRaw.password?.startsWith('$2a$');
-
-    if (isHashed) {
-      isAuthenticated = await bcrypt.compare(password, userRaw.password);
-    } else {
-      // Fallback para contraseñas no migradas aún
-      isAuthenticated = userRaw.password === password;
+    // Solo bcrypt — todas las contraseñas están hasheadas en producción
+    if (!userRaw.password?.startsWith('$2b$') && !userRaw.password?.startsWith('$2a$')) {
+      console.error('SEGURIDAD: Contraseña sin hashear detectada para usuario:', username);
+      return res.status(500).json({ success: false, error: 'Error de configuración. Contactá al administrador.' });
     }
+    isAuthenticated = await bcrypt.compare(password, userRaw.password);
 
     if (!isAuthenticated) {
       return res.status(401).json({ success: false, error: 'Usuario o contraseña incorrectos' });
