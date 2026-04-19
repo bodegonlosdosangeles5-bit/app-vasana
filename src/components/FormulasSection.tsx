@@ -105,6 +105,7 @@ export const FormulasSection = ({
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [isPreviewingPDF, setIsPreviewingPDF] = useState(false);
+  const [isSubmittingFormula, setIsSubmittingFormula] = useState(false);
 
   // =============================================
   // Datos de fórmulas (definido antes del bloque PDF)
@@ -388,13 +389,29 @@ export const FormulasSection = ({
   const handleLoadFormula = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canCargarProducto) return;
-    
+    if (isSubmittingFormula) return; // Bloquear doble submit
+
     const createFunction = createProducto || createFormula;
     if (!createFunction) {
       console.error('No hay función createProducto disponible');
       return;
     }
 
+    // Validar duplicado exacto: mismo lote Y mismo nombre
+    const duplicadoExacto = formulasData.some(f =>
+      f.lote_code?.toString().trim() === newFormula.lot?.toString().trim() &&
+      f.name?.trim().toLowerCase() === newFormula.name?.trim().toLowerCase()
+    );
+
+    if (duplicadoExacto) {
+      toast.error(
+        `Ya existe un producto con el lote ${newFormula.lot} y el nombre "${newFormula.name}". ` +
+        `No se puede cargar dos veces el mismo producto.`
+      );
+      return;
+    }
+
+    setIsSubmittingFormula(true);
     try {
       // Uso Interno queda en planta (Florencio Varela), el resto va a Villa Martelli
       const autoDestination = newFormula.type === 'uso_interno' ? 'Florencio Varela' : 'Villa Martelli';
@@ -469,6 +486,9 @@ export const FormulasSection = ({
       
     } catch (error) {
       console.error('Error creating formula:', error);
+      toast.error('Error al cargar el producto. Intentá de nuevo.');
+    } finally {
+      setIsSubmittingFormula(false);
     }
   };
 
@@ -1442,11 +1462,21 @@ export const FormulasSection = ({
                 Cancelar
               </Button>
               <Button 
-                type="submit" 
-                className="bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto order-1 sm:order-2"
+                type="submit"
+                disabled={isSubmittingFormula}
+                className="bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto order-1 sm:order-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Upload className="h-4 w-4 mr-2" />
-                Cargar Producto
+                {isSubmittingFormula ? (
+                  <>
+                    <div className="animate-spin h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full" />
+                    Cargando...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Cargar Producto
+                  </>
+                )}
               </Button>
             </DialogFooter>
           </form>

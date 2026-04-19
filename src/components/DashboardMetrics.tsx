@@ -275,7 +275,22 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction, invent
 
   // Calcular materias primas sin stock (cantidad <= 0)
   const outOfStockItems = useMemo(() => {
-    return inventoryItems.filter(item => (item.currentStock || 0) <= 0);
+    // Agrupar por nombre y sumar stock total
+    const stockPorNombre = inventoryItems.reduce<
+      Record<string, { item: InventoryItem; totalStock: number }>
+    >((acc, item) => {
+      const nombre = item.name.trim().toLowerCase();
+      if (!acc[nombre]) {
+        acc[nombre] = { item, totalStock: 0 };
+      }
+      acc[nombre].totalStock += (item.currentStock || 0);
+      return acc;
+    }, {});
+
+    // Solo los grupos donde el stock TOTAL es 0
+    return Object.values(stockPorNombre)
+      .filter(({ totalStock }) => totalStock <= 0)
+      .map(({ item }) => item);
   }, [inventoryItems]);
 
   // Totales para progresos proporcionales

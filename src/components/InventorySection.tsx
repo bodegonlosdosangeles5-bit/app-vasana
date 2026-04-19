@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Search, Package, MapPin, AlertTriangle, Edit, Save, X, Plus, Trash2, Beaker } from "lucide-react";
 import MapaUbicacionRacks from './MapaUbicacionRacks';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -395,7 +395,7 @@ export const InventorySection = () => {
             return (
               <Card 
                 key={item.id} 
-                className="relative overflow-hidden bg-white dark:bg-slate-800/80 border-0 rounded-[2rem] shadow-sm hover:shadow-2xl transition-all duration-500 ease-out group hover:-translate-y-2 dark:backdrop-blur-xl border border-slate-100 dark:border-slate-700 cursor-pointer"
+                className={`relative overflow-hidden bg-white dark:bg-slate-800/80 rounded-[2rem] shadow-sm hover:shadow-2xl transition-all duration-500 ease-out group hover:-translate-y-2 dark:backdrop-blur-xl border ${(item.currentStock || 0) <= 0 ? 'border-red-300 dark:border-red-700' : 'border-slate-100 dark:border-slate-700'} cursor-pointer`}
                 onClick={(e) => {
                   const target = e.target as HTMLElement;
                   if (target.closest('button')) return;
@@ -410,6 +410,11 @@ export const InventorySection = () => {
                     <div className="min-w-0 flex-1">
                       <h3 className="text-xl font-bold text-slate-800 dark:text-white truncate tracking-tight group-hover:text-pink-500 transition-colors">
                         {item.name}
+                        {(item.currentStock || 0) <= 0 && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 mt-1 ml-2">
+                            ● AGOTADO
+                          </span>
+                        )}
                       </h3>
                       <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">
                         Cert: {item.certificate}
@@ -450,15 +455,26 @@ export const InventorySection = () => {
                           <Package className="h-4 w-4 text-pink-500" />
                           <span className="text-sm font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Existencias</span>
                         </div>
-                        <span className={`text-lg font-black ${isLow ? 'text-amber-500' : 'text-slate-800 dark:text-white'}`}>
-                          {item.currentStock >= 1000 ? `${(item.currentStock / 1000).toLocaleString()} kg` : `${item.currentStock.toLocaleString()} g`}
-                        </span>
+                        <div className="flex flex-col items-end">
+                          <span className={`text-lg font-black ${(item.currentStock || 0) <= 0 ? 'text-red-600 dark:text-red-400' : isLow ? 'text-amber-500' : 'text-slate-800 dark:text-white'}`}>
+                            {(item.currentStock || 0) <= 0
+                              ? '0 kg'
+                              : item.currentStock >= 1000 
+                              ? `${(item.currentStock / 1000).toLocaleString()} kg` 
+                              : `${item.currentStock.toLocaleString()} g`}
+                          </span>
+                          {(item.currentStock || 0) <= 0 && (
+                            <p className="text-xs text-red-500 font-bold mt-0.5">
+                              Pendiente de reabastecimiento
+                            </p>
+                          )}
+                        </div>
                       </div>
                       
                       <div className="space-y-1.5">
                         <div className="h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                           <div 
-                            className={`h-full transition-all duration-1000 ease-out rounded-full ${isLow ? 'bg-amber-500' : 'bg-pink-500'}`}
+                            className={`h-full transition-all duration-1000 ease-out rounded-full ${(item.currentStock || 0) <= 0 ? 'bg-red-500' : isLow ? 'bg-amber-500' : 'bg-pink-500'}`}
                             style={{ width: `${stockPercent || 50}%` }}
                           />
                         </div>
