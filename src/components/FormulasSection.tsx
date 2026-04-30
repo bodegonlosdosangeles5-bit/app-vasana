@@ -52,6 +52,8 @@ export const FormulasSection = ({
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
   const canCargarProducto = isAdmin || user?.role === 'user';
+  const canEditProducto = isAdmin || user?.user_name === 'varela';
+  const canRemoveFaltante = isAdmin || user?.user_name === 'varela';
 
   // Usar directamente los datos de los props (instancia centralizada en Index.tsx)
   const formulasData = formulas;
@@ -216,23 +218,163 @@ export const FormulasSection = ({
       }
     });
 
-    // ─── FIRMA / CIERRE ──────────────────────────────────────
-    const finalY = (pdf as any).lastAutoTable?.finalY || 52;
-    let cursorY = finalY + 12;
+    // ─── PÁGINA 2: RESUMEN DE MATERIAS PRIMAS ──────────────
+    pdf.addPage();
 
-    if (cursorY + 20 > pageHeight - 20) {
-      pdf.addPage();
-      cursorY = 20;
-    }
-    pdf.setDrawColor(200, 200, 200);
-    pdf.setLineWidth(0.3);
-    pdf.line(20, cursorY, pageWidth - 20, cursorY);
-    cursorY += 6;
-
+    // Header igual al de la página 1
+    pdf.setFillColor(2, 63, 134);
+    pdf.rect(0, 0, pageWidth, 28, 'F');
+    pdf.setTextColor(247, 166, 0);
+    pdf.setFontSize(16);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('CONTROL DE PRODUCCIÓN', 14, 11);
+    pdf.setTextColor(200, 220, 255);
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text('Control de Producción — Planta Florencio Varela', 14, 18);
+    pdf.setTextColor(180, 200, 235);
     pdf.setFontSize(8);
-    pdf.setFont("helvetica", "italic");
-    pdf.setTextColor(140, 140, 140);
-    pdf.text("Este documento fue generado automáticamente por el Sistema de Control de Producción.", 20, cursorY);
+    pdf.text(`Impreso: ${fechaImpresion}`, pageWidth - 14, 18, { align: 'right' });
+
+    // Título de la página 2
+    pdf.setTextColor(30, 30, 30);
+    pdf.setFontSize(13);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Resumen de Materias Primas Faltantes', 14, 40);
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(100, 100, 100);
+    pdf.text('Consolidado de todos los lotes incompletos', 14, 47);
+
+    // Consolidar materias primas faltantes
+    // Unificar unidades: todo a gramos para sumar,
+    // luego mostrar en kg si >= 1000g
+    const resumenMap: Record<string, {
+      totalGramos: number;
+      cantidadLotes: number;
+      numerosLote: string[];
+    }> = {};
+
+    // Deduplicar lotes por número de lote:
+    // Si hay dos filas con el mismo lote_code,
+    // usar solo la primera que aparezca
+    const lotesDeduplicados = lotes.filter(
+      (formula, index, self) =>
+        index === self.findIndex(
+          f => (f.lote_code || f.id)?.toString().trim() ===
+               (formula.lote_code || formula.id)?.toString().trim()
+        )
+    );
+
+    lotesDeduplicados.forEach(formula => {
+      if (!formula.missingIngredients?.length) return;
+      formula.missingIngredients.forEach((ing: { name: string; required: number; unit: string }) => {
+        const nombre = ing.name.trim().toUpperCase();
+        // Convertir todo a gramos
+        let gramos = 0;
+        if (ing.unit === 'kg') {
+          gramos = ing.required * 1000;
+        } else if (ing.unit === 'g') {
+          gramos = ing.required;
+        } else if (ing.unit === 'mg') {
+          gramos = ing.required / 1000;
+        } else {
+          // Si la unidad no es reconocida, asumir gramos
+          gramos = ing.required;
+        }
+
+        const numeroLote = (formula.lote_code || formula.id)
+          ?.toString().trim() || '-';
+
+        if (!resumenMap[nombre]) {
+          resumenMap[nombre] = {
+            totalGramos: 0,
+            cantidadLotes: 0,
+            numerosLote: []
+          };
+        }
+        resumenMap[nombre].totalGramos += gramos;
+        resumenMap[nombre].cantidadLotes += 1;
+        if (!resumenMap[nombre].numerosLote.includes(numeroLote)) {
+          resumenMap[nombre].numerosLote.push(numeroLote);
+        }
+      });
+    });
+
+    // Ordenar por cantidad de lotes descendente
+    const resumenRows = Object.entries(resumenMap)
+      .sort((a, b) => b[1].cantidadLotes - a[1].cantidadLotes)
+      .map(([nombre, datos], index) => {
+        // Mostrar en kg si >= 1000g, sino en g
+        const totalMostrado = datos.totalGramos >= 1000
+          ? `${(datos.totalGramos / 1000).toLocaleString('es-AR', {
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 2
+            })} kg`
+          : `${datos.totalGramos.toLocaleString('es-AR', {
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 1
+            })} g`;
+
+        return [
+          (index + 1).toString(),
+          nombre,
+          totalMostrado,
+          datos.numerosLote.join(', ')
+        ];
+      });
+
+    autoTable(pdf, {
+      startY: 52,
+      head: [['#', 'Materia Prima', 'Total Faltante', 'Números de Lote']],
+      body: resumenRows,
+      theme: 'striped',
+      styles: {
+        fontSize: 8,
+        cellPadding: 4,
+        overflow: 'linebreak'
+      },
+      headStyles: {
+        fillColor: [2, 63, 134],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 8.5,
+        halign: 'center',
+        valign: 'middle'
+      },
+      bodyStyles: {
+        textColor: [40, 40, 40],
+        valign: 'middle'
+      },
+      alternateRowStyles: {
+        fillColor: [240, 246, 255]
+      },
+      columnStyles: {
+        0: { cellWidth: 10, halign: 'center' },
+        1: { cellWidth: 90 },
+        2: { cellWidth: 35, halign: 'center' },
+        3: { cellWidth: 45, halign: 'center' }
+      }
+    });
+
+    // Total al pie de la página 2
+    const finalY2 = (pdf as any).lastAutoTable.finalY + 8;
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(2, 63, 134);
+    pdf.text(
+      `Total de materias primas faltantes distintas: ${resumenRows.length}`,
+      14,
+      finalY2
+    );
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(100, 100, 100);
+    pdf.setFontSize(7.5);
+    pdf.text(
+      'Este documento fue generado automáticamente por el Sistema de Control de Producción.',
+      14,
+      finalY2 + 6
+    );
   };
 
   // Calcular lotes incompletos actuales
@@ -336,7 +478,7 @@ export const FormulasSection = ({
 
   // Función para actualizar automáticamente fórmulas incompletas sin faltantes
   const handleUpdateIncompleteFormulas = async () => {
-    if (!isAdmin) return;
+    if (!canEditProducto) return;
     if (!updateIncompleteFormulasStatus) return;
     
     try {
@@ -414,7 +556,11 @@ export const FormulasSection = ({
     setIsSubmittingFormula(true);
     try {
       // Uso Interno queda en planta (Florencio Varela), el resto va a Villa Martelli
-      const autoDestination = newFormula.type === 'uso_interno' ? 'Florencio Varela' : 'Villa Martelli';
+      const autoDestination = newFormula.type === 'uso_interno'
+        ? 'Florencio Varela'
+        : newFormula.type === 'exportacion'
+        ? 'Exportación'
+        : 'Villa Martelli';
       
       const batchSizeInKg = newFormula.batchUnit === 'g'
         ? parseFloat(newFormula.batchSize) / 1000
@@ -499,7 +645,7 @@ export const FormulasSection = ({
 
   const handleUpdateFormula = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isAdmin) return;
+    if (!canEditProducto) return;
     if (editingFormula) {
       try {
         const success = await updateProducto(editingFormula.id, {
@@ -647,7 +793,7 @@ export const FormulasSection = ({
   };
 
   const handleRemoveIngredient = async (formulaId: string, ingredientName: string) => {
-    if (!isAdmin) return;
+    if (!canRemoveFaltante) return;
     try {
       console.log(`🗑️ Eliminando ingrediente: ${ingredientName} de fórmula: ${formulaId}`);
       
@@ -683,7 +829,13 @@ export const FormulasSection = ({
         if (success) {
           // Si no quedan ingredientes faltantes, cambiar el estado a "available"
           if (remainingIngredients.length === 0 && updateFormula) {
-            await updateFormula(formulaId, { status: 'available' });
+            // Preservar fecha y cliente al completar
+            const formulaActual = formulasData.find(f => f.id === formulaId);
+            await updateFormula(formulaId, {
+              status: 'available',
+              date: formulaActual?.date || new Date().toLocaleDateString('en-CA'),
+              clientName: formulaActual?.clientName || '',
+            });
           }
         }
       } else {
@@ -691,7 +843,13 @@ export const FormulasSection = ({
         const success = await ProductoService.removeMissingIngredient(formulaId, ingredientName);
         if (success) {
           if (remainingIngredients.length === 0) {
-            await ProductoService.updateProducto(formulaId, { status: 'available' });
+            // Preservar fecha y cliente al completar
+            const formulaActual = formulasData.find(f => f.id === formulaId);
+            await ProductoService.updateProducto(formulaId, {
+              status: 'available',
+              date: formulaActual?.date || new Date().toLocaleDateString('en-CA'),
+              clientName: formulaActual?.clientName || '',
+            });
           }
         }
       }
@@ -752,6 +910,7 @@ export const FormulasSection = ({
                   <SelectItem value="all">Todos los destinos</SelectItem>
                   <SelectItem value="Villa Martelli">Villa Martelli</SelectItem>
                   <SelectItem value="Florencio Varela">Florencio Varela / Uso Interno</SelectItem>
+                  <SelectItem value="Exportación">Exportación</SelectItem>
                 </SelectContent>
               </Select>
             )}
@@ -912,7 +1071,7 @@ export const FormulasSection = ({
                                 </span>
                               </div>
                             </div>
-                            {isAdmin && (
+                            {canRemoveFaltante && (
                               <Button
                                 type="button"
                                 variant="destructive"
@@ -970,30 +1129,30 @@ export const FormulasSection = ({
                 )}
 
                 <div className="flex justify-end pt-2 gap-2">
+                  {canEditProducto && (
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => handleEditFormula(formula)}
+                      className="h-9 w-9 text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-900/50"
+                      title="Editar producto"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  )}
                   {isAdmin && (
-                    <>
-                      <Button 
-                        variant="outline" 
-                        size="icon"
-                        onClick={() => handleEditFormula(formula)}
-                        className="h-9 w-9 text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-900/50"
-                        title="Editar producto"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="icon"
-                        onClick={() => {
-                          setProductToDelete(formula.id);
-                          setIsDeleteConfirmOpen(true);
-                        }}
-                        className="h-9 w-9 text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-900/50"
-                        title="Eliminar producto"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </>
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => {
+                        setProductToDelete(formula.id);
+                        setIsDeleteConfirmOpen(true);
+                      }}
+                      className="h-9 w-9 text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-900/50"
+                      title="Eliminar producto"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   )}
                 </div>
               </CardContent>
@@ -1062,6 +1221,7 @@ export const FormulasSection = ({
                     <SelectContent>
                       <SelectItem value="Florencio Varela">Florencio Varela (Uso Interno)</SelectItem>
                       <SelectItem value="Villa Martelli">Villa Martelli (Sucursal)</SelectItem>
+                      <SelectItem value="Exportación">Exportación</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

@@ -1272,7 +1272,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction, invent
 
       {/* Modal de Listado de Producción - Viaje Actual */}
       <Dialog open={isProductionListOpen} onOpenChange={setIsProductionListOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden bg-background border-border text-foreground">
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-hidden overflow-y-auto bg-background border-border text-foreground p-4 sm:p-6">
           <DialogDescription className="sr-only">Métricas de producción</DialogDescription>
           <DialogHeader className="flex flex-col gap-3 border-b border-border pb-4">
             <div className="flex items-center justify-between">
@@ -1329,7 +1329,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction, invent
             </div>
 
             {/* Lista de productos */}
-            <div className="max-h-96 overflow-y-auto">
+            <div className="max-h-[50vh] overflow-y-auto">
               {productosViajeSorted.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   No hay productos fabricados para el viaje actual
