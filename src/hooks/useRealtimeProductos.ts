@@ -22,9 +22,9 @@ export interface Producto {
   ingredients?: Array<{
     name: string;
     required: number;
-    available: number;
     unit: string;
   }>;
+  created_at?: string;
 }
 
 export const useRealtimeProductos = () => {

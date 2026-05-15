@@ -22,6 +22,7 @@ export interface Producto {
     available: number;
     unit: string;
   }>;
+  created_at?: string;
 }
 
 export class ProductoService {
@@ -130,6 +131,7 @@ export class ProductoService {
         date: producto.date || undefined,
         type: producto.type as 'stock' | 'client',
         clientName: producto.client_name || undefined,
+        created_at: producto.created_at,
         missingIngredients: missingByProducto[producto.id] || [],
         ingredients: availableByProducto[producto.id] || []
       }));
@@ -203,7 +205,8 @@ export class ProductoService {
         ...producto,
         id: uniqueId,
         lote_code: loteCode,
-        stock_actual: producto.batchSize
+        stock_actual: producto.batchSize,
+        created_at: data?.created_at || new Date().toISOString()
       };
       
       return result;

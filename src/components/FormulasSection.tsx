@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { 
@@ -9,6 +9,12 @@ import {
   format
 } from "date-fns";
 import { CheckCircle, XCircle, Clock, Beaker, Filter, Edit, Save, X, Plus, Upload, Package, Trash2, AlertCircle, Eye, Download } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -66,6 +72,7 @@ export const FormulasSection = ({
   const deleteProducto = deleteFormula;
   const addMissingIngredientReal = addMissingIngredient;
   const removeMissingIngredientReal = removeMissingIngredient;
+  const [acordeonAbierto, setAcordeonAbierto] = useState<string>("");
   const [selectedFormula, setSelectedFormula] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingFormula, setEditingFormula] = useState<any>(null);
@@ -475,6 +482,26 @@ export const FormulasSection = ({
     const destinationMatch = destinationFilter === "all" || formula.destination === destinationFilter;
     return statusMatch && destinationMatch;
   });
+
+  const productosCargadosHoy = useMemo(() => {
+    const hoy = new Date().toLocaleDateString(
+      'es-AR', { 
+        timeZone: 'America/Argentina/Buenos_Aires' 
+      }
+    );
+    return currentFormulas.filter(f => {
+      // Solo incompletos
+      if (getFormulaStatus(f) !== 'incomplete') 
+        return false;
+      // Verificar si fue cargado hoy
+      if (!f.created_at) return false;
+      const fechaCarga = new Date(f.created_at)
+        .toLocaleDateString('es-AR', { 
+          timeZone: 'America/Argentina/Buenos_Aires' 
+        });
+      return fechaCarga === hoy;
+    });
+  }, [currentFormulas]);
 
   // Función para actualizar automáticamente fórmulas incompletas sin faltantes
   const handleUpdateIncompleteFormulas = async () => {
@@ -953,6 +980,158 @@ export const FormulasSection = ({
           </Button>
         </div>
       )}
+
+      {productosCargadosHoy.length > 0 && (
+    <Accordion
+      type="single"
+      collapsible
+      value={acordeonAbierto}
+      onValueChange={setAcordeonAbierto}
+      className="mb-6 rounded-2xl border-2 
+        border-amber-400 dark:border-amber-500 
+        overflow-hidden"
+    >
+      <AccordionItem value="cargados-hoy" 
+        className="border-0">
+
+        {/* Header como AccordionTrigger */}
+        <AccordionTrigger className="flex items-center 
+          justify-between px-4 py-3 
+          bg-amber-400 dark:bg-amber-500/30 
+          hover:bg-amber-500 dark:hover:bg-amber-500/40
+          hover:no-underline transition-colors
+          [&>svg]:text-amber-900 
+          [&>svg]:dark:text-amber-300">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🔔</span>
+            <span className="font-bold text-amber-900 
+              dark:text-amber-300 text-sm uppercase 
+              tracking-wider">
+              Cargados Hoy
+            </span>
+            <span className="bg-amber-900 
+              dark:bg-amber-400 text-amber-50 
+              dark:text-amber-900 text-xs font-bold 
+              px-2 py-0.5 rounded-full">
+              {productosCargadosHoy.length}
+            </span>
+          </div>
+          <span className="text-xs text-amber-800 
+            dark:text-amber-400 font-medium mr-2">
+            {new Date().toLocaleDateString('es-AR', {
+              timeZone: 'America/Argentina/Buenos_Aires',
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric'
+            })}
+          </span>
+        </AccordionTrigger>
+
+        {/* Contenido desplegable */}
+        <AccordionContent className="bg-amber-50 
+          dark:bg-amber-900/20 pb-0">
+          
+          {/* Lista de productos */}
+          <div className="divide-y divide-amber-200 
+            dark:divide-amber-800">
+            {productosCargadosHoy.map(formula => {
+              const horasCargado = formula.created_at
+                ? Math.floor(
+                    (Date.now() - 
+                      new Date(formula.created_at).getTime()
+                    ) / (1000 * 60 * 60)
+                  )
+                : null;
+              const minutosCargado = formula.created_at
+                ? Math.floor(
+                    (Date.now() - 
+                      new Date(formula.created_at).getTime()
+                    ) / (1000 * 60)
+                  ) % 60
+                : null;
+              const tiempoTexto = horasCargado !== null
+                ? horasCargado === 0
+                  ? `hace ${minutosCargado} min`
+                  : `hace ${horasCargado}h ${minutosCargado}min`
+                : '';
+
+              return (
+                <div key={formula.id}
+                  className="px-4 py-3 flex items-start 
+                    justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center 
+                      gap-2 flex-wrap">
+                      <span className="font-bold text-sm 
+                        text-amber-900 dark:text-amber-200 
+                        truncate">
+                        {formula.name}
+                      </span>
+                      <span className="text-xs 
+                        bg-amber-200 dark:bg-amber-800 
+                        text-amber-800 dark:text-amber-300 
+                        px-2 py-0.5 rounded-full 
+                        font-medium whitespace-nowrap">
+                        Lote {formula.lote_code || formula.id}
+                      </span>
+                    </div>
+                    <div className="mt-1 flex items-center 
+                      gap-3 text-xs text-amber-700 
+                      dark:text-amber-400 flex-wrap">
+                      <span>
+                        ⚗️ {formula.missingIngredients?.length || 0} faltante(s)
+                      </span>
+                      {formula.clientName && (
+                        <span>👤 {formula.clientName}</span>
+                      )}
+                      {tiempoTexto && (
+                        <span>🕐 {tiempoTexto}</span>
+                      )}
+                    </div>
+                    {formula.missingIngredients && 
+                      formula.missingIngredients.length > 0 && (
+                      <div className="mt-1 text-xs 
+                        text-amber-600 dark:text-amber-500">
+                        {formula.missingIngredients
+                          .slice(0, 3)
+                          .map((ing: { 
+                            name: string; 
+                            required: number; 
+                            unit: string 
+                          }) => ing.name)
+                          .join(', ')}
+                        {formula.missingIngredients.length > 3 &&
+                          ` +${formula.missingIngredients.length - 3} más`}
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <span className="text-sm font-bold 
+                      text-amber-900 dark:text-amber-300">
+                      {formula.kilos_fabricados || 
+                       formula.production_kg || formula.batchSize || 0} kg
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Pie */}
+          <div className="px-4 py-2 bg-amber-100 
+            dark:bg-amber-900/30 border-t 
+            border-amber-200 dark:border-amber-800">
+            <p className="text-xs text-amber-700 
+              dark:text-amber-400 text-center">
+              Productos con materias primas faltantes 
+              cargados hoy
+            </p>
+          </div>
+
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  )}
 
       {filteredFormulas.length === 0 ? (
         <div className="text-center py-12">

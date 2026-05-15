@@ -70,7 +70,7 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
     superAdminOnly?: boolean;
   }> = [
     { id: "dashboard",  label: "Dashboard",  icon: BarChart3 },
-    { id: "inventory",  label: "Inventario",  icon: Package },
+    { id: "inventory",  label: "Materias Primas",  icon: Package },
     { id: "formulas",   label: "Productos",   icon: FlaskConical },
     { id: "production", label: "ENVIOS",  icon: Truck,  consultaHidden: true },
     { id: "users",      label: "Usuarios",    icon: Users,  adminOnly: true, superAdminOnly: true },

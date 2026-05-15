@@ -802,6 +802,18 @@ export const InventorySection = () => {
                 lugarStr={selectedItem.place || ''}
                 nivel={parseInt(selectedItem.level) || 0}
                 nombreInsumo={selectedItem.name}
+                allItems={inventoryItems.map(i => ({
+                  id: i.id,
+                  name: i.name,
+                  rack: i.rack,
+                  place: i.place,
+                  level: i.level,
+                  currentStock: i.currentStock,
+                  certificate: i.certificate,
+                  status: i.status,
+                  unit: i.unit,
+                  minStock: i.minStock || 0,
+                }))}
               />
             </div>
           )}

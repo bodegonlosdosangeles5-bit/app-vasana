@@ -1,14 +1,28 @@
-import React from 'react';
+import React, { useState } from 'react';
+
+interface InventarioItemSimple {
+  id: string;
+  name: string;
+  rack: string;
+  place: string;
+  level: string;
+  currentStock: number;
+  certificate: string;
+  status: string;
+  unit: string;
+  minStock: number;
+}
 
 interface UbicacionProps {
   rack: number;
   lugarStr: string;
   nivel: number;
   nombreInsumo?: string;
+  allItems?: InventarioItemSimple[];
 }
 
 const MapaUbicacionRacks: React.FC<UbicacionProps> = ({ 
-  rack, lugarStr, nivel, nombreInsumo 
+  rack, lugarStr, nivel, nombreInsumo, allItems = []
 }) => {
   // Mejora 1: filtrar valores inválidos
   const lugaresArr = lugarStr.toString()
@@ -34,33 +48,97 @@ const MapaUbicacionRacks: React.FC<UbicacionProps> = ({
     return 12 + (6 - lugar) * lugarWidth + lugarWidth / 2;
   };
 
-  const renderSlots = (esActivo: boolean) => {
-    return [1, 2, 3, 4, 5, 6].map((lugar) => (
-      <circle 
-        key={lugar} 
-        cx={calcX(lugar)} 
-        cy={nivelHeight / 2} 
-        r="11" 
-        fill={esActivo ? "#F1F5F9" : "#ffffff"} 
-        stroke={esActivo ? "#CBD5E1" : "#E2E8F0"}
-        strokeWidth="1.5"
-        className="transition-all hover:fill-slate-200 cursor-pointer"
-      />
-    ));
+  const renderSlots = (esActivo: boolean, rNum: number, nNum: number) => {
+    return [1, 2, 3, 4, 5, 6].map((lugar) => {
+      const esSeleccionado = 
+        slotSeleccionado?.r === rNum && 
+        slotSeleccionado?.l === lugar && 
+        slotSeleccionado?.n === nNum;
+
+      return (
+        <g key={lugar} onClick={() => handleClickSlot(rNum, lugar, nNum)}
+          style={{ cursor: 'pointer' }}>
+          <circle 
+            cx={calcX(lugar)} 
+            cy={nivelHeight / 2} 
+            r="11" 
+            fill={esSeleccionado ? "#FEE2E2" : esActivo ? "#F1F5F9" : "#ffffff"} 
+            stroke={esSeleccionado ? "#EF4444" : "#000000"}
+            strokeWidth={esSeleccionado ? "2.5" : "1.5"}
+            className="transition-all hover:fill-slate-100"
+          />
+          {esSeleccionado && (
+            <circle
+              cx={calcX(lugar)}
+              cy={nivelHeight / 2}
+              r="5"
+              fill="#EF4444"
+              className="pointer-events-none"
+            />
+          )}
+        </g>
+      );
+    });
+  };
+
+  const [slotSeleccionado, setSlotSeleccionado] = useState<{ r: number; l: number; n: number } | null>(null);
+  const [panelItem, setPanelItem] = useState<InventarioItemSimple | null>(null);
+  const [panelVacio, setPanelVacio] = useState<{ rack: number; lugar: number; nivel: number } | null>(null);
+
+  const getItemEnPosicion = (rNum: number, lNum: number, nNum: number): InventarioItemSimple | null => {
+    if (!allItems.length) return null;
+    return allItems.find(item => {
+      const itemRack = parseInt(item.rack);
+      const itemNivel = parseInt(item.level);
+      const itemLugares = item.place.toString()
+        .split('-').map(Number)
+        .filter(n => !isNaN(n));
+      return itemRack === rNum && 
+             itemNivel === nNum && 
+             itemLugares.includes(lNum);
+    }) || null;
+  };
+
+  const handleClickSlot = (rNum: number, lNum: number, nNum: number) => {
+    // Si hace clic en el mismo slot, deseleccionar
+    if (
+      slotSeleccionado?.r === rNum && 
+      slotSeleccionado?.l === lNum && 
+      slotSeleccionado?.n === nNum
+    ) {
+      setSlotSeleccionado(null);
+      setPanelItem(null);
+      setPanelVacio(null);
+      return;
+    }
+    setSlotSeleccionado({ r: rNum, l: lNum, n: nNum });
+    const found = getItemEnPosicion(rNum, lNum, nNum);
+    if (found) {
+      setPanelItem(found);
+      setPanelVacio(null);
+    } else {
+      setPanelItem(null);
+      setPanelVacio({ rack: rNum, lugar: lNum, nivel: nNum });
+    }
   };
 
   return (
-    <div className="flex flex-col items-center bg-white p-8 rounded-2xl border border-slate-200 shadow-lg">
-      
-      {/* Cabecera del modal del Mapa */}
-      <div className="mb-8 w-full flex flex-col items-end">
-        <h3 className="text-slate-500 text-xs uppercase tracking-widest font-bold">
-          Detalle de Materia Prima
-        </h3>
-        <p className="text-slate-900 text-2xl font-black mt-1">
-          {nombreInsumo ? nombreInsumo.toUpperCase() : 'ÍTEM'}
-        </p>
-      </div>
+    <div className="flex flex-col bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden">
+      {/* Contenedor flex: mapa + panel lateral */}
+      <div className="flex gap-0">
+        
+        {/* Mapa (lado izquierdo) */}
+        <div className={`flex flex-col items-center p-8 transition-all duration-300 ${panelItem || panelVacio ? 'w-4/5' : 'w-full'}`}>
+          
+          {/* Cabecera del modal del Mapa */}
+          <div className="mb-8 w-full flex flex-col items-end">
+            <h3 className="text-slate-500 text-xs uppercase tracking-widest font-bold">
+              Detalle de Materia Prima
+            </h3>
+            <p className="text-slate-900 text-2xl font-black mt-1">
+              {nombreInsumo ? nombreInsumo.toUpperCase() : 'ÍTEM'}
+            </p>
+          </div>
 
       {!isValid ? (
         <div className="w-full py-16 text-center text-slate-500 text-sm font-medium bg-slate-50 rounded-xl border border-slate-100">
@@ -174,14 +252,14 @@ const MapaUbicacionRacks: React.FC<UbicacionProps> = ({
                       )}
 
                       {/* Dibujar celdas base */}
-                      {renderSlots(esRackActivo)}
+                      {renderSlots(esRackActivo, r, n)}
 
                       {/* Renderizar marcas actvas (si es el rack y nivel correcto) */}
                       {isNivelActivo && lugaresArr.map((lugar) => {
                         const xLugar = calcX(lugar);
                         const yLugarCent = nivelHeight / 2;
                         return (
-                          <g key={`active-${lugar}`} className="cursor-pointer group">
+                          <g key={`active-${lugar}`} className="cursor-pointer group" onClick={() => handleClickSlot(r, lugar, n)}>
                              {/* Efecto Pulso Constante */}
                              <circle 
                                cx={xLugar} cy={yLugarCent} 
@@ -258,11 +336,119 @@ const MapaUbicacionRacks: React.FC<UbicacionProps> = ({
         </svg>
       )}
 
+        </div>
+
+        {/* Panel lateral (lado derecho) */}
+        {(panelItem || panelVacio) && (
+          <div className="w-1/5 border-l border-slate-200 
+            bg-slate-50 p-3 flex flex-col gap-3
+            animate-in slide-in-from-right duration-200
+            overflow-y-auto">
+            
+            {/* Botón cerrar */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setPanelItem(null);
+                setPanelVacio(null);
+                setSlotSeleccionado(null);
+              }}
+              className="self-end flex items-center 
+                justify-center w-6 h-6 rounded-full 
+                bg-slate-200 hover:bg-slate-300 
+                text-slate-600 hover:text-slate-800 
+                transition-all text-xs font-bold
+                flex-shrink-0"
+            >
+              ✕
+            </button>
+
+            {panelItem ? (
+              <>
+                {/* Header */}
+                <div className="space-y-1">
+                  <p className="text-[10px] text-slate-400 
+                    uppercase tracking-wider font-bold">
+                    Materia Prima
+                  </p>
+                  <p className="text-sm font-black 
+                    text-slate-800 leading-tight">
+                    {panelItem.name}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    CERT: {panelItem.certificate}
+                  </p>
+                </div>
+
+                {/* Datos */}
+                <div className="flex flex-col gap-2 mt-1">
+                  {[
+                    { 
+                      label: "Stock actual", 
+                      value: panelItem.currentStock >= 1000
+                        ? `${(panelItem.currentStock/1000)
+                            .toLocaleString()} kg`
+                        : `${panelItem.currentStock
+                            .toLocaleString()} g`
+                    },
+                    { 
+                      label: "Stock mínimo", 
+                      value: `${panelItem.minStock/1000} kg` 
+                    },
+                    { 
+                      label: "Estado", 
+                      value: panelItem.status === 'normal' 
+                        ? '✅ Normal' 
+                        : panelItem.status === 'low' 
+                        ? '⚠️ Stock bajo' 
+                        : '🔴 Crítico' 
+                    },
+                    { 
+                      label: "Ubicación", 
+                      value: `Rack ${panelItem.rack} • L${panelItem.place} • N${panelItem.level}` 
+                    },
+                  ].map(({ label, value }) => (
+                    <div key={label} 
+                      className="bg-white rounded-lg p-2 
+                        border border-slate-100 shadow-sm">
+                      <p className="text-[10px] text-slate-400 
+                        uppercase tracking-wider mb-1">
+                        {label}
+                      </p>
+                      <p className="text-xs font-semibold 
+                        text-slate-700">
+                        {value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : panelVacio ? (
+              <div className="flex flex-col items-center 
+                justify-center h-full gap-2 text-center 
+                mt-4">
+                <span className="text-3xl">📦</span>
+                <p className="text-[10px] text-slate-400 
+                  font-medium leading-relaxed">
+                  Rack {panelVacio.rack}{'\n'}
+                  Lugar {panelVacio.lugar}{'\n'}
+                  Nivel {panelVacio.nivel}
+                </p>
+                <p className="text-[10px] text-slate-300">
+                  Sin datos
+                </p>
+              </div>
+            ) : null}
+
+          </div>
+        )}
+      </div>
+
       {/* Leyenda en el Footer */}
       <div className="mt-8 flex gap-10 text-[14px] font-semibold text-slate-600 border-t border-slate-200 pt-6 w-full justify-center">
         <div className="flex items-center gap-3">
-          <div className="w-5 h-5 rounded-full bg-slate-50 border border-slate-300"></div>
-          Espacio Libre
+          <div className="w-5 h-5 rounded-full bg-slate-50 border-2 border-black"></div>
+          Lugar disponible
         </div>
         <div className="flex items-center gap-3">
           <div className="relative flex items-center justify-center">
