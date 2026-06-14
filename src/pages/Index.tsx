@@ -6,6 +6,7 @@ import { InventorySection } from "@/components/InventorySection";
 import { FormulasSection } from "@/components/FormulasSection";
 import { ProductionSection } from "@/components/ProductionSection";
 import { UserAdminPanel } from "@/components/UserAdminPanel";
+import { ActivityLogPanel } from "@/components/ActivityLogPanel";
 import { useRealtimeProductos } from "@/hooks/useRealtimeProductos";
 import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
 import { useRealtimeInventory } from "@/hooks/useRealtimeInventory";
@@ -88,6 +89,9 @@ const IndexContent = () => {
       case "users":
         if (user?.role !== 'superadmin') return null;
         return <UserAdminPanel />;
+      case "historial":
+        if (user?.role !== 'superadmin') return null;
+        return <ActivityLogPanel />;
       default:
         return <DashboardMetrics 
           formulas={productos as Producto[]} 

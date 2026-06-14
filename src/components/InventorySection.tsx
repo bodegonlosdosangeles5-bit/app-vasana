@@ -18,6 +18,7 @@ export const InventorySection = () => {
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
   const isSuperAdmin = user?.role === 'superadmin';
   const canNuevoInsumo = isAdmin || user?.role === 'user' || user?.role === 'consulta';
+  const canEditInsumo = isAdmin || user?.user_name === 'varela';
   
   const [searchTerm, setSearchTerm] = useState("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -135,7 +136,7 @@ export const InventorySection = () => {
   };
 
   const handleSaveEdit = async () => {
-    if (!isAdmin) {
+    if (!canEditInsumo) {
       toast.error('No tienes permisos para realizar esta acción');
       return;
     }
@@ -318,8 +319,26 @@ export const InventorySection = () => {
 
   const handleDeleteItem = async () => {
     if (!isSuperAdmin || !deletingItemId) return;
+
+    // Capturar datos ANTES de eliminar para tenerlos disponibles en el log
+    const itemData = inventoryItems.find(i => i.id === deletingItemId);
+    const itemIdSnapshot = deletingItemId;
+
     try {
-      await deleteInventoryItem(deletingItemId);
+      await deleteInventoryItem(itemIdSnapshot);
+
+      // Registrar en log ANTES de limpiar el estado
+      await ActivityLogService.log({
+        user_name: user?.user_name || 'desconocido',
+        user_role: user?.role || 'superadmin',
+        accion: 'Eliminó materia prima',
+        entidad: 'Inventario',
+        descripcion: itemData
+          ? `Eliminó "${itemData.name}" del inventario`
+          : `Eliminó materia prima con ID ${itemIdSnapshot}`,
+        color_tag: 'red'
+      });
+
       setIsDeleteConfirmOpen(false);
       setDeletingItemId(null);
     } catch (error) {
@@ -434,7 +453,7 @@ export const InventorySection = () => {
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       )}
-                      {isAdmin && (
+                      {canEditInsumo && (
                         <Button
                           variant="ghost"
                           size="icon"

@@ -1,4 +1,4 @@
-import { BarChart3, Package, FlaskConical, Truck, Menu, X, LogOut, User, Download, Users, ChevronDown } from "lucide-react";
+import { BarChart3, Package, FlaskConical, Truck, Menu, X, LogOut, User, Download, Users, ChevronDown, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Logo } from "@/components/Logo";
@@ -74,6 +74,7 @@ export const Navigation = ({ activeSection, onSectionChange }: NavigationProps) 
     { id: "formulas",   label: "Productos",   icon: FlaskConical },
     { id: "production", label: "ENVIOS",  icon: Truck,  consultaHidden: true },
     { id: "users",      label: "Usuarios",    icon: Users,  adminOnly: true, superAdminOnly: true },
+    { id: "historial",  label: "Historial",   icon: ClipboardList, adminOnly: true, superAdminOnly: true },
   ];
 
   // Filtrar según rol: consulta no ve Producción ni Usuarios; user no ve Usuarios

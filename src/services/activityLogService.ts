@@ -44,34 +44,30 @@ export class ActivityLogService {
     }
   }
 
-  static async getLogs(filters?: {
-    desde?: string;
-    hasta?: string;
-    entidad?: string;
-    color_tag?: ColorTag;
-  }): Promise<ActivityLogEntry[]> {
+  static async getLogs(
+    userRole: string,
+    filters?: {
+      desde?: string;
+      hasta?: string;
+      entidad?: string;
+      color_tag?: ColorTag;
+    }
+  ): Promise<ActivityLogEntry[]> {
     try {
-      let query = (supabase as any)
-        .from('activity_log')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const params = new URLSearchParams();
+      if (filters?.desde)      params.append('desde', filters.desde);
+      if (filters?.hasta)      params.append('hasta', filters.hasta);
+      if (filters?.entidad && filters.entidad !== 'todas')
+                               params.append('entidad', filters.entidad);
+      if (filters?.color_tag)  params.append('color_tag', filters.color_tag);
 
-      if (filters?.desde) {
-        query = query.gte('created_at', filters.desde);
-      }
-      if (filters?.hasta) {
-        query = query.lte('created_at', filters.hasta + 'T23:59:59');
-      }
-      if (filters?.entidad && filters.entidad !== 'todas') {
-        query = query.eq('entidad', filters.entidad);
-      }
-      if (filters?.color_tag && filters.color_tag !== undefined) {
-        query = query.eq('color_tag', filters.color_tag);
-      }
+      const response = await fetch(`/api/activity-log?${params.toString()}`, {
+        headers: { 'x-user-role': userRole },
+      });
 
-      const { data, error } = await query;
-      if (error) throw error;
-      return (data || []) as unknown as ActivityLogEntry[];
+      if (!response.ok) return [];
+      const result = await response.json();
+      return (result.logs ?? []) as ActivityLogEntry[];
     } catch (error) {
       console.error('Error obteniendo historial:', error);
       return [];

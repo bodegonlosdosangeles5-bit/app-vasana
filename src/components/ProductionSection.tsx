@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Truck, Calendar, Weight, MapPin, Clock, TrendingUp, Plus, Eye, Package, Pencil, Trash2, AlertCircle, History, ShieldAlert, Printer } from "lucide-react";
+import { Truck, Calendar, Weight, MapPin, Clock, TrendingUp, Plus, Eye, Package, Pencil, Trash2, AlertCircle, Printer } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -22,7 +22,6 @@ import { RemitoWithItems } from "@/services/remitoService";
 import { useAuth } from "@/components/Auth/AuthProvider";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LogService, ActivityLog } from "@/services/logService";
 
 interface ProductionSectionProps {
   formulas?: Producto[];
@@ -62,8 +61,6 @@ export const ProductionSection = ({ formulas = [], updateProducto: updateProduct
 
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
-  const [recentLogs, setRecentLogs] = useState<ActivityLog[]>([]);
-  const [loadingLogs, setLoadingLogs] = useState(false);
 
   // Hook para envíos
   const {
@@ -136,16 +133,7 @@ export const ProductionSection = ({ formulas = [], updateProducto: updateProduct
   }, [currentProduction]);
 
 
-  const fetchLogs = async () => {
-    setLoadingLogs(true);
-    const logs = await LogService.getRecentLogs(5);
-    setRecentLogs(logs);
-    setLoadingLogs(false);
-  };
 
-  useEffect(() => {
-    fetchLogs();
-  }, []);
 
   const handleViewEnvio = async (envioId: string) => {
     try {
@@ -207,14 +195,6 @@ export const ProductionSection = ({ formulas = [], updateProducto: updateProduct
       if (success) {
         toast.success("Producto actualizado correctamente");
         
-        LogService.saveLog({
-          action: 'Edición de Lote',
-          detail: `Editado producto "${editForm.name}" (${editForm.batchSize}kg). Destino: ${editForm.destination}`,
-          user_name: user?.user_name || 'Admin',
-          user_email: user?.user_name, 
-          product_id: editingProducto.id
-        }).then(() => fetchLogs());
-
         setIsEditModalOpen(false);
         setEditingProducto(null);
       } else {
@@ -234,21 +214,11 @@ export const ProductionSection = ({ formulas = [], updateProducto: updateProduct
       return;
     }
 
-    const targetProduct = formulasData.find(p => p.id === productToDelete);
-
     try {
       const success = await deleteProductoRealtime(productToDelete);
       if (success) {
         toast.success("Producto eliminado correctamente");
         
-        LogService.saveLog({
-          action: 'Eliminación',
-          detail: `Eliminado lote "${targetProduct?.name}" de ${targetProduct?.batchSize}kg`,
-          user_name: user?.user_name || 'Admin',
-          user_email: user?.user_name,
-          product_id: productToDelete
-        }).then(() => fetchLogs());
-
         setIsDeleteConfirmOpen(false);
         setProductToDelete(null);
       } else {
@@ -590,67 +560,6 @@ export const ProductionSection = ({ formulas = [], updateProducto: updateProduct
         </DialogContent>
       </Dialog>
 
-      <div className="mt-12 pt-8 border-t border-zinc-800/50">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-[#F7A600]/10 rounded-lg">
-              <History className="h-5 w-5 text-[#F7A600]" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-black dark:text-white">Historial de Cambios</h3>
-              <p className="text-xs text-black/50 dark:text-white/40">Movimientos recientes de administración</p>
-            </div>
-          </div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={fetchLogs}
-            disabled={loadingLogs}
-            className="text-xs text-yellow-500 hover:text-yellow-400 hover:bg-yellow-500/5"
-          >
-            {loadingLogs ? "Cargando..." : "Actualizar historial"}
-          </Button>
-        </div>
-
-        <div className="space-y-3">
-          {recentLogs.length === 0 ? (
-            <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-8 text-center">
-              <p className="text-zinc-500 text-sm">No hay registros de actividad recientes</p>
-            </div>
-          ) : (
-            recentLogs.map((log) => (
-              <div 
-                key={log.id} 
-                className="flex items-start gap-4 p-4 bg-zinc-900/20 border border-zinc-800/30 rounded-xl hover:bg-zinc-900/40 transition-colors group"
-              >
-                <div className={`mt-1 p-1.5 rounded-full ${
-                  log.action === 'Eliminación' ? 'bg-red-500/10 text-red-500' : 'bg-blue-500/10 text-blue-500'
-                }`}>
-                  <ShieldAlert className="h-3.5 w-3.5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
-                    <p className="text-sm font-bold text-black dark:text-white">
-                      {log.action} <span className="text-zinc-500 text-xs font-normal ml-2">por {log.user_name}</span>
-                    </p>
-                    <p className="text-[10px] tabular-nums text-zinc-500 whitespace-nowrap">
-                      {log.created_at ? new Date(log.created_at).toLocaleString('es-AR', {
-                        day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit'
-                      }) : 'Recientemente'}
-                    </p>
-                  </div>
-                  <p className="text-xs text-black/60 dark:text-white/30 line-clamp-1 group-hover:line-clamp-none transition-all">
-                    {log.detail}
-                  </p>
-                  {log.product_id && (
-                    <p className="text-[9px] text-zinc-600 mt-1 font-mono">ID: {log.product_id}</p>
-                  )}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
       <RemitoManualModal isOpen={showRemitoManual} onClose={() => setShowRemitoManual(false)} />
     </div>
   );

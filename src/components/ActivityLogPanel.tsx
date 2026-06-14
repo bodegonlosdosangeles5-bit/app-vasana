@@ -32,7 +32,7 @@ export const ActivityLogPanel = () => {
     if (tipo === 'yellow') color_tag = 'yellow';
     if (tipo === 'red') color_tag = 'red';
 
-    const data = await ActivityLogService.getLogs({
+    const data = await ActivityLogService.getLogs(user?.role ?? '', {
       desde: desde || undefined,
       hasta: hasta || undefined,
       entidad: entidad !== 'todas' ? entidad : undefined,
@@ -44,13 +44,13 @@ export const ActivityLogPanel = () => {
   };
 
   useEffect(() => {
-    if (user?.role === 'admin' || user?.role === 'superadmin') {
+    if (user?.role === 'superadmin') {
       loadLogs();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.role, desde, hasta, entidad, tipo]);
 
-  if (user?.role !== 'admin' && user?.role !== 'superadmin') {
+  if (user?.role !== 'superadmin') {
     return null;
   }
 

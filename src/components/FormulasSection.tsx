@@ -711,27 +711,32 @@ export const FormulasSection = ({
   const handleDeleteFormula = async () => {
     if (!isAdmin) return;
     if (!productToDelete) return;
-    
+
+    // Capturar los datos ANTES de cualquier operación asíncrona
+    // para evitar que el estado se limpie antes de usarlos
     const productData = formulas.find((f: any) => f.id === productToDelete);
-    
+    const productIdSnapshot = productToDelete;
+
     try {
-      const success = await deleteProducto(productToDelete);
+      const success = await deleteProducto(productIdSnapshot);
       if (success) {
+        // Registrar en el log ANTES de limpiar el estado
+        await ActivityLogService.log({
+          user_name: user?.user_name || 'desconocido',
+          user_role: user?.role || 'user',
+          accion: 'Eliminó producto',
+          entidad: 'Productos',
+          descripcion: productData
+            ? `Eliminó el producto "${productData.name}" (lote ${productData.lote_code || productData.id})`
+            : `Eliminó el producto con ID ${productIdSnapshot}`,
+          color_tag: 'red'
+        });
+
+        // Limpiar estado DESPUÉS del log
         setShowSuccessMessage("Producto eliminado correctamente 🗑️");
         setIsDeleteConfirmOpen(false);
         setProductToDelete(null);
         setTimeout(() => setShowSuccessMessage(null), 3000);
-
-        if (productData) {
-          await ActivityLogService.log({
-            user_name: user?.user_name || 'desconocido',
-            user_role: user?.role || 'user',
-            accion: 'Eliminó producto',
-            entidad: 'Productos',
-            descripcion: `Eliminó el producto "${productData.name}" (lote ${productData.lote_code || productData.id})`,
-            color_tag: 'red'
-          });
-        }
       }
     } catch (error) {
       console.error('Error deleting product:', error);

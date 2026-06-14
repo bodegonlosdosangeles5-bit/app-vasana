@@ -3,4 +3,5 @@ echo Cerrando procesos Node anteriores...
 taskkill /F /IM node.exe /T >nul 2>&1
 timeout /t 2 /nobreak >nul
 echo Iniciando vercel dev...
-vercel dev
+npx vercel dev
+
