@@ -13,6 +13,7 @@ import { useRealtimeInventory } from "@/hooks/useRealtimeInventory";
 import { useUserActivity } from "@/hooks/useUserActivity";
 import { Producto } from "@/services/productoService";
 import { ProtectedRoute } from "@/components/Auth/ProtectedRoute";
+import { WorldCupBall } from "@/components/WorldCupBall";
 import { AuthProvider, useAuth } from "@/components/Auth/AuthProvider";
 import { RemitoService } from "@/services/remitoService";
 import { toast } from "sonner";
@@ -105,6 +106,7 @@ const IndexContent = () => {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-500">
       <div className="particles-container"></div>
       <Navigation activeSection={activeSection} onSectionChange={setActiveSection} />
+      <WorldCupBall />
       
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
         {/* Dashboard Header with Date/Time */}
