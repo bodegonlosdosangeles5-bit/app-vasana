@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
 // Configuración para el cliente admin
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://xfkgrcygkqfusfsjvdly.supabase.co";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
 // Validar que las variables de entorno estén configuradas
@@ -18,8 +18,8 @@ if (!SUPABASE_SERVICE_ROLE_KEY) {
 // Crear cliente admin con service role key
 // NOTA: Para producción, usar la clave de servicio real de Supabase
 export const supabaseAdmin = createClient<Database>(
-  SUPABASE_URL, 
-  SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhma2dyY3lna3FmdXNmc2p2ZGx5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTEwMTczNywiZXhwIjoyMDc0Njc3NzM3fQ.8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q', // Fallback temporal
+  SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY,
   {
     auth: {
       autoRefreshToken: false,
