@@ -1,8 +1,7 @@
 import { useState, useMemo } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { 
-  parseISO,
+import {
   startOfMonth,
   parse,
   isSameDay,
@@ -29,6 +28,7 @@ import { ActivityLogService } from "@/services/activityLogService";
 
 import { useAuth } from "@/components/Auth/AuthProvider";
 import { toast } from "sonner";
+import { formatFechaCorta } from "@/lib/utils";
 
 interface FormulasSectionProps {
   formulas?: any[];
@@ -171,7 +171,7 @@ export const FormulasSection = ({
         formula.lote_code || formula.id,
         formula.name,
         `${formula.batchSize} kg`,
-        formula.date ? format(parseISO(formula.date + "T00:00:00"), "dd/MM/yyyy") : "-",
+        formatFechaCorta(formula.date, "-"),
         formula.destination,
         faltantes
       ];
@@ -1188,7 +1188,7 @@ export const FormulasSection = ({
                       </p>
                     )}
                     <p className="text-sm text-muted-foreground dark:text-white/80 mt-1">
-                      Fecha: {formula.date ? format(parseISO(formula.date + 'T00:00:00'), 'dd/MM/yyyy') : 'No especificada'}
+                      Fecha: {formatFechaCorta(formula.date, 'No especificada')}
                     </p>
                     <p className="text-sm text-muted-foreground dark:text-white/80 mt-1">
                       Para: {formula.type === "client" ? `Cliente${formula.clientName ? ` - ${formula.clientName}` : ''}` : formula.destination === 'Florencio Varela' ? '🏭 Uso Interno (Planta)' : 'Stock'}

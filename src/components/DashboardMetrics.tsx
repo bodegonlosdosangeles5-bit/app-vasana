@@ -22,6 +22,7 @@ import { useRealtimeProductos } from "@/hooks/useRealtimeProductos";
 import { MetricasService, ComparativaHoyAyer, ProductionViewData } from "@/services/metricasService";
 import { format, subDays, parseISO, startOfWeek, isSameMonth, isSameWeek, startOfMonth, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
+import { formatFechaCorta } from "@/lib/utils";
 import { ProductionStatsModal } from "./ProductionStatsModal";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Activity } from "lucide-react";
@@ -565,7 +566,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction, invent
       f.lote_code || f.id || '—',
       `${f.batchSize || 0} kg`,
       f.clientName || 'Sin cliente',
-      f.date ? format(parseISO(f.date + 'T00:00:00'), 'dd/MM/yyyy') : '—',
+      formatFechaCorta(f.date, '—'),
     ]);
 
   const handleExportProductosPDF = async () => {
@@ -689,7 +690,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction, invent
       f.lote_code || f.id || '—',
       f.name || '—',
       f.type === 'client' ? (f.clientName || 'Cliente') : 'Stock',
-      f.date ? format(parseISO(f.date + 'T00:00:00'), 'dd/MM/yyyy') : '—',
+      formatFechaCorta(f.date, '—'),
       `${f.batchSize || 0} kg`,
     ]);
 
@@ -1253,7 +1254,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction, invent
 
                       {/* Información adicional */}
                       <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border pt-2">
-                        <span>Fecha: {formula.date ? format(parseISO(formula.date + 'T00:00:00'), 'dd/MM/yyyy') : 'Sin fecha'}</span>
+                        <span>Fecha: {formatFechaCorta(formula.date)}</span>
                         <span>Destino: {formula.destination || 'Sin destino'}</span>
                       </div>
                     </div>
@@ -1407,7 +1408,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction, invent
 
                       {/* Información adicional */}
                       <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border pt-2">
-                        <span>Fecha: {producto.date ? format(parseISO(producto.date + 'T00:00:00'), 'dd/MM/yyyy') : 'Sin fecha'}</span>
+                        <span>Fecha: {formatFechaCorta(producto.date)}</span>
                         <span>Destino: {producto.destination || 'Sin destino'}</span>
                       </div>
                     </div>

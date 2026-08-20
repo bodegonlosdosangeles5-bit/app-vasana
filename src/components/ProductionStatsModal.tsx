@@ -17,6 +17,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Producto } from "@/services/productoService";
+import { formatFechaCorta, parseFechaSegura } from "@/lib/utils";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import autoTable from "jspdf-autotable";
@@ -109,7 +110,7 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
     const monthAgo = subDays(now, 30);
     const recentLots = villaMartelliProducts
       .filter(p => {
-        const pDate = p.date ? parseISO(p.date + 'T00:00:00') : null;
+        const pDate = parseFechaSegura(p.date);
         return pDate && pDate >= monthAgo && pDate <= now;
       })
       .sort((a, b) => Number(a.lote_code || a.id) - Number(b.lote_code || b.id));
@@ -121,9 +122,12 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
       // Filtrar últimos 14 días de la vista
       const last14Days = subDays(now, 14);
       chartDynamicData = viewData
-        .filter(d => d?.fecha_produccion != null && parseISO(d.fecha_produccion + 'T00:00:00') >= last14Days)
+        .filter(d => {
+          const date = parseFechaSegura(d?.fecha_produccion);
+          return date && date >= last14Days;
+        })
         .map(d => ({
-          name: format(parseISO(d.fecha_produccion + 'T00:00:00'), "dd/MM"),
+          name: format(parseFechaSegura(d.fecha_produccion)!, "dd/MM"),
           total: Number(d.total_kg)
         }));
     } else if (viewType === "monthly") {
@@ -252,7 +256,7 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
       pdf.text("2. Listado de Lotes Procesados", 15, 85);
       const tableData = stats.recentLots.map((lot, index) => [
         (index + 1).toString(),
-        lot.date ? format(parseISO(lot.date + 'T00:00:00'), "dd/MM/yyyy") : "-",
+        formatFechaCorta(lot.date, "-"),
         lot.name,
         lot.lote_code || lot.id,
         `${lot.batchSize} kg`,
