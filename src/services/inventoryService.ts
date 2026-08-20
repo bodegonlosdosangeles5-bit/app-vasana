@@ -16,6 +16,7 @@ export interface InventoryItem {
   rack: string;
   place: string;
   level: string;
+  observaciones?: string;
 }
 
 function mapInventoryItem(item: any): InventoryItem {
@@ -35,6 +36,7 @@ function mapInventoryItem(item: any): InventoryItem {
     rack: item.rack,
     place: item.place,
     level: item.level,
+    observaciones: item.observaciones || undefined,
   };
 }
 
@@ -196,6 +198,7 @@ export class InventoryService {
           rack: updates.rack,
           place: updates.place,
           level: updates.level,
+          observaciones: updates.observaciones || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', id)

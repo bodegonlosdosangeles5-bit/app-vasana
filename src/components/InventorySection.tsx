@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Search, Package, MapPin, AlertTriangle, Edit, Save, X, Plus, Trash2, Beaker, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Package, MapPin, AlertTriangle, Edit, Save, X, Plus, Trash2, Beaker, ChevronLeft, ChevronRight, StickyNote } from "lucide-react";
 import MapaUbicacionRacks from './MapaUbicacionRacks';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useRealtimeInventory } from "@/hooks/useRealtimeInventory";
 import { InventoryItem, InventoryService } from "@/services/inventoryService";
 import { useAuth } from "@/components/Auth/AuthProvider";
@@ -174,9 +175,13 @@ export const InventorySection = () => {
           unit: 'g', // Siempre almacenar en gramos
           location: `${editingItem.rack}-${editingItem.place}-${editingItem.level}`,
         };
-        await updateInventoryItem(editingItem.id, updates);
+        const result = await updateInventoryItem(editingItem.id, updates);
+        if (!result) {
+          toast.error('Error al guardar los cambios. Por favor intenta nuevamente.');
+          return;
+        }
         setIsEditModalOpen(false);
-        
+
         await ActivityLogService.log({
           user_name: user?.user_name || 'desconocido',
           user_role: user?.role || 'user',
@@ -189,6 +194,7 @@ export const InventorySection = () => {
         setEditingItem(null);
       } catch (error) {
         console.error('Error actualizando materia prima:', error);
+        toast.error('Error al guardar los cambios. Por favor intenta nuevamente.');
       }
     }
   };
@@ -554,6 +560,15 @@ export const InventorySection = () => {
                       </div>
                     </div>
 
+                    {item.observaciones && (
+                      <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50/60 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20">
+                        <StickyNote className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed break-words">
+                          {item.observaciones}
+                        </p>
+                      </div>
+                    )}
+
                     {item.status !== "normal" && (
                       <div className="flex items-center gap-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/30 animate-pulse">
                         <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
@@ -705,6 +720,17 @@ export const InventorySection = () => {
                     <option value="kg">Kilogramos (kg)</option>
                   </select>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="observaciones">Observaciones</Label>
+                <Textarea
+                  id="observaciones"
+                  value={editingItem.observaciones || ''}
+                  onChange={(e) => handleInputChange('observaciones', e.target.value)}
+                  placeholder="Nota opcional (no afecta la búsqueda)"
+                  rows={3}
+                />
               </div>
             </div>
           )}
