@@ -72,51 +72,51 @@ export class EnvioService {
       if (envioError) throw envioError;
       if (!envio) return null;
 
-      // Obtener remitos asociados
+      // Obtener los remito_id asociados a este envío
+      // Nota: no se usa el embed anidado de PostgREST (envios_remitos -> remitos -> remito_items)
+      // porque las foreign keys correspondientes no existen en la base actual, lo que hace
+      // fallar la consulta con PGRST200. Se resuelve con consultas separadas, igual que en
+      // getAllRemitos/getRemitosPendientes.
       const { data: enviosRemitos, error: enviosRemitosError } = await supabase
         .from('envios_remitos')
-        .select(`
-          remito_id,
-          remitos (
-            id,
-            destino,
-            fecha,
-            total_kilos,
-            estado,
-            observaciones,
-            remito_items (
-              id,
-              producto_id,
-              nombre_producto,
-              kilos_sumados,
-              cantidad_lotes,
-              lote,
-              cliente_o_stock,
-              notas
-            )
-          )
-        `)
+        .select('remito_id')
         .eq('envio_id', envioId);
 
       if (enviosRemitosError) throw enviosRemitosError;
 
-      // Formatear los datos
-      const remitos = (enviosRemitos || []).map((er: unknown) => {
-        const item = er as { remitos: { id: string, destino: string, fecha: string, total_kilos: number, estado: string, observaciones: string | null, remito_items: unknown[] } };
-        return {
-          id: item.remitos.id,
-          destino: item.remitos.destino,
-          fecha: item.remitos.fecha,
-          total_kilos: item.remitos.total_kilos,
-          estado: item.remitos.estado,
-          observaciones: item.remitos.observaciones,
-          items: item.remitos.remito_items || []
-        };
-      });
+      const remitoIds = (enviosRemitos || []).map(er => er.remito_id);
+
+      let remitos: EnvioConRemitos['remitos'] = [];
+
+      if (remitoIds.length > 0) {
+        const { data: remitosData, error: remitosError } = await supabase
+          .from('remitos')
+          .select('id, destino, fecha, total_kilos, estado, observaciones')
+          .in('id', remitoIds);
+
+        if (remitosError) throw remitosError;
+
+        const { data: itemsData, error: itemsError } = await supabase
+          .from('remito_items')
+          .select('id, remito_id, producto_id, nombre_producto, kilos_sumados, cantidad_lotes, lote, cliente_o_stock, notas')
+          .in('remito_id', remitoIds);
+
+        if (itemsError) throw itemsError;
+
+        remitos = (remitosData || []).map(remito => ({
+          id: remito.id,
+          destino: remito.destino,
+          fecha: remito.fecha,
+          total_kilos: remito.total_kilos,
+          estado: remito.estado,
+          observaciones: remito.observaciones,
+          items: (itemsData || []).filter(item => item.remito_id === remito.id)
+        })) as EnvioConRemitos['remitos'];
+      }
 
       return {
         ...envio,
-        remitos: remitos as EnvioConRemitos['remitos']
+        remitos
       } as EnvioConRemitos;
     } catch (error) {
       console.error('Error obteniendo envío con remitos:', error);
