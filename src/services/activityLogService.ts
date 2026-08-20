@@ -51,8 +51,10 @@ export class ActivityLogService {
       hasta?: string;
       entidad?: string;
       color_tag?: ColorTag;
+      page?: number;
+      pageSize?: number;
     }
-  ): Promise<ActivityLogEntry[]> {
+  ): Promise<{ logs: ActivityLogEntry[]; total: number }> {
     try {
       const params = new URLSearchParams();
       if (filters?.desde)      params.append('desde', filters.desde);
@@ -60,17 +62,19 @@ export class ActivityLogService {
       if (filters?.entidad && filters.entidad !== 'todas')
                                params.append('entidad', filters.entidad);
       if (filters?.color_tag)  params.append('color_tag', filters.color_tag);
+      params.append('page', String(filters?.page ?? 1));
+      params.append('pageSize', String(filters?.pageSize ?? 20));
 
       const response = await fetch(`/api/activity-log?${params.toString()}`, {
         headers: { 'x-user-role': userRole },
       });
 
-      if (!response.ok) return [];
+      if (!response.ok) return { logs: [], total: 0 };
       const result = await response.json();
-      return (result.logs ?? []) as ActivityLogEntry[];
+      return { logs: (result.logs ?? []) as ActivityLogEntry[], total: result.total ?? 0 };
     } catch (error) {
       console.error('Error obteniendo historial:', error);
-      return [];
+      return { logs: [], total: 0 };
     }
   }
 }

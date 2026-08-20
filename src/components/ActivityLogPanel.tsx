@@ -13,42 +13,55 @@ export const ActivityLogPanel = () => {
   const { user } = useAuth();
   
   const [logs, setLogs] = useState<ActivityLogEntry[]>([]);
+  const [totalLogs, setTotalLogs] = useState(0);
   const [loading, setLoading] = useState(false);
-  
+
   // Filters
   const [desde, setDesde] = useState('');
   const [hasta, setHasta] = useState('');
   const [entidad, setEntidad] = useState('todas');
   const [tipo, setTipo] = useState('todos');
-  
-  // Pagination
+
+  // Pagination (server-side)
   const [page, setPage] = useState(1);
   const itemsPerPage = 20;
 
-  const loadLogs = async () => {
+  const loadLogs = async (pageToLoad: number) => {
     setLoading(true);
     let color_tag: ColorTag | undefined = undefined;
     if (tipo === 'green') color_tag = 'green';
     if (tipo === 'yellow') color_tag = 'yellow';
     if (tipo === 'red') color_tag = 'red';
 
-    const data = await ActivityLogService.getLogs(user?.role ?? '', {
+    const { logs: data, total } = await ActivityLogService.getLogs(user?.role ?? '', {
       desde: desde || undefined,
       hasta: hasta || undefined,
       entidad: entidad !== 'todas' ? entidad : undefined,
       color_tag,
+      page: pageToLoad,
+      pageSize: itemsPerPage,
     });
     setLogs(data);
-    setPage(1);
+    setTotalLogs(total);
     setLoading(false);
   };
 
+  // Al cambiar filtros, volver a la página 1
   useEffect(() => {
     if (user?.role === 'superadmin') {
-      loadLogs();
+      setPage(1);
+      loadLogs(1);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.role, desde, hasta, entidad, tipo]);
+
+  // Al cambiar de página, traer esa página del servidor
+  useEffect(() => {
+    if (user?.role === 'superadmin') {
+      loadLogs(page);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
   if (user?.role !== 'superadmin') {
     return null;
@@ -63,14 +76,16 @@ export const ActivityLogPanel = () => {
     }
   };
 
-  const paginatedLogs = logs.slice((page - 1) * itemsPerPage, page * itemsPerPage);
-  const totalPages = Math.ceil(logs.length / itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(totalLogs / itemsPerPage));
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-xl font-semibold">Historial de Cambios</h3>
-        <Button onClick={loadLogs} variant="outline" size="sm" disabled={loading}>
+        <div>
+          <h3 className="text-xl font-semibold">Historial de Cambios</h3>
+          <p className="text-xs text-muted-foreground">Se conservan solo los últimos 7 días; los registros más antiguos se eliminan automáticamente.</p>
+        </div>
+        <Button onClick={() => loadLogs(page)} variant="outline" size="sm" disabled={loading}>
           <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
           Actualizar
         </Button>
@@ -136,7 +151,7 @@ export const ActivityLogPanel = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedLogs.map((log) => (
+              logs.map((log) => (
                 <TableRow key={log.id}>
                   <TableCell className="whitespace-nowrap text-sm">
                     {format(parseISO(log.created_at), 'dd/MM/yyyy HH:mm')}
