@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Search, Package, MapPin, AlertTriangle, Edit, Save, X, Plus, Trash2, Beaker } from "lucide-react";
+import { Search, Package, MapPin, AlertTriangle, Edit, Save, X, Plus, Trash2, Beaker, ChevronLeft, ChevronRight } from "lucide-react";
 import MapaUbicacionRacks from './MapaUbicacionRacks';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useRealtimeInventory } from "@/hooks/useRealtimeInventory";
-import { InventoryItem } from "@/services/inventoryService";
+import { InventoryItem, InventoryService } from "@/services/inventoryService";
 import { useAuth } from "@/components/Auth/AuthProvider";
 import { ActivityLogService } from "@/services/activityLogService";
 import { toast } from "sonner";
@@ -21,6 +21,9 @@ export const InventorySection = () => {
   const canEditInsumo = isAdmin || user?.user_name === 'varela';
   
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 20;
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -29,6 +32,10 @@ export const InventorySection = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  // Snapshot completo de materias primas para el mapa de racks (se pide solo
+  // al abrir el detalle, no en cada carga de la lista paginada).
+  const [rackMapItems, setRackMapItems] = useState<InventoryItem[]>([]);
+  const [rackMapLoading, setRackMapLoading] = useState(false);
 
   const [newItem, setNewItem] = useState({
     name: "",
@@ -42,21 +49,36 @@ export const InventorySection = () => {
     status: "normal"
   });
 
-  // Usar el hook de Realtime para manejar las materias primas
-  const { 
-    inventoryItems, 
-    loading, 
-    error, 
-    createInventoryItem, 
-    updateInventoryItem, 
-    deleteInventoryItem 
-  } = useRealtimeInventory();
+  // Debounce de la búsqueda: espera a que el usuario deje de tipear antes de
+  // consultar la base de datos, para no disparar una query por cada letra.
+  useEffect(() => {
+    const timeout = setTimeout(() => setDebouncedSearchTerm(searchTerm), 350);
+    return () => clearTimeout(timeout);
+  }, [searchTerm]);
 
-  const filteredItems = inventoryItems.filter(item =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.certificate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.location.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Volver a la página 1 cuando cambia la búsqueda
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchTerm]);
+
+  // Usar el hook de Realtime para manejar las materias primas.
+  // Paginado y ordenado alfabéticamente del lado del servidor: solo se traen
+  // los ITEMS_PER_PAGE registros de la página actual, no toda la tabla.
+  const {
+    inventoryItems,
+    totalCount,
+    loading,
+    error,
+    createInventoryItem,
+    updateInventoryItem,
+    deleteInventoryItem
+  } = useRealtimeInventory({ page: currentPage, pageSize: ITEMS_PER_PAGE, search: debouncedSearchTerm });
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / ITEMS_PER_PAGE));
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [totalPages, currentPage]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -346,9 +368,16 @@ export const InventorySection = () => {
     }
   };
 
-  const handleOpenDetail = (item: InventoryItem) => {
+  const handleOpenDetail = async (item: InventoryItem) => {
     setSelectedItem(item);
     setIsDetailModalOpen(true);
+    setRackMapLoading(true);
+    try {
+      const all = await InventoryService.getInventoryItems();
+      setRackMapItems(all);
+    } finally {
+      setRackMapLoading(false);
+    }
   };
 
   return (
@@ -390,24 +419,24 @@ export const InventorySection = () => {
         </div>
       )}
 
-      {!loading && !error && filteredItems.length === 0 && (
+      {!loading && !error && totalCount === 0 && (
         <div className="text-center py-12">
           <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-foreground mb-2">
             {searchTerm ? "No se encontraron materias primas" : "No hay materias primas"}
           </h3>
           <p className="text-muted-foreground">
-            {searchTerm 
-              ? "Intenta con otros términos de búsqueda." 
+            {searchTerm
+              ? "Intenta con otros términos de búsqueda."
               : "Agrega tu primera materia prima para comenzar."
             }
           </p>
         </div>
       )}
 
-      {!loading && !error && filteredItems.length > 0 && (
+      {!loading && !error && totalCount > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
-          {filteredItems.map((item) => {
+          {inventoryItems.map((item) => {
             const stockPercent = item.maxStock ? Math.min(100, (item.currentStock / item.maxStock) * 100) : 0;
             const isLow = item.status !== 'normal';
             
@@ -538,6 +567,37 @@ export const InventorySection = () => {
               </Card>
             );
           })}
+        </div>
+      )}
+
+      {!loading && !error && totalCount > ITEMS_PER_PAGE && (
+        <div className="flex items-center justify-between gap-4 bg-white dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
+          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+            Mostrando {(currentPage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, totalCount)} de {totalCount}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 rounded-xl"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm font-bold text-slate-700 dark:text-white min-w-[90px] text-center">
+              Página {currentPage} de {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 rounded-xl"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       )}
 
@@ -814,14 +874,20 @@ export const InventorySection = () => {
             <DialogTitle>{selectedItem?.name}</DialogTitle>
           </DialogHeader>
 
-          {selectedItem && (
+          {selectedItem && rackMapLoading && (
+            <div className="w-full py-24 text-center text-white/80 bg-slate-900/80 rounded-3xl">
+              Cargando mapa de racks...
+            </div>
+          )}
+
+          {selectedItem && !rackMapLoading && (
             <div className="w-full">
               <MapaUbicacionRacks
                 rack={parseInt(selectedItem.rack) || 0}
                 lugarStr={selectedItem.place || ''}
                 nivel={parseInt(selectedItem.level) || 0}
                 nombreInsumo={selectedItem.name}
-                allItems={inventoryItems.map(i => ({
+                allItems={rackMapItems.map(i => ({
                   id: i.id,
                   name: i.name,
                   rack: i.rack,

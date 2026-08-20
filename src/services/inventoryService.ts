@@ -18,7 +18,57 @@ export interface InventoryItem {
   level: string;
 }
 
+function mapInventoryItem(item: any): InventoryItem {
+  return {
+    id: item.id,
+    name: item.name,
+    category: item.category,
+    currentStock: item.current_stock,
+    minStock: item.min_stock,
+    maxStock: item.max_stock,
+    unit: item.unit,
+    location: item.location,
+    supplier: item.supplier || undefined,
+    lastUpdate: item.last_update,
+    status: item.status as 'normal' | 'low' | 'critical',
+    certificate: item.certificate,
+    rack: item.rack,
+    place: item.place,
+    level: item.level,
+  };
+}
+
 export class InventoryService {
+  // Obtener una página de materias primas, ordenadas alfabéticamente y filtradas en el servidor
+  static async getInventoryItemsPage(params: {
+    page: number;
+    pageSize: number;
+    search?: string;
+  }): Promise<{ items: InventoryItem[]; total: number }> {
+    const { page, pageSize, search } = params;
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    let query = supabase
+      .from('inventory_items')
+      .select('*', { count: 'exact' })
+      .order('name', { ascending: true })
+      .range(from, to);
+
+    const term = search?.trim().replace(/[,()%]/g, '');
+    if (term) {
+      query = query.or(`name.ilike.%${term}%,certificate.ilike.%${term}%,location.ilike.%${term}%`);
+    }
+
+    const { data: items, error, count } = await query;
+    if (error) throw error;
+
+    return {
+      items: (items || []).map(mapInventoryItem),
+      total: count || 0,
+    };
+  }
+
   // Obtener todas las materias primas
   static async getInventoryItems(): Promise<InventoryItem[]> {
     try {
@@ -33,23 +83,7 @@ export class InventoryService {
         return [];
       }
 
-      return items.map(item => ({
-        id: item.id,
-        name: item.name,
-        category: item.category,
-        currentStock: item.current_stock,
-        minStock: item.min_stock,
-        maxStock: item.max_stock,
-        unit: item.unit,
-        location: item.location,
-        supplier: item.supplier || undefined,
-        lastUpdate: item.last_update,
-        status: item.status as 'normal' | 'low' | 'critical',
-        certificate: item.certificate,
-        rack: item.rack,
-        place: item.place,
-        level: item.level,
-      }));
+      return items.map(mapInventoryItem);
     } catch (error) {
       console.error('Error fetching inventory items:', error);
       return [];

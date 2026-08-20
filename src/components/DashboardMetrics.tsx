@@ -20,9 +20,9 @@ import { useRealtimeInventory } from "@/hooks/useRealtimeInventory";
 import { InventoryItem } from "@/services/inventoryService";
 import { useRealtimeProductos } from "@/hooks/useRealtimeProductos";
 import { MetricasService, ComparativaHoyAyer, ProductionViewData } from "@/services/metricasService";
-import { format, subDays, parseISO, startOfWeek, isSameMonth, isSameWeek, startOfMonth, isSameDay } from "date-fns";
+import { format, subDays, startOfWeek, isSameMonth, isSameWeek, startOfMonth, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
-import { formatFechaCorta } from "@/lib/utils";
+import { formatFechaCorta, parseFechaSegura } from "@/lib/utils";
 import { ProductionStatsModal } from "./ProductionStatsModal";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Activity } from "lucide-react";
@@ -146,14 +146,9 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction, invent
     // 1. Producción del Día (Reemplazo del 'Stock Disponible' que se va a 0 al remitir)
     // El usuario quiere ver reflejada la producción de HOY en el Dashboard, independientemente de si ya se remitió.
     const todayTotal = viewData.reduce((sum, d) => {
-      if (!d?.fecha_produccion) return sum;
-      try {
-        const dDate = parseISO(d.fecha_produccion + 'T00:00:00');
-        if (isSameDay(dDate, now)) {
-          return sum + Number(d.total_kg || 0);
-        }
-      } catch (e) {
-        console.error("Error parsing date in todayTotal", e);
+      const dDate = parseFechaSegura(d?.fecha_produccion);
+      if (dDate && isSameDay(dDate, now)) {
+        return sum + Number(d.total_kg || 0);
       }
       return sum;
     }, 0);
@@ -177,14 +172,9 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction, invent
     // 2. Semanal (Desde el Lunes de esta semana - de la Vista SQL)
     // Usamos d.total_kg que viene de la vista y ya suma batch_size (producción histórica)
     const weekly = viewData.reduce((sum, d) => {
-      if (!d?.fecha_produccion) return sum;
-      try {
-        const dDate = parseISO(d.fecha_produccion + 'T00:00:00');
-        if (isSameWeek(dDate, now, { weekStartsOn: 1 })) {
-          return sum + Number(d.total_kg || 0);
-        }
-      } catch (e) {
-        console.error("Error parsing date in weekly", e);
+      const dDate = parseFechaSegura(d?.fecha_produccion);
+      if (dDate && isSameWeek(dDate, now, { weekStartsOn: 1 })) {
+        return sum + Number(d.total_kg || 0);
       }
       return sum;
     }, 0);
@@ -192,14 +182,9 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction, invent
     // 3. Mensual (Desde el día 1 de este mes - de la Vista SQL)
     // Usamos d.total_kg que viene de la vista y ya suma batch_size (producción histórica)
     const monthly = viewData.reduce((sum, d) => {
-      if (!d?.fecha_produccion) return sum;
-      try {
-        const dDate = parseISO(d.fecha_produccion + 'T00:00:00');
-        if (isSameMonth(dDate, now)) {
-          return sum + Number(d.total_kg || 0);
-        }
-      } catch (e) {
-        console.error("Error parsing date in monthly", e);
+      const dDate = parseFechaSegura(d?.fecha_produccion);
+      if (dDate && isSameMonth(dDate, now)) {
+        return sum + Number(d.total_kg || 0);
       }
       return sum;
     }, 0);
@@ -212,15 +197,13 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction, invent
      if (viewData.length === 0) {
        // Si no hay datos de la vista, calcular fallback desde formulasData
        formulasData.forEach(p => {
-         if (!p.date) return;
-         try {
-           const pDate = parseISO(p.date + 'T00:00:00');
-           const amount = Number(p.batchSize || 0);
-           
-           if (isSameDay(pDate, now)) finalToday += amount;
-           if (isSameWeek(pDate, now, { weekStartsOn: 1 })) finalWeekly += amount;
-           if (isSameMonth(pDate, now)) finalMonthly += amount;
-         } catch (e) {}
+         const pDate = parseFechaSegura(p.date);
+         if (!pDate) return;
+         const amount = Number(p.batchSize || 0);
+
+         if (isSameDay(pDate, now)) finalToday += amount;
+         if (isSameWeek(pDate, now, { weekStartsOn: 1 })) finalWeekly += amount;
+         if (isSameMonth(pDate, now)) finalMonthly += amount;
        });
      }
 
@@ -245,14 +228,8 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction, invent
       const isTerminated = ['terminado', 'finalizado', 'completo', 'available'].includes(normalizedStatus);
       const isVillaMartelli = normalizedDestination === 'villamartelli';
       
-      let isToday = false;
-      try {
-        if (formula?.date) {
-          isToday = isSameDay(parseISO(formula.date + 'T00:00:00'), todayDate);
-        }
-      } catch (e) {
-         // Silently ignore invalid dates
-      }
+      const parsedFormulaDate = parseFechaSegura(formula?.date);
+      const isToday = parsedFormulaDate ? isSameDay(parsedFormulaDate, todayDate) : false;
       const hasStock = (formula?.stock_actual ?? (formula?.batchSize || 0)) > 0;
       
       // Mostrar solo si tiene stock para Villa Martelli

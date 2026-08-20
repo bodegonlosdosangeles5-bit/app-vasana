@@ -29,8 +29,7 @@ import {
   startOfDay, 
   isSameDay, 
   isSameWeek, 
-  isSameMonth, 
-  parseISO,
+  isSameMonth,
   startOfMonth,
   parse
 } from "date-fns";
@@ -135,20 +134,16 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
       const monthlyGroups = new Map<string, { total: number, date: Date }>();
       
       viewData.forEach(d => {
-        if (!d?.fecha_produccion) return; // ← Guarda defensiva
-        try {
-          const date = parseISO(d.fecha_produccion + 'T00:00:00');
-          const key = format(date, "yyyy-MM");
-          
-          if (!monthlyGroups.has(key)) {
-            monthlyGroups.set(key, { total: 0, date });
-          }
-          
-          const current = monthlyGroups.get(key)!;
-          current.total += Number(d.total_kg);
-        } catch (e) {
-          console.warn("Error parseando fecha_produccion (monthly):", d.fecha_produccion, e);
+        const date = parseFechaSegura(d?.fecha_produccion);
+        if (!date) return;
+        const key = format(date, "yyyy-MM");
+
+        if (!monthlyGroups.has(key)) {
+          monthlyGroups.set(key, { total: 0, date });
         }
+
+        const current = monthlyGroups.get(key)!;
+        current.total += Number(d.total_kg);
       });
 
       // Convertir a array, ordenar por fecha y formato final
@@ -163,14 +158,10 @@ export const ProductionStatsModal = ({ isOpen, onClose, productos }: ProductionS
       // Semanal
       const weeklyGroups: Record<string, number> = {};
       viewData.forEach(d => {
-        if (!d?.fecha_produccion) return; // ← Guarda defensiva
-        try {
-          const date = parseISO(d.fecha_produccion + 'T00:00:00');
-          const label = `Sem ${format(date, "I")}`;
-          weeklyGroups[label] = (weeklyGroups[label] || 0) + Number(d.total_kg);
-        } catch (e) {
-          console.warn("Error parseando fecha_produccion (weekly):", d.fecha_produccion, e);
-        }
+        const date = parseFechaSegura(d?.fecha_produccion);
+        if (!date) return;
+        const label = `Sem ${format(date, "I")}`;
+        weeklyGroups[label] = (weeklyGroups[label] || 0) + Number(d.total_kg);
       });
       chartDynamicData = Object.entries(weeklyGroups).slice(-8).map(([name, total]) => ({ name, total }));
     }

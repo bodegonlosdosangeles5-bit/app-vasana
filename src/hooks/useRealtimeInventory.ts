@@ -2,27 +2,45 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { InventoryService, InventoryItem } from '@/services/inventoryService';
 
-export const useRealtimeInventory = () => {
+interface UseRealtimeInventoryOptions {
+  // Si se pasan page + pageSize, la carga se hace paginada del lado del servidor
+  // (ordenada alfabéticamente y filtrada por búsqueda). Sin estos parámetros
+  // se mantiene el comportamiento original: trae todas las materias primas.
+  page?: number;
+  pageSize?: number;
+  search?: string;
+}
+
+export const useRealtimeInventory = (options: UseRealtimeInventoryOptions = {}) => {
+  const { page, pageSize, search } = options;
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Cargar materias primas iniciales
+  // Cargar materias primas (todas, o la página actual si se pidió paginación)
   const loadInventoryItems = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await InventoryService.getInventoryItems();
-      setInventoryItems(data);
+      if (page && pageSize) {
+        const { items, total } = await InventoryService.getInventoryItemsPage({ page, pageSize, search });
+        setInventoryItems(items);
+        setTotalCount(total);
+      } else {
+        const data = await InventoryService.getInventoryItems();
+        setInventoryItems(data);
+        setTotalCount(data.length);
+      }
     } catch (err) {
       setError('Error al cargar las materias primas');
       console.error('Error cargando materias primas:', err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page, pageSize, search]);
 
-  // Cargar materias primas al montar el componente
+  // Cargar materias primas al montar el componente (y cuando cambia página/búsqueda)
   useEffect(() => {
     loadInventoryItems();
   }, [loadInventoryItems]);
@@ -104,6 +122,7 @@ export const useRealtimeInventory = () => {
 
   return {
     inventoryItems,
+    totalCount,
     loading,
     error,
     loadInventoryItems,
