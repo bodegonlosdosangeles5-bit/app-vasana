@@ -60,6 +60,7 @@ export const FormulasSection = ({
   const canCargarProducto = isAdmin || user?.role === 'user';
   const canEditProducto = isAdmin || user?.user_name === 'varela';
   const canRemoveFaltante = isAdmin || user?.user_name === 'varela';
+  const canAddFaltante = isAdmin || user?.role === 'user';
 
   // Usar directamente los datos de los props (instancia centralizada en Index.tsx)
   const formulasData = formulas;
@@ -70,7 +71,6 @@ export const FormulasSection = ({
   const createProducto = createFormula;
   const updateProducto = updateFormula;
   const deleteProducto = deleteFormula;
-  const addMissingIngredientReal = addMissingIngredient;
   const removeMissingIngredientReal = removeMissingIngredient;
   const [acordeonAbierto, setAcordeonAbierto] = useState<string>("");
   const [selectedFormula, setSelectedFormula] = useState<string | null>(null);
@@ -611,22 +611,9 @@ export const FormulasSection = ({
         stock_actual: batchSizeInKg // Stock inicial igual a la producción (ya convertido a kg)
       };
 
+      // createFunction ya inserta missingIngredients (formulaData.missingIngredients) usando el id real generado
       await createFunction(formulaData);
-      
-      // Si es incompleta y tiene ingredientes faltantes, agregarlos a Supabase
-      if (newFormula.status === 'incomplete' && missingIngredients.length > 0) {
-        for (const ingredient of missingIngredients) {
-          const addFunction = addMissingIngredientReal || addMissingIngredient;
-          if (addFunction) {
-            await addFunction(newFormula.lot, {
-              name: ingredient.name,
-              required: parseFloat(ingredient.required),
-              unit: ingredient.unit
-            });
-          }
-        }
-      }
-      
+
       // Resetear el formulario
       setNewFormula({
         lot: "",
@@ -685,8 +672,42 @@ export const FormulasSection = ({
           clientName: editingFormula.clientName,
           status: editingFormula.status
         });
-        
+
         if (success) {
+          // Sincronizar materias primas faltantes (missing_ingredients no se actualiza con updateProducto)
+          const originalFormula = formulasData.find((f: any) => f.id === editingFormula.id);
+          const originalIngredients = originalFormula?.missingIngredients || [];
+          const editedIngredients = (editingFormula.missingIngredients || []).filter((ing: any) => ing.name?.trim());
+
+          const originalByName = new Map(originalIngredients.map((ing: any) => [ing.name, ing]));
+          const editedByName = new Map(editedIngredients.map((ing: any) => [ing.name, ing]));
+
+          const addFn = addMissingIngredient;
+          const removeFn = removeMissingIngredientReal;
+
+          for (const [name, original] of originalByName) {
+            if (!editedByName.has(name) && removeFn) {
+              await removeFn(editingFormula.id, name);
+            }
+          }
+
+          for (const [name, edited] of editedByName) {
+            const original = originalByName.get(name);
+            const changed = !original || original.required !== edited.required || original.unit !== edited.unit;
+            if (changed) {
+              if (original && removeFn) {
+                await removeFn(editingFormula.id, name);
+              }
+              if (addFn) {
+                await addFn(editingFormula.id, {
+                  name,
+                  required: parseFloat(edited.required) || 0,
+                  unit: edited.unit
+                });
+              }
+            }
+          }
+
           setShowSuccessMessage(`¡Producto "${editingFormula.name}" actualizado! ✅`);
           setIsEditModalOpen(false);
           
@@ -747,7 +768,7 @@ export const FormulasSection = ({
     if (editingFormula) {
       setEditingFormula(prev => ({
         ...prev,
-        ingredients: prev.ingredients.map((ing, i) => 
+        missingIngredients: (prev.missingIngredients || []).map((ing, i) =>
           i === index ? { ...ing, [field]: value } : ing
         )
       }));
@@ -766,13 +787,17 @@ export const FormulasSection = ({
 
   const handleSubmitIngredient = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isAdmin || !selectedFormulaForIngredient || !newIngredient.name.trim() || !newIngredient.required) {
+    if (!canAddFaltante) {
+      toast.error("No tenés permiso para agregar materias primas faltantes.");
+      return;
+    }
+    if (!selectedFormulaForIngredient || !newIngredient.name.trim() || !newIngredient.required) {
       return;
     }
 
     try {
       setIsAddingIngredient(true);
-      
+
       if (addMissingIngredient) {
         const success = await addMissingIngredient(
           selectedFormulaForIngredient.id,
@@ -792,6 +817,8 @@ export const FormulasSection = ({
             required: "",
             unit: "kg"
           });
+        } else {
+          toast.error("No se pudo guardar la materia prima faltante. Revisá la consola para más detalles.");
         }
       } else {
         // Fallback al servicio directo si no hay función de Realtime
@@ -807,7 +834,7 @@ export const FormulasSection = ({
         if (success) {
           const updatedFormulas = await ProductoService.getProductos();
           setFormulas(updatedFormulas);
-          
+
           setIsAddIngredientModalOpen(false);
           setSelectedFormulaForIngredient(null);
           setNewIngredient({
@@ -815,10 +842,13 @@ export const FormulasSection = ({
             required: "",
             unit: "kg"
           });
+        } else {
+          toast.error("No se pudo guardar la materia prima faltante. Revisá la consola para más detalles.");
         }
       }
     } catch (error) {
       console.error('Error adding ingredient:', error);
+      toast.error("Ocurrió un error al guardar la materia prima faltante.");
     } finally {
       setIsAddingIngredient(false);
     }
@@ -1222,7 +1252,7 @@ export const FormulasSection = ({
                           </Badge>
                         )}
                       </div>
-                      {isAdmin && (
+                      {canAddFaltante && (
                         <Button
                           type="button"
                           variant="outline"
@@ -1288,16 +1318,18 @@ export const FormulasSection = ({
                         <p className="text-muted-foreground dark:text-white/60 text-sm mb-4">
                           Esta fórmula está marcada como incompleta pero no tiene ingredientes faltantes registrados
                         </p>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleAddIngredient(formula)}
-                          className="text-foreground dark:text-white border-border dark:border-white hover:bg-muted dark:hover:bg-white hover:text-foreground dark:hover:text-black"
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Agregar Primera Materia Prima
-                        </Button>
+                        {canAddFaltante && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAddIngredient(formula)}
+                            className="text-foreground dark:text-white border-border dark:border-white hover:bg-muted dark:hover:bg-white hover:text-foreground dark:hover:text-black"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Agregar Primera Materia Prima
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1461,10 +1493,10 @@ export const FormulasSection = ({
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      const newIngredient = { name: "", required: 0, available: 0, unit: "kg" };
+                      const newIngredient = { name: "", required: 0, unit: "kg" };
                       setEditingFormula(prev => ({
                         ...prev,
-                        ingredients: [...prev.ingredients, newIngredient]
+                        missingIngredients: [...(prev.missingIngredients || []), newIngredient]
                       }));
                     }}
                     className="flex items-center gap-2 w-full sm:w-auto"
@@ -1474,9 +1506,7 @@ export const FormulasSection = ({
                   </Button>
                 </div>
                 
-                {editingFormula.ingredients
-                  .filter((ingredient: any) => ingredient.available < ingredient.required)
-                  .map((ingredient: any, index: number) => (
+                {(editingFormula.missingIngredients || []).map((ingredient: any, index: number) => (
                   <div key={index} className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 sm:p-4 border rounded-lg bg-red-50">
                     <div className="space-y-1">
                       <Label>Nombre de la Materia Prima</Label>
@@ -1487,19 +1517,19 @@ export const FormulasSection = ({
                         required
                       />
                     </div>
-                    
+
                     <div className="space-y-1">
                       <Label>Cantidad Faltante</Label>
                       <Input
                         type="number"
                         step="0.1"
-                        value={ingredient.required - ingredient.available}
+                        value={ingredient.required}
                         onChange={(e) => {
-                          const missing = parseFloat(e.target.value);
+                          const required = parseFloat(e.target.value);
                           setEditingFormula(prev => ({
                             ...prev,
-                            ingredients: prev.ingredients.map((ing, i) => 
-                              i === index ? { ...ing, required: ing.available + missing } : ing
+                            missingIngredients: prev.missingIngredients.map((ing, i) =>
+                              i === index ? { ...ing, required } : ing
                             )
                           }));
                         }}
@@ -1507,11 +1537,11 @@ export const FormulasSection = ({
                         required
                       />
                     </div>
-                    
+
                     <div className="space-y-1">
                       <Label>Unidad</Label>
-                      <Select 
-                        value={ingredient.unit} 
+                      <Select
+                        value={ingredient.unit}
                         onValueChange={(value) => handleEditIngredientChange(index, "unit", value)}
                       >
                         <SelectTrigger>
@@ -1525,7 +1555,7 @@ export const FormulasSection = ({
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     <Button
                       type="button"
                       variant="destructive"
@@ -1533,7 +1563,7 @@ export const FormulasSection = ({
                       onClick={() => {
                         setEditingFormula(prev => ({
                           ...prev,
-                          ingredients: prev.ingredients.filter((_, i) => i !== index)
+                          missingIngredients: prev.missingIngredients.filter((_, i) => i !== index)
                         }));
                       }}
                       className="mt-4 sm:mt-6 w-full sm:w-auto sm:col-span-3"

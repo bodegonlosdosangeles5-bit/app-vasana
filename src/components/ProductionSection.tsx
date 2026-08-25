@@ -14,11 +14,9 @@ import { RemitoManualModal } from "@/components/RemitoManualModal";
 import { EnvioDetailModal } from "@/components/EnvioDetailModal";
 import { Producto } from "@/services/productoService";
 import { useRealtimeEnvios } from "@/hooks/useRealtimeEnvios";
-import { useRealtimeRemitos } from "@/hooks/useRealtimeRemitos";
-import { useRemitos } from "@/hooks/useRemitos";
 
 import { EnvioConRemitos } from "@/services/envioService";
-import { RemitoWithItems } from "@/services/remitoService";
+import { RemitoService, RemitoWithItems } from "@/services/remitoService";
 import { useAuth } from "@/components/Auth/AuthProvider";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -70,21 +68,6 @@ export const ProductionSection = ({ formulas = [], updateProducto: updateProduct
     crearEnvioConRemitosPendientes,
     getEnvioConRemitos
   } = useRealtimeEnvios();
-
-  // Hook para remitos
-  const {
-    currentRemito,
-    loading: remitosLoading,
-    error: remitosError
-  } = useRealtimeRemitos();
-
-  // Hook para obtener todos los remitos
-  const {
-    remitos,
-    loading: allRemitosLoading,
-    error: allRemitosError,
-    getRemitoWithItems
-  } = useRemitos();
 
   // Función para normalizar texto (quitar tildes, espacios y convertir a minúsculas)
   const normalizeText = (text: string) => {
@@ -149,7 +132,7 @@ export const ProductionSection = ({ formulas = [], updateProducto: updateProduct
 
   const handleViewRemito = async (remitoId: string) => {
     try {
-      const remitoConItems = await getRemitoWithItems(remitoId);
+      const remitoConItems = await RemitoService.getRemitoWithItems(remitoId);
       if (remitoConItems) {
         setSelectedRemito(remitoConItems);
         setIsRemitoDetailOpen(true);

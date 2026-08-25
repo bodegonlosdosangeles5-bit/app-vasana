@@ -39,7 +39,7 @@ const IndexContent = () => {
   const { isConnected, lastUpdate } = useRealtimeUpdates();
 
   // Instancia centralizada de inventario (evita doble query desde DashboardMetrics)
-  const { inventoryItems } = useRealtimeInventory();
+  const { inventoryItems, loading: inventoryLoading } = useRealtimeInventory();
   
   // Rastrear actividad del usuario (heartbeat)
   useUserActivity();
@@ -93,10 +93,13 @@ const IndexContent = () => {
         if (user?.role !== 'superadmin') return null;
         return <ActivityLogPanel />;
       default:
-        return <DashboardMetrics 
-          formulas={productos as Producto[]} 
+        return <DashboardMetrics
+          formulas={productos as Producto[]}
           onNavigateToProduction={() => setActiveSection("production")}
           inventoryItems={inventoryItems}
+          inventoryLoading={inventoryLoading}
+          updateProducto={updateProducto}
+          deleteProducto={deleteProducto}
         />;
     }
   };

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ProductoService } from '@/services/productoService';
 
@@ -52,6 +52,20 @@ export const useRealtimeProductos = () => {
     loadProductos();
   }, [loadProductos]);
 
+  // Debounce de la recarga por Realtime: una acción del usuario (ej. generar un
+  // envío, que actualiza varios productos en un bucle, o sincronizar varias
+  // materias primas faltantes al editar un producto) puede disparar varios
+  // eventos de cambio casi simultáneos. Sin esto, cada evento volvía a traer
+  // los 1520+ productos completos por separado. Se agrupan en una sola recarga.
+  const reloadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scheduleReload = useCallback(() => {
+    if (reloadTimeoutRef.current) clearTimeout(reloadTimeoutRef.current);
+    reloadTimeoutRef.current = setTimeout(() => {
+      reloadTimeoutRef.current = null;
+      loadProductos(true);
+    }, 600);
+  }, [loadProductos]);
+
   // Configurar suscripción en tiempo real
   useEffect(() => {
     const channelId = `productos_changes_${Math.random().toString(36).substring(7)}`;
@@ -66,7 +80,7 @@ export const useRealtimeProductos = () => {
         },
         (payload) => {
           console.log('🔄 Cambio en productos:', payload);
-          loadProductos(true); // Recargar productos silenciosamente
+          scheduleReload();
         }
       )
       .on(
@@ -78,7 +92,7 @@ export const useRealtimeProductos = () => {
         },
         (payload) => {
           console.log('🔄 Cambio en ingredientes faltantes:', payload);
-          loadProductos(true); // Recargar productos silenciosamente
+          scheduleReload();
         }
       )
       .on(
@@ -90,17 +104,18 @@ export const useRealtimeProductos = () => {
         },
         (payload) => {
           console.log('🔄 Cambio en ingredientes disponibles:', payload);
-          loadProductos(true); // Recargar productos silenciosamente
+          scheduleReload();
         }
       )
       .subscribe();
 
     return () => {
+      if (reloadTimeoutRef.current) clearTimeout(reloadTimeoutRef.current);
       setTimeout(() => {
         supabase.removeChannel(channel);
       }, 500);
     };
-  }, [loadProductos]);
+  }, [scheduleReload]);
 
   // Crear producto
   const createProducto = useCallback(async (producto: Omit<Producto, 'id'> & { id?: string }): Promise<Producto | null> => {

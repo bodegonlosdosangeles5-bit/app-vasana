@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { EnvioService, Envio, EnvioConRemitos } from '@/services/envioService';
 
@@ -29,6 +29,16 @@ export const useRealtimeEnvios = () => {
 
   // Configurar suscripción en tiempo real
   useEffect(() => {
+    // Agrupa varios cambios casi simultáneos en una sola recarga.
+    const reloadTimeoutRef = { current: null as ReturnType<typeof setTimeout> | null };
+    const scheduleReload = () => {
+      if (reloadTimeoutRef.current) clearTimeout(reloadTimeoutRef.current);
+      reloadTimeoutRef.current = setTimeout(() => {
+        reloadTimeoutRef.current = null;
+        loadEnvios();
+      }, 600);
+    };
+
     const channelId = `envios_changes_${Math.random().toString(36).substring(7)}`;
     const channel = supabase
       .channel(channelId)
@@ -41,12 +51,13 @@ export const useRealtimeEnvios = () => {
         },
         (payload) => {
           console.log('🔄 Cambio en envíos:', payload);
-          loadEnvios(); // Recargar envíos cuando hay cambios
+          scheduleReload();
         }
       )
       .subscribe();
 
     return () => {
+      if (reloadTimeoutRef.current) clearTimeout(reloadTimeoutRef.current);
       setTimeout(() => {
         supabase.removeChannel(channel);
       }, 500);

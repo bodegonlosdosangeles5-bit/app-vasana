@@ -498,22 +498,26 @@ export class RemitoService {
 
       if (!remitos || remitos.length === 0) return [];
 
-      // Obtener items para cada remito
-      const remitosWithItems = await Promise.all(
-        remitos.map(async (remito) => {
-          const { data: items } = await supabase
-            .from('remito_items')
-            .select('*')
-            .eq('remito_id', remito.id)
-            .order('lote', { ascending: true });
+      // Obtener los items de todos los remitos en una sola consulta (evita N+1)
+      const remitoIds = remitos.map(r => r.id);
+      const { data: items, error: itemsError } = await supabase
+        .from('remito_items')
+        .select('*')
+        .in('remito_id', remitoIds)
+        .order('lote', { ascending: true });
 
-          return {
-            ...remito,
-            estado: remito.estado as 'abierto' | 'cerrado',
-            items: items || []
-          } as RemitoWithItems;
-        })
-      );
+      if (itemsError) throw itemsError;
+
+      const itemsByRemito = (items || []).reduce((acc, item) => {
+        (acc[item.remito_id] ||= []).push(item);
+        return acc;
+      }, {} as Record<string, typeof items>);
+
+      const remitosWithItems = remitos.map(remito => ({
+        ...remito,
+        estado: remito.estado as 'abierto' | 'cerrado',
+        items: itemsByRemito[remito.id] || []
+      })) as RemitoWithItems[];
 
       return remitosWithItems;
     } catch (error) {

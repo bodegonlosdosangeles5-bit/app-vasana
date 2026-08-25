@@ -44,23 +44,24 @@ export const useRealtimeRemitos = () => {
   }, []);
 
   // Cargar datos al montar el componente
+  // Nota: loadRemitos() (todos los remitos + items, con N+1 queries) no se llama
+  // automáticamente porque ningún consumidor actual usa el array `remitos` — solo
+  // `currentRemito`. Sigue disponible para quien lo necesite invocar manualmente.
   useEffect(() => {
-    loadRemitos();
     loadCurrentRemito();
-  }, [loadRemitos, loadCurrentRemito]);
+  }, [loadCurrentRemito]);
 
   // Configurar polling como fallback si Realtime falla
   const startPolling = useCallback(() => {
     if (pollingIntervalRef.current) return;
-    
+
     console.log('🔄 Iniciando polling como fallback...');
     setIsPolling(true);
     const interval = setInterval(() => {
-      loadRemitos();
       loadCurrentRemito();
     }, 5000); // Polling cada 5 segundos
     pollingIntervalRef.current = interval;
-  }, [loadRemitos, loadCurrentRemito]);
+  }, [loadCurrentRemito]);
 
   const stopPolling = useCallback(() => {
     if (pollingIntervalRef.current) {
@@ -95,8 +96,6 @@ export const useRealtimeRemitos = () => {
           },
           (payload) => {
             console.log('📡 Cambio detectado en remitos:', payload);
-            // Recargar remitos cuando hay cambios
-            loadRemitos();
             loadCurrentRemito();
           }
         )
@@ -109,8 +108,6 @@ export const useRealtimeRemitos = () => {
           },
           (payload) => {
             console.log('📡 Cambio detectado en remito_items:', payload);
-            // Recargar remitos cuando hay cambios en items
-            loadRemitos();
             loadCurrentRemito();
           }
         )
@@ -152,7 +149,7 @@ export const useRealtimeRemitos = () => {
       }
       stopPolling();
     };
-  }, [loadRemitos, loadCurrentRemito, startPolling, stopPolling]);
+  }, [loadCurrentRemito, startPolling, stopPolling]);
 
   // Generar remito para Villa Martelli
   const generateRemitoForVillaMartelli = async (productionItems: ProductionItem[]) => {

@@ -16,9 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { useMemo, useState, useEffect } from "react";
 import { Producto } from "@/services/productoService";
-import { useRealtimeInventory } from "@/hooks/useRealtimeInventory";
 import { InventoryItem } from "@/services/inventoryService";
-import { useRealtimeProductos } from "@/hooks/useRealtimeProductos";
 import { MetricasService, ComparativaHoyAyer, ProductionViewData } from "@/services/metricasService";
 import { format, subDays, startOfWeek, isSameMonth, isSameWeek, startOfMonth, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
@@ -52,14 +50,24 @@ interface DashboardMetricsProps {
   formulas?: Producto[];
   onNavigateToProduction?: () => void;
   inventoryItems?: InventoryItem[];
+  inventoryLoading?: boolean;
+  updateProducto?: (id: string, updates: Partial<Producto>) => Promise<Producto | null>;
+  deleteProducto?: (id: string) => Promise<boolean>;
 }
 
-export const DashboardMetrics = ({ formulas = [], onNavigateToProduction, inventoryItems: inventoryItemsProp }: DashboardMetricsProps) => {
-  // Usar el hook de productos en tiempo real
-  const { productos, loading: productosLoading, error: productosError, updateProducto, deleteProducto } = useRealtimeProductos();
-  
-  // Usar los datos del hook en tiempo real o los props como fallback
-  const formulasData = productos.length > 0 ? productos : formulas;
+export const DashboardMetrics = ({
+  formulas = [],
+  onNavigateToProduction,
+  inventoryItems: inventoryItemsProp,
+  inventoryLoading = false,
+  updateProducto,
+  deleteProducto
+}: DashboardMetricsProps) => {
+  // Los productos e items de inventario llegan por props: ya se cargan una sola vez
+  // de forma centralizada en Index.tsx (evita duplicar la consulta y la suscripción
+  // realtime que esto generaba antes al llamar useRealtimeProductos/useRealtimeInventory
+  // de nuevo acá adentro).
+  const formulasData = formulas;
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isOutOfStockOpen, setIsOutOfStockOpen] = useState(false);
   const [isFormulasListOpen, setIsFormulasListOpen] = useState(false);
@@ -123,11 +131,9 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction, invent
     };
     fetchAllData();
     return () => { isMounted = false; };
-  }, [productos]);
-  
-  // Hook para obtener datos de inventario (solo si no se recibe via props)
-  const { inventoryItems: inventoryItemsHook, loading: inventoryLoading } = useRealtimeInventory();
-  const inventoryItems = inventoryItemsProp ?? inventoryItemsHook;
+  }, [formulas]);
+
+  const inventoryItems = inventoryItemsProp ?? [];
 
   // Función para normalizar texto (quitar tildes, espacios y convertir a minúsculas)
   const normalizeText = (text: string) => {
@@ -481,6 +487,7 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction, invent
       toast.error("No tienes permisos para realizar esta acción");
       return;
     }
+    if (!updateProducto) return;
     try {
       const success = await updateProducto(editingProducto.id, {
         name: editForm.name,
@@ -517,7 +524,8 @@ export const DashboardMetrics = ({ formulas = [], onNavigateToProduction, invent
       toast.error("No tienes permisos para realizar esta acción");
       return;
     }
-    const targetProduct = productos.find(p => p.id === productToDelete);
+    if (!deleteProducto) return;
+    const targetProduct = formulasData.find(p => p.id === productToDelete);
     const success = await deleteProducto(productToDelete);
     if (success) {
       toast.success("Producto eliminado correctamente");

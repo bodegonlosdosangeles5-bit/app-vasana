@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { InventoryService, InventoryItem } from '@/services/inventoryService';
 
@@ -47,6 +47,16 @@ export const useRealtimeInventory = (options: UseRealtimeInventoryOptions = {}) 
 
   // Configurar Realtime para materias primas
   useEffect(() => {
+    // Agrupa varios cambios casi simultáneos (ej. una carga en lote) en una sola recarga.
+    const reloadTimeoutRef = { current: null as ReturnType<typeof setTimeout> | null };
+    const scheduleReload = () => {
+      if (reloadTimeoutRef.current) clearTimeout(reloadTimeoutRef.current);
+      reloadTimeoutRef.current = setTimeout(() => {
+        reloadTimeoutRef.current = null;
+        loadInventoryItems();
+      }, 600);
+    };
+
     const channelId = `inventory_changes_${Math.random().toString(36).substring(7)}`;
     const inventoryChannel = supabase
       .channel(channelId)
@@ -58,8 +68,7 @@ export const useRealtimeInventory = (options: UseRealtimeInventoryOptions = {}) 
           table: 'inventory_items'
         },
         (_payload) => {
-          // Recargar todas las materias primas cuando hay cambios
-          loadInventoryItems();
+          scheduleReload();
         }
       )
       .subscribe((status) => {
@@ -72,6 +81,7 @@ export const useRealtimeInventory = (options: UseRealtimeInventoryOptions = {}) 
 
     // Cleanup al desmontar
     return () => {
+      if (reloadTimeoutRef.current) clearTimeout(reloadTimeoutRef.current);
       // En React Strict Mode, esto puede causar un cierre abrupto del WebSocket si se llama inmediatamente.
       // Un pequeño timeout evita el warning de "WebSocket is closed before the connection is established"
       setTimeout(() => {
