@@ -23,12 +23,13 @@ const IndexContent = () => {
   const { user } = useAuth();
 
   // Usar el hook de productos con Supabase Realtime
-  const { 
-    productos, 
-    loading, 
-    error, 
-    createProducto, 
-    updateProducto, 
+  const {
+    productos,
+    loading,
+    error,
+    loadProductos,
+    createProducto,
+    updateProducto,
     deleteProducto,
     addMissingIngredient,
     removeMissingIngredient,
@@ -81,10 +82,11 @@ const IndexContent = () => {
           error={error}
         />;
       case "production":
-        return <ProductionSection 
+        return <ProductionSection
           formulas={productos as Producto[]}
           updateProducto={updateProducto}
           deleteProducto={deleteProducto}
+          refreshFormulas={() => loadProductos(true)}
         />;
       case "users":
         if (user?.role !== 'superadmin') return null;

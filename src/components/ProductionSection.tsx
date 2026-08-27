@@ -25,9 +25,10 @@ interface ProductionSectionProps {
   formulas?: Producto[];
   updateProducto?: (id: string, updates: Partial<Producto>) => Promise<Producto | null>;
   deleteProducto?: (id: string) => Promise<boolean>;
+  refreshFormulas?: () => Promise<void>;
 }
 
-export const ProductionSection = ({ formulas = [], updateProducto: updateProductoProp, deleteProducto: deleteProductoProp }: ProductionSectionProps) => {
+export const ProductionSection = ({ formulas = [], updateProducto: updateProductoProp, deleteProducto: deleteProductoProp, refreshFormulas }: ProductionSectionProps) => {
   const { user } = useAuth();
   const canEdit = user?.role === 'admin' || user?.role === 'superadmin';
 
@@ -267,9 +268,10 @@ export const ProductionSection = ({ formulas = [], updateProducto: updateProduct
         </TabsList>
 
         <TabsContent value="remito" className="space-y-4">
-          <RemitoProduction 
-            productionItems={currentProduction} 
+          <RemitoProduction
+            productionItems={currentProduction}
             onSuccess={() => setActiveTab("shipments")}
+            refreshProductos={refreshFormulas}
           />
         </TabsContent>
 

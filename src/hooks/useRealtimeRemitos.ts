@@ -40,6 +40,8 @@ export const useRealtimeRemitos = () => {
     } catch (err) {
       setError('Error al cargar el remito actual');
       console.error('❌ Error cargando remito actual:', err);
+    } finally {
+      setLoading(false);
     }
   }, []);
 

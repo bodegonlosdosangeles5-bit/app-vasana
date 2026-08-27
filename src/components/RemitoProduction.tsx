@@ -16,9 +16,10 @@ import { ActivityLogService } from "@/services/activityLogService";
 interface RemitoProductionProps {
   productionItems: ProductionItem[];
   onSuccess?: () => void;
+  refreshProductos?: () => Promise<void>;
 }
 
-export const RemitoProduction = ({ productionItems, onSuccess }: RemitoProductionProps) => {
+export const RemitoProduction = ({ productionItems, onSuccess, refreshProductos }: RemitoProductionProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
@@ -133,7 +134,11 @@ export const RemitoProduction = ({ productionItems, onSuccess }: RemitoProductio
           setSelectedItems(new Set());
           setIsConfirmOpen(false);
           setIsGenerating(false);
-          
+
+          // Forzar recarga de productos: Realtime no siempre notifica el cambio de
+          // stock_actual, así que no podemos depender solo de la suscripción.
+          refreshProductos?.();
+
           // Notificar éxito visual
           setShowSuccessMessage(`✅ Remito ${data.remito.id} generado y enviado correctamente.`);
           
