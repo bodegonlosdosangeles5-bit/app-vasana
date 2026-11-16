@@ -158,7 +158,43 @@ export const FormulasSection = ({
     pdf.setFontSize(9);
     pdf.setFont("helvetica", "normal");
     pdf.setTextColor(100, 100, 100);
-    pdf.text(`Total de lotes incompletos: ${lotes.length}`, 14, 47);
+    // Suma total de kilos de los lotes no terminados (los mismos que se listan en la tabla)
+    const totalKilosIncompletos = lotes.reduce(
+      (sum, formula) => sum + (Number(formula.batchSize) || 0),
+      0
+    );
+    const totalKilosTexto = `${totalKilosIncompletos.toLocaleString("es-AR", {
+      maximumFractionDigits: 2
+    })} kg`;
+    pdf.text(
+      `Total de lotes incompletos: ${lotes.length}   |   Total de kilos: ${totalKilosTexto}`,
+      14,
+      47
+    );
+
+    // Desglose de kilos por destino
+    const fmtKg = (n: number) => `${n.toLocaleString("es-AR", { maximumFractionDigits: 2 })} kg`;
+    const normDestino = (d: unknown) =>
+      String(d || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "");
+    const kilosPorDestino = { villaMartelli: 0, exportacion: 0, usoInterno: 0, otros: 0 };
+    lotes.forEach((formula) => {
+      const kg = Number(formula.batchSize) || 0;
+      const d = normDestino(formula.destination);
+      if (d === "villamartelli") kilosPorDestino.villaMartelli += kg;
+      else if (d === "exportacion") kilosPorDestino.exportacion += kg;
+      else if (d === "florenciovarela" || d === "usointerno") kilosPorDestino.usoInterno += kg;
+      else kilosPorDestino.otros += kg;
+    });
+    const desglose = [
+      `Villa Martelli: ${fmtKg(kilosPorDestino.villaMartelli)}`,
+      `Exportación: ${fmtKg(kilosPorDestino.exportacion)}`,
+      `Uso Interno: ${fmtKg(kilosPorDestino.usoInterno)}`,
+      ...(kilosPorDestino.otros > 0 ? [`Otros: ${fmtKg(kilosPorDestino.otros)}`] : []),
+    ].join("   |   ");
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(2, 63, 134);
+    pdf.text(desglose, 14, 53);
+    pdf.setFont("helvetica", "normal");
 
     // ─── TABLA RESUMEN ───────────────────────────────────────
     const tableRows = lotes.map((formula, index) => {
@@ -178,9 +214,19 @@ export const FormulasSection = ({
     });
 
     autoTable(pdf, {
-      startY: 52,
+      startY: 58,
       head: [["", "Lote", "Producto", "Kilos", "Fecha", "Destino", "Materias Primas Faltantes"]],
       body: tableRows,
+      foot: [["", "", "TOTAL KILOS", totalKilosTexto, "", "", ""]],
+      showFoot: "lastPage",
+      footStyles: {
+        fillColor: [2, 63, 134],
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+        fontSize: 7.5,
+        halign: "center",
+        valign: "middle"
+      },
       theme: "striped",
       styles: {
         fontSize: 7,
@@ -679,8 +725,8 @@ export const FormulasSection = ({
           const originalIngredients = originalFormula?.missingIngredients || [];
           const editedIngredients = (editingFormula.missingIngredients || []).filter((ing: any) => ing.name?.trim());
 
-          const originalByName = new Map(originalIngredients.map((ing: any) => [ing.name, ing]));
-          const editedByName = new Map(editedIngredients.map((ing: any) => [ing.name, ing]));
+          const originalByName = new Map<string, any>(originalIngredients.map((ing: any) => [ing.name, ing]));
+          const editedByName = new Map<string, any>(editedIngredients.map((ing: any) => [ing.name, ing]));
 
           const addFn = addMissingIngredient;
           const removeFn = removeMissingIngredientReal;

@@ -112,12 +112,12 @@ const IndexContent = () => {
       <Navigation activeSection={activeSection} onSectionChange={setActiveSection} />
       
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12 pb-16">
-        {/* Dashboard Header with Date/Time */}
-        <div className="mb-10 lg:mb-14">
-          <DashboardHeader enableDateDialog />
-        </div>
-        
         <div className="max-w-7xl mx-auto">
+          {/* Dashboard Header with Date/Time (mismo ancho que el contenido) */}
+          <div className="mb-6">
+            <DashboardHeader enableDateDialog />
+          </div>
+
           <div className="transition-all duration-500 ease-in-out">
             {renderSection()}
           </div>

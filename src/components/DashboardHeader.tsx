@@ -23,7 +23,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
       {/* Welcome Message */}
       <div className="space-y-1">
         <h1 className="text-3xl lg:text-4xl font-bold text-slate-800 dark:text-white tracking-tight">
-          Control de <span className="text-pink-600">Producción</span>
+          Control de <span className="text-[#023F86] dark:text-[#F7A600]">Producción</span>
         </h1>
         <p className="text-sm lg:text-base text-slate-500 dark:text-slate-400 font-medium tracking-wide">
           <span className="text-slate-900 dark:text-slate-200">Planta Varela</span>
@@ -31,7 +31,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
       </div>
       
       {/* Date and Time Display with Realtime Indicator */}
-      <div className="flex flex-col items-start md:items-end gap-3 bg-white dark:bg-slate-800/50 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-md">
+      <div className="flex flex-col items-start md:items-end gap-3 bg-white dark:bg-slate-800/50 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-md">
         {enableDateDialog ? (
           <>
             <button 

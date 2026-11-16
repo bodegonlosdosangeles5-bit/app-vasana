@@ -26,6 +26,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Activity } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { ProductoStatusLookup } from "./ProductoStatusLookup";
 
 interface Metric {
   title: string;
@@ -44,6 +45,7 @@ interface Metric {
   isCritical?: boolean;
   isReportCard?: boolean;
   isSpecialDona?: boolean;
+  barClass?: string;
 }
 
 interface DashboardMetricsProps {
@@ -431,6 +433,7 @@ export const DashboardMetrics = ({
       bgClass: "bg-[#023F86]/10",
       progress: animatedProgressKilos,
       hasProductionList: true,
+      barClass: "bg-[#023F86]",
     },
     {
       title: "Materias Primas",
@@ -442,6 +445,7 @@ export const DashboardMetrics = ({
       isCritical: outOfStockItems.length > 0,
       progress: animatedProgressOutOfStock,
       hasOutOfStock: true,
+      barClass: outOfStockItems.length > 0 ? "bg-rose-500" : "bg-emerald-500",
     },
     {
       title: "Lotes Finalizados",
@@ -452,9 +456,10 @@ export const DashboardMetrics = ({
       bgClass: "bg-[#F7A600]/10",
       progress: animatedProgressTerminados,
       hasFormulasList: true,
+      barClass: "bg-[#F7A600]",
     },
     {
-      title: "REPORTE DE PLANTA",
+      title: "Reporte de Planta",
       value: " ",
       subtitle: "Estadísticas Avanzadas",
       icon: BarChart3,
@@ -795,7 +800,7 @@ export const DashboardMetrics = ({
   // ──────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-10 pt-4 pb-12 layout-entry">
+    <div className="space-y-6 pb-12 layout-entry">
       {/* Metrics Cards - Premium Grid Layout */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 kpi-staggered">
         {metrics.map((metric: Metric, index) => {
@@ -805,12 +810,12 @@ export const DashboardMetrics = ({
           return (
             <Card 
               key={index} 
-              className={`relative overflow-hidden border-0 rounded-[2.5rem] shadow-sm hover:shadow-2xl
-                          transition-all duration-700 ease-in-out group
-                          ${isClickable ? 'cursor-pointer hover:-translate-y-3' : ''}
+              className={`relative overflow-hidden rounded-3xl shadow-sm hover:shadow-lg
+                          transition-all duration-300 ease-out group
+                          ${isClickable ? 'cursor-pointer hover:-translate-y-1' : ''}
                           ${metric.isReportCard 
                             ? 'bg-gradient-to-br from-[#023F86] via-[#0555B1] to-[#023F86] text-white border-none' 
-                            : 'bg-white dark:bg-card/40 border border-slate-200'
+                            : 'bg-white dark:bg-card/40 border border-slate-200 dark:border-slate-800'
                           }`}
               onClick={() => {
                 if (metric.hasOutOfStock) {
@@ -844,7 +849,7 @@ export const DashboardMetrics = ({
                       <Icon className="h-6 w-6 text-white" strokeWidth={1.5} />
                     </div>
                     <div className="space-y-1">
-                        <h3 className="text-white text-base font-bold tracking-wide uppercase">
+                        <h3 className="text-white text-base font-bold tracking-wide">
                           {metric.title}
                         </h3>
                         <p className="text-[11px] text-blue-100 font-medium tracking-widest uppercase opacity-80">
@@ -934,7 +939,7 @@ export const DashboardMetrics = ({
                         {metric.progress !== undefined && (
                           <div className="mt-4 relative h-2 w-full bg-slate-100 dark:bg-muted/30 rounded-full overflow-hidden">
                              <div 
-                                className="absolute top-0 left-0 h-full bg-[#F7A600] transition-all duration-1000 ease-out rounded-full"
+                                className={`absolute top-0 left-0 h-full ${metric.barClass || "bg-[#F7A600]"} transition-all duration-1000 ease-out rounded-full`}
                                 style={{ width: `${metric.progress}%` }}
                              />
                           </div>
@@ -950,6 +955,10 @@ export const DashboardMetrics = ({
         })}
       </div>
 
+      {/* Consulta de estado por lote (solo lectura) — misma grilla de 4 columnas que los KPIs */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        <ProductoStatusLookup productos={formulasData} />
+      </div>
 
       {/* Modal de búsqueda de inventario */}
       <Dialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
