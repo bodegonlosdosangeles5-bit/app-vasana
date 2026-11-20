@@ -367,6 +367,17 @@ export class ProductoService {
         .eq('id', id);
 
       if (error) throw error;
+
+      // Borrar también sus materias primas (la base no lo hace en cascada y
+      // quedaban filas huérfanas). Se hace después de borrar el producto para
+      // no perder nada si el borrado del producto falla.
+      const [missingRes, availableRes] = await Promise.all([
+        supabase.from('missing_ingredients').delete().eq('producto_id', id),
+        supabase.from('available_ingredients').delete().eq('producto_id', id)
+      ]);
+      if (missingRes.error) console.error('Error borrando materias primas faltantes del producto:', missingRes.error);
+      if (availableRes.error) console.error('Error borrando materias primas disponibles del producto:', availableRes.error);
+
       return true;
     } catch (error) {
       console.error('Error deleting producto:', error);
