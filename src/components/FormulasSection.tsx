@@ -7,7 +7,7 @@ import {
   isSameDay,
   format
 } from "date-fns";
-import { CheckCircle, XCircle, Clock, Beaker, Filter, Edit, Save, X, Plus, Upload, Package, Trash2, AlertCircle, Eye, Download } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Beaker, Filter, Edit, Save, X, Plus, Upload, Package, Trash2, AlertCircle, Eye, Download, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -78,6 +78,8 @@ export const FormulasSection = ({
   const [editingFormula, setEditingFormula] = useState<any>(null);
   const [showOnlyIncomplete, setShowOnlyIncomplete] = useState(true);
   const [destinationFilter, setDestinationFilter] = useState<string>("all");
+  const [loteSearch, setLoteSearch] = useState("");
+  const [paginaActual, setPaginaActual] = useState(1);
   const [isLoadModalOpen, setIsLoadModalOpen] = useState(false);
   const [isAddIngredientModalOpen, setIsAddIngredientModalOpen] = useState(false);
   const [selectedFormulaForIngredient, setSelectedFormulaForIngredient] = useState<any>(null);
@@ -526,8 +528,33 @@ export const FormulasSection = ({
     const actualStatus = getFormulaStatus(formula);
     const statusMatch = showOnlyIncomplete ? actualStatus === "incomplete" : true;
     const destinationMatch = destinationFilter === "all" || formula.destination === destinationFilter;
-    return statusMatch && destinationMatch;
+    const loteBuscado = loteSearch.trim().toLowerCase();
+    const loteMatch = !loteBuscado ||
+      String(formula.lote_code || formula.id || '').toLowerCase().includes(loteBuscado);
+    return statusMatch && destinationMatch && loteMatch;
   });
+
+  // Paginación de la grilla de productos
+  const PRODUCTOS_POR_PAGINA = 10;
+  const totalPaginas = Math.max(1, Math.ceil(filteredFormulas.length / PRODUCTOS_POR_PAGINA));
+  const paginaVisible = Math.min(paginaActual, totalPaginas);
+  const formulasPaginadas = filteredFormulas.slice(
+    (paginaVisible - 1) * PRODUCTOS_POR_PAGINA,
+    paginaVisible * PRODUCTOS_POR_PAGINA
+  );
+  const irAPagina = (pagina: number) => {
+    setPaginaActual(Math.min(Math.max(1, pagina), totalPaginas));
+    document.getElementById('productos-grilla')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  // Números de página a mostrar: primera, última y vecinas de la actual (con "…")
+  const paginasAMostrar: (number | '…')[] = [];
+  for (let i = 1; i <= totalPaginas; i++) {
+    if (i === 1 || i === totalPaginas || Math.abs(i - paginaVisible) <= 1) {
+      paginasAMostrar.push(i);
+    } else if (paginasAMostrar[paginasAMostrar.length - 1] !== '…') {
+      paginasAMostrar.push('…');
+    }
+  }
 
   const productosCargadosHoy = useMemo(() => {
     const hoy = new Date().toLocaleDateString(
@@ -583,8 +610,36 @@ export const FormulasSection = ({
     }));
   };
 
+  // Convierte una cantidad de materia prima a kg (L y ml se toman como kg y g).
+  // Devuelve null para unidades no comparables (ej: "unidades").
+  const ingredienteEnKg = (cantidad: any, unidad: string): number | null => {
+    const n = parseFloat(cantidad);
+    if (isNaN(n)) return null;
+    if (unidad === 'kg' || unidad === 'L') return n;
+    if (unidad === 'g' || unidad === 'ml') return n / 1000;
+    return null;
+  };
+
+  // Valida que una materia prima faltante no supere los kilos totales del producto.
+  // Muestra un cartel y devuelve false si la cantidad es inválida.
+  const validarFaltanteVsProducto = (ing: { name?: string; required: any; unit: string }, productoKg: number): boolean => {
+    const kg = ingredienteEnKg(ing.required, ing.unit);
+    if (kg === null || !productoKg || isNaN(productoKg) || productoKg <= 0) return true;
+    if (kg > productoKg) {
+      toast.error(
+        `La materia prima "${ing.name || ''}" (${ing.required} ${ing.unit}) no puede superar el total del producto (${productoKg} kg). Corregí la cantidad.`
+      );
+      return false;
+    }
+    return true;
+  };
+
   const handleAddMissingIngredient = () => {
     if (newMissingIngredient.name.trim() && newMissingIngredient.required.trim()) {
+      const productoKg = newFormula.batchUnit === 'g'
+        ? parseFloat(newFormula.batchSize) / 1000
+        : parseFloat(newFormula.batchSize);
+      if (!validarFaltanteVsProducto(newMissingIngredient, productoKg)) return;
       setMissingIngredients(prev => [...prev, { ...newMissingIngredient }]);
       setNewMissingIngredient({ name: "", required: "", unit: "kg" });
     }
@@ -624,6 +679,16 @@ export const FormulasSection = ({
         `No se puede cargar dos veces el mismo producto.`
       );
       return;
+    }
+
+    // Validar que ninguna materia prima faltante supere los kilos del producto
+    if (newFormula.status === 'incomplete') {
+      const productoKg = newFormula.batchUnit === 'g'
+        ? parseFloat(newFormula.batchSize) / 1000
+        : parseFloat(newFormula.batchSize);
+      for (const ing of missingIngredients) {
+        if (!validarFaltanteVsProducto(ing, productoKg)) return;
+      }
     }
 
     setIsSubmittingFormula(true);
@@ -707,6 +772,11 @@ export const FormulasSection = ({
     e.preventDefault();
     if (!canEditProducto) return;
     if (editingFormula) {
+      // Validar que ninguna materia prima faltante supere los kilos del producto
+      const productoKg = Number(editingFormula.batchSize);
+      for (const ing of (editingFormula.missingIngredients || []).filter((i: any) => i.name?.trim())) {
+        if (!validarFaltanteVsProducto(ing, productoKg)) return;
+      }
       try {
         const success = await updateProducto(editingFormula.id, {
           name: editingFormula.name,
@@ -838,6 +908,12 @@ export const FormulasSection = ({
       return;
     }
     if (!selectedFormulaForIngredient || !newIngredient.name.trim() || !newIngredient.required) {
+      return;
+    }
+    if (!validarFaltanteVsProducto(
+      newIngredient,
+      Number(selectedFormulaForIngredient.production_kg || selectedFormulaForIngredient.batchSize)
+    )) {
       return;
     }
 
@@ -987,7 +1063,7 @@ export const FormulasSection = ({
             <Button
               variant={showOnlyIncomplete ? "default" : "outline"}
               size="sm"
-              onClick={() => setShowOnlyIncomplete(!showOnlyIncomplete)}
+              onClick={() => { setShowOnlyIncomplete(!showOnlyIncomplete); setPaginaActual(1); }}
               className={`flex items-center gap-2 font-bold px-4 h-9 rounded-xl ${
                 showOnlyIncomplete 
                   ? "bg-[#F7A600] text-[#023F86] hover:bg-[#F7A600]/90 border-none" 
@@ -1010,7 +1086,7 @@ export const FormulasSection = ({
               </Button>
             )}
             {!showOnlyIncomplete && (
-              <Select value={destinationFilter} onValueChange={setDestinationFilter}>
+              <Select value={destinationFilter} onValueChange={(v) => { setDestinationFilter(v); setPaginaActual(1); }}>
                 <SelectTrigger className="w-[180px] h-9 rounded-xl border-slate-200">
                   <SelectValue placeholder="Filtrar por destino" />
                 </SelectTrigger>
@@ -1214,22 +1290,55 @@ export const FormulasSection = ({
     </Accordion>
   )}
 
+      {/* Buscador por número de lote */}
+      <div id="productos-grilla" className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 scroll-mt-4">
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            type="search"
+            inputMode="numeric"
+            placeholder="Buscar por número de lote"
+            value={loteSearch}
+            onChange={(e) => { setLoteSearch(e.target.value); setPaginaActual(1); }}
+            className="pl-9 pr-9 h-9 rounded-xl border-slate-200"
+          />
+          {loteSearch && (
+            <button
+              type="button"
+              onClick={() => { setLoteSearch(""); setPaginaActual(1); }}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              aria-label="Limpiar búsqueda"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+        {filteredFormulas.length > 0 && (
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Mostrando {(paginaVisible - 1) * PRODUCTOS_POR_PAGINA + 1}–{Math.min(paginaVisible * PRODUCTOS_POR_PAGINA, filteredFormulas.length)} de {filteredFormulas.length} {filteredFormulas.length === 1 ? "producto" : "productos"}
+          </p>
+        )}
+      </div>
+
       {filteredFormulas.length === 0 ? (
         <div className="text-center py-12">
           <Beaker className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-foreground mb-2">
-            {showOnlyIncomplete ? "¡Excelente!" : "No hay productos"}
+            {loteSearch.trim() ? "Sin resultados" : showOnlyIncomplete ? "¡Excelente!" : "No hay productos"}
           </h3>
           <p className="text-muted-foreground">
-            {showOnlyIncomplete 
-              ? "Todas los productos tienen los materiales necesarios disponibles." 
+            {loteSearch.trim()
+              ? `No hay productos con lote "${loteSearch.trim()}"${showOnlyIncomplete ? " entre los incompletos. Probá con \"Ver Historial Completo\"." : "."}`
+              : showOnlyIncomplete
+              ? "Todas los productos tienen los materiales necesarios disponibles."
               : "No se encontraron productos en el sistema."
             }
           </p>
         </div>
       ) : (
+        <>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-          {filteredFormulas.map((formula) => {
+          {formulasPaginadas.map((formula) => {
           const actualStatus = getFormulaStatus(formula);
           const completion = getCompletionPercentage(formula);
           
@@ -1422,6 +1531,53 @@ export const FormulasSection = ({
           );
         })}
         </div>
+
+        {/* Paginación */}
+        {totalPaginas > 1 && (
+          <nav className="flex items-center justify-center gap-1 pt-2" aria-label="Paginación de productos">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => irAPagina(paginaVisible - 1)}
+              disabled={paginaVisible === 1}
+              className="h-9 px-3 rounded-xl border-slate-200 text-slate-600"
+            >
+              <ChevronLeft className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Anterior</span>
+            </Button>
+            {paginasAMostrar.map((p, i) =>
+              p === '…' ? (
+                <span key={`e${i}`} className="px-1.5 text-sm text-slate-400">…</span>
+              ) : (
+                <Button
+                  key={p}
+                  variant={p === paginaVisible ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => irAPagina(p)}
+                  aria-current={p === paginaVisible ? "page" : undefined}
+                  className={`h-9 min-w-9 px-3 rounded-xl font-semibold ${
+                    p === paginaVisible
+                      ? "bg-[#023F86] hover:bg-[#0555B1] text-white"
+                      : "border-slate-200 text-slate-600"
+                  }`}
+                >
+                  {p}
+                </Button>
+              )
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => irAPagina(paginaVisible + 1)}
+              disabled={paginaVisible === totalPaginas}
+              className="h-9 px-3 rounded-xl border-slate-200 text-slate-600"
+            >
+              <span className="hidden sm:inline">Siguiente</span>
+              <ChevronRight className="h-4 w-4 sm:ml-1" />
+            </Button>
+          </nav>
+        )}
+        </>
       )}
 
 

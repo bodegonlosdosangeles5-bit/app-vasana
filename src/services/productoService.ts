@@ -162,7 +162,9 @@ export class ProductoService {
           destination: producto.destination,
           date: producto.date || null,
           type: producto.type,
-          client_name: producto.clientName || null
+          client_name: producto.clientName || null,
+          // La base nueva no tiene default en created_at: se setea desde la app
+          created_at: new Date().toISOString()
         })
         .select()
         .single();

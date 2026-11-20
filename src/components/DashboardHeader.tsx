@@ -10,11 +10,14 @@ interface DashboardHeaderProps {
    * Útil para habilitarlo sólo en la pantalla de inicio.
    */
   enableDateDialog?: boolean;
+  /** Contenido opcional a la derecha de "Status" (ej: campana de notificaciones). */
+  notificaciones?: React.ReactNode;
 }
 
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ 
   className = '',
-  enableDateDialog = false
+  enableDateDialog = false,
+  notificaciones
 }) => {
   const [calendarOpen, setCalendarOpen] = useState(false);
 
@@ -45,9 +48,12 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
         ) : (
           <DateTimeDisplay format="full" />
         )}
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Status</span>
-          <RealtimeIndicator />
+        <div className="flex w-full items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Status</span>
+            <RealtimeIndicator />
+          </div>
+          {notificaciones}
         </div>
       </div>
     </div>

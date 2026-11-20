@@ -7,6 +7,7 @@ import { FormulasSection } from "@/components/FormulasSection";
 import { ProductionSection } from "@/components/ProductionSection";
 import { UserAdminPanel } from "@/components/UserAdminPanel";
 import { ActivityLogPanel } from "@/components/ActivityLogPanel";
+import { FaltantesRecientesNotice } from "@/components/FaltantesRecientesNotice";
 import { useRealtimeProductos } from "@/hooks/useRealtimeProductos";
 import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
 import { useRealtimeInventory } from "@/hooks/useRealtimeInventory";
@@ -115,7 +116,15 @@ const IndexContent = () => {
         <div className="max-w-7xl mx-auto">
           {/* Dashboard Header with Date/Time (mismo ancho que el contenido) */}
           <div className="mb-6">
-            <DashboardHeader enableDateDialog />
+            <DashboardHeader
+              enableDateDialog
+              notificaciones={activeSection === "dashboard" ? (
+                <FaltantesRecientesNotice
+                  productos={productos as Producto[]}
+                  onVerProductos={() => setActiveSection("formulas")}
+                />
+              ) : undefined}
+            />
           </div>
 
           <div className="transition-all duration-500 ease-in-out">
